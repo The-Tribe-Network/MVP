@@ -1,0 +1,1 @@
+export type AppURLPath = `/dashboard/${string}`;
