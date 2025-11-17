@@ -1,8 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
-import { createTribe } from "@/lib/services/tribe";
+import { createTribe, getUserTribes } from "@/lib/services/tribe";
 import type { TribeWithCreator } from "@/lib/database/types";
 import { createTribeSchema, validateApiRequest } from "@/lib/validations/tribe";
+
+export async function GET(request: NextRequest) {
+  try {
+    // Check authentication
+    const user = await getServerUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Fetch user's tribes
+    const userTribes = await getUserTribes(user.id);
+
+    return NextResponse.json(userTribes);
+  } catch (error) {
+    console.error("Error fetching user tribes:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch user tribes" },
+      { status: 500 }
+    );
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,6 +45,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Parse invitations from request body if provided
+    const invitations = body.invitations as
+      | Array<{ email: string; role: "admin" | "moderator" | "member" }>
+      | undefined;
+
     // Create tribe with validated data
     const newTribe = await createTribe(
       {
@@ -33,6 +59,7 @@ export async function POST(request: NextRequest) {
         location: validation.data.location || undefined,
         privacy: validation.data.privacy,
         category: validation.data.category,
+        invitations,
       },
       user.id
     );

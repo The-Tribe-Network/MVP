@@ -5,6 +5,8 @@ export interface InvitedMember {
 
 export type PrivacyType = 'private' | 'public'
 
+export type TribeCategory = 'social' | 'gaming' | 'family' | 'work' | 'hobbies' | 'other'
+
 export interface TribeFormData {
   tribeName: string
   description: string

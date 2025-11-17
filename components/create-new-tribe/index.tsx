@@ -12,9 +12,12 @@ import { LocationStep } from './LocationStep'
 import { PrivacyStep } from './PrivacyStep'
 import { InviteMembersStep } from './InviteMembersStep'
 import { InvitedMember, PrivacyType } from './types'
+import type { TribeCategory } from './BasicInfoStep'
 import { STEP_CONFIG, TOTAL_STEPS } from './stepConfig'
 import { useCreateTribe } from '@/lib/hooks/use-tribes'
 import { toast } from 'sonner'
+import { step1Schema, step2Schema, step3Schema, step4Schema } from '@/lib/validations/tribe'
+import { getLocationPlaceId } from '@/lib/utils/location'
 
 export default function CreateTribePage() {
   const router = useRouter()
@@ -25,6 +28,7 @@ export default function CreateTribePage() {
   const [tribeName, setTribeName] = useState('')
   const [description, setDescription] = useState('')
   const [avatar, setAvatar] = useState('')
+  const [category, setCategory] = useState<TribeCategory>('other')
   const [location, setLocation] = useState('')
   const [privacy, setPrivacy] = useState<PrivacyType>('private')
   const [inviteEmails, setInviteEmails] = useState<InvitedMember[]>([])
@@ -65,10 +69,14 @@ export default function CreateTribePage() {
         avatar: avatar || undefined,
         location: location || undefined,
         privacy: privacy,
-        category: 'other', // Default category, can be enhanced later
+        category: category,
+        invitations: inviteEmails.length > 0 ? inviteEmails : undefined,
       })
 
       toast.success('Tribe created successfully!')
+      if (inviteEmails.length > 0) {
+        toast.success(`${inviteEmails.length} invitation(s) sent!`)
+      }
       // Redirect to the new tribe dashboard
       router.push(`/tribe/${result.id}`)
     } catch (error) {
@@ -78,14 +86,30 @@ export default function CreateTribePage() {
 
   const isStepValid = (): boolean => {
     switch (currentStep) {
-      case 1:
-        return tribeName.trim() !== '' && description.trim() !== ''
-      case 2:
-        return location.trim() !== ''
-      case 3:
-        return true // Privacy has default value
-      case 4:
-        return true // Invites are optional
+      case 1: {
+        const result = step1Schema.safeParse({ tribeName, description })
+        return result.success
+      }
+      case 2: {
+        const result = step2Schema.safeParse({ location })
+
+        if (!result.success) {
+          return false
+        }
+
+        const validatedLocation = result.data.location
+
+        return getLocationPlaceId(validatedLocation) !== null
+      }
+      case 3: {
+        const result = step3Schema.safeParse({ privacy })
+        return result.success
+      }
+      case 4: {
+        // Invites are optional, so this step is always valid
+        const result = step4Schema.safeParse({})
+        return result.success
+      }
       default:
         return false
     }
@@ -125,9 +149,11 @@ export default function CreateTribePage() {
                 tribeName={tribeName}
                 description={description}
                 avatar={avatar}
+                category={category}
                 onTribeNameChange={setTribeName}
                 onDescriptionChange={setDescription}
                 onAvatarChange={setAvatar}
+                onCategoryChange={setCategory}
               />
             )}
 

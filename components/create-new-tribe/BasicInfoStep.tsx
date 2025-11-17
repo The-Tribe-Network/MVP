@@ -4,23 +4,46 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import type { TribeCategory } from './types'
+
+const CATEGORY_LABELS: Record<TribeCategory, string> = {
+  social: 'Social',
+  gaming: 'Gaming',
+  family: 'Family',
+  work: 'Work',
+  hobbies: 'Hobbies',
+  other: 'Other',
+}
+
+const CATEGORIES: TribeCategory[] = ['social', 'gaming', 'family', 'work', 'hobbies', 'other']
 
 interface BasicInfoStepProps {
   tribeName: string
   description: string
   avatar: string
+  category: TribeCategory
   onTribeNameChange: (value: string) => void
   onDescriptionChange: (value: string) => void
   onAvatarChange: (value: string) => void
+  onCategoryChange: (value: TribeCategory) => void
 }
 
 export function BasicInfoStep({
   tribeName,
   description,
   avatar,
+  category,
   onTribeNameChange,
   onDescriptionChange,
   onAvatarChange,
+  onCategoryChange,
 }: BasicInfoStepProps) {
   return (
     <div className="space-y-6">
@@ -46,6 +69,25 @@ export function BasicInfoStep({
           onChange={(e) => onTribeNameChange(e.target.value)}
           className="bg-white/5 border-zinc-700"
         />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="category">Category</Label>
+        <Select value={category} onValueChange={onCategoryChange}>
+          <SelectTrigger
+            id="category"
+            className="w-full bg-white/5 border-zinc-700"
+          >
+            <SelectValue placeholder="Select a category" />
+          </SelectTrigger>
+          <SelectContent>
+            {CATEGORIES.map((cat) => (
+              <SelectItem key={cat} value={cat}>
+                {CATEGORY_LABELS[cat]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="space-y-2">

@@ -28,6 +28,7 @@ import {
   TooltipProvider,
 } from "@/components/ui/tooltip";
 import TribeList from "./tribe-sidebar/tribe-list";
+import { useUserTribes } from "@/lib/hooks/use-tribes";
 
 export default function AppSidebar(
   props: React.ComponentProps<typeof Sidebar>
@@ -54,12 +55,8 @@ export default function AppSidebar(
     }
   }, [isTribeDashboard, setOpen]);
 
-  // Mock tribes data - replace with real data from API later
-  const userTribes = [
-    { id: "1", name: "The Crew", avatar: "/tribe-logo.jpg" },
-    { id: "2", name: "Family", avatar: null },
-    { id: "3", name: "Work Team", avatar: null },
-  ];
+  // Fetch user's tribes
+  const { data: userTribes = [], isLoading: isLoadingTribes } = useUserTribes();
 
   return (
     <Sidebar

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Search, Filter, MapPin, Users, Lock, Globe, TrendingUp, Sparkles } from 'lucide-react'
+import { getLocationDisplayName } from '@/lib/utils/location'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
@@ -214,7 +215,7 @@ export default function DiscoverPage() {
           </div>
           <div className="flex items-center gap-1">
             <MapPin className="w-4 h-4" />
-            <span className="truncate">{tribe.location}</span>
+            <span className="truncate">{getLocationDisplayName(tribe.location)}</span>
           </div>
         </div>
         <div className="flex items-center gap-2">

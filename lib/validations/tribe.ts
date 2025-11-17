@@ -79,6 +79,42 @@ export const tribeIdParamSchema = z.object({
   id: uuidSchema,
 });
 
+// Step-specific validation schemas for multi-step form
+export const step1Schema = z.object({
+  tribeName: z
+    .string()
+    .min(1, "Tribe name is required")
+    .trim()
+    .refine((val) => val.length >= 2, "Tribe name must be at least 2 characters"),
+  description: z
+    .string()
+    .min(1, "Description is required")
+    .trim(),
+});
+
+export const step2Schema = z.object({
+  location: z
+    .string()
+    .min(1, "Location is required")
+    .refine(
+      (val) => {
+        try {
+          const parsed = JSON.parse(val);
+          return parsed?.placeId != null && parsed?.displayName != null;
+        } catch {
+          return false;
+        }
+      },
+      { message: "Location must be selected from the dropdown" }
+    ),
+});
+
+export const step3Schema = z.object({
+  privacy: privacyTypeSchema.default("private"),
+});
+
+export const step4Schema = z.object({}).passthrough(); // Invites are optional, so this step is always valid
+
 // Type exports
 export type CreateTribeInput = z.infer<typeof createTribeSchema>;
 export type UpdateTribeInput = z.infer<typeof updateTribeSchema>;
