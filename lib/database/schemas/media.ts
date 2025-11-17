@@ -1,15 +1,15 @@
-import { pgTable, text, timestamp, integer, bigint } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, integer, bigint, uuid } from "drizzle-orm/pg-core";
 import { tribe } from "./tribe";
 import { user } from "./auth";
 import { post } from "./post";
 import { mediaType } from "./enums";
 
 export const album = pgTable("album", {
-  id: text("id").primaryKey(),
-  tribeId: text("tribe_id")
+  id: uuid("id").primaryKey().defaultRandom(),
+  tribeId: uuid("tribe_id")
     .notNull()
     .references(() => tribe.id, { onDelete: "cascade" }),
-  createdBy: text("created_by")
+  createdBy: uuid("created_by")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
@@ -23,13 +23,13 @@ export const album = pgTable("album", {
 });
 
 export const media = pgTable("media", {
-  id: text("id").primaryKey(),
-  postId: text("post_id").references(() => post.id, { onDelete: "cascade" }),
-  albumId: text("album_id").references((): any => album.id, { onDelete: "set null" }),
-  uploadedBy: text("uploaded_by")
+  id: uuid("id").primaryKey().defaultRandom(),
+  postId: uuid("post_id").references(() => post.id, { onDelete: "cascade" }),
+  albumId: uuid("album_id").references((): any => album.id, { onDelete: "set null" }),
+  uploadedBy: uuid("uploaded_by")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
-  tribeId: text("tribe_id")
+  tribeId: uuid("tribe_id")
     .notNull()
     .references(() => tribe.id, { onDelete: "cascade" }),
   fileUrl: text("file_url").notNull(),

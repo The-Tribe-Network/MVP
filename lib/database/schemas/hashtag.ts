@@ -1,8 +1,8 @@
-import { pgTable, text, timestamp, integer, unique } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, integer, unique, uuid } from "drizzle-orm/pg-core";
 import { post } from "./post";
 
 export const hashtag = pgTable("hashtag", {
-  id: text("id").primaryKey(),
+  id: uuid("id").primaryKey().defaultRandom(),
   tag: text("tag").notNull().unique(),
   postCount: integer("post_count").notNull().default(0),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -13,11 +13,11 @@ export const hashtag = pgTable("hashtag", {
 });
 
 export const postHashtag = pgTable("post_hashtag", {
-  id: text("id").primaryKey(),
-  postId: text("post_id")
+  id: uuid("id").primaryKey().defaultRandom(),
+  postId: uuid("post_id")
     .notNull()
     .references(() => post.id, { onDelete: "cascade" }),
-  hashtagId: text("hashtag_id")
+  hashtagId: uuid("hashtag_id")
     .notNull()
     .references(() => hashtag.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at").defaultNow().notNull(),

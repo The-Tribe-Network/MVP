@@ -1,13 +1,13 @@
-import { pgTable, text, timestamp, unique } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, unique, uuid } from "drizzle-orm/pg-core";
 import { tribe } from "./tribe";
 import { user } from "./auth";
 
 export const post = pgTable("post", {
-  id: text("id").primaryKey(),
-  tribeId: text("tribe_id")
+  id: uuid("id").primaryKey().defaultRandom(),
+  tribeId: uuid("tribe_id")
     .notNull()
     .references(() => tribe.id, { onDelete: "cascade" }),
-  authorId: text("author_id")
+  authorId: uuid("author_id")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
   content: text("content").notNull(),
@@ -19,11 +19,11 @@ export const post = pgTable("post", {
 });
 
 export const postLike = pgTable("post_like", {
-  id: text("id").primaryKey(),
-  postId: text("post_id")
+  id: uuid("id").primaryKey().defaultRandom(),
+  postId: uuid("post_id")
     .notNull()
     .references(() => post.id, { onDelete: "cascade" }),
-  userId: text("user_id")
+  userId: uuid("user_id")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -32,15 +32,15 @@ export const postLike = pgTable("post_like", {
 }));
 
 export const comment = pgTable("comment", {
-  id: text("id").primaryKey(),
-  postId: text("post_id")
+  id: uuid("id").primaryKey().defaultRandom(),
+  postId: uuid("post_id")
     .notNull()
     .references(() => post.id, { onDelete: "cascade" }),
-  authorId: text("author_id")
+  authorId: uuid("author_id")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
   content: text("content").notNull(),
-  parentCommentId: text("parent_comment_id").references((): any => comment.id, {
+  parentCommentId: uuid("parent_comment_id").references((): any => comment.id, {
     onDelete: "cascade",
   }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -51,11 +51,11 @@ export const comment = pgTable("comment", {
 });
 
 export const commentLike = pgTable("comment_like", {
-  id: text("id").primaryKey(),
-  commentId: text("comment_id")
+  id: uuid("id").primaryKey().defaultRandom(),
+  commentId: uuid("comment_id")
     .notNull()
     .references(() => comment.id, { onDelete: "cascade" }),
-  userId: text("user_id")
+  userId: uuid("user_id")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at").defaultNow().notNull(),

@@ -1,9 +1,9 @@
-import { pgTable, text, timestamp, boolean, unique } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean, unique, uuid } from "drizzle-orm/pg-core";
 import { user } from "./auth";
 import { privacyType, tribeRole, tribeCategory, invitationStatus } from "./enums";
 
 export const tribe = pgTable("tribe", {
-  id: text("id").primaryKey(),
+  id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
   description: text("description"),
   avatar: text("avatar"),
@@ -12,7 +12,7 @@ export const tribe = pgTable("tribe", {
   category: tribeCategory("category").notNull().default("other"),
   isFeatured: boolean("is_featured").notNull().default(false),
   isTrending: boolean("is_trending").notNull().default(false),
-  createdBy: text("created_by")
+  createdBy: uuid("created_by")
     .notNull()
     .references(() => user.id, { onDelete: "restrict" }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -23,11 +23,11 @@ export const tribe = pgTable("tribe", {
 });
 
 export const tribeMember = pgTable("tribe_member", {
-  id: text("id").primaryKey(),
-  tribeId: text("tribe_id")
+  id: uuid("id").primaryKey().defaultRandom(),
+  tribeId: uuid("tribe_id")
     .notNull()
     .references(() => tribe.id, { onDelete: "cascade" }),
-  userId: text("user_id")
+  userId: uuid("user_id")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
   role: tribeRole("role").notNull().default("member"),
@@ -37,14 +37,14 @@ export const tribeMember = pgTable("tribe_member", {
 }));
 
 export const tribeMemberPermission = pgTable("tribe_member_permission", {
-  id: text("id").primaryKey(),
-  tribeMemberId: text("tribe_member_id")
+  id: uuid("id").primaryKey().defaultRandom(),
+  tribeMemberId: uuid("tribe_member_id")
     .notNull()
     .references(() => tribeMember.id, { onDelete: "cascade" }),
-  tribeId: text("tribe_id")
+  tribeId: uuid("tribe_id")
     .notNull()
     .references(() => tribe.id, { onDelete: "cascade" }),
-  userId: text("user_id")
+  userId: uuid("user_id")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
 
@@ -86,7 +86,7 @@ export const tribeMemberPermission = pgTable("tribe_member_permission", {
 
   // Notes
   restrictionReason: text("restriction_reason"),
-  setBy: text("set_by")
+  setBy: uuid("set_by")
     .notNull()
     .references(() => user.id, { onDelete: "restrict" }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -97,11 +97,11 @@ export const tribeMemberPermission = pgTable("tribe_member_permission", {
 });
 
 export const tribeInvitation = pgTable("tribe_invitation", {
-  id: text("id").primaryKey(),
-  tribeId: text("tribe_id")
+  id: uuid("id").primaryKey().defaultRandom(),
+  tribeId: uuid("tribe_id")
     .notNull()
     .references(() => tribe.id, { onDelete: "cascade" }),
-  invitedBy: text("invited_by")
+  invitedBy: uuid("invited_by")
     .notNull()
     .references(() => user.id, { onDelete: "restrict" }),
   email: text("email").notNull(),

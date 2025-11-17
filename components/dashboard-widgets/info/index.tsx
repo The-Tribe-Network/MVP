@@ -8,6 +8,7 @@ interface TribeInfoWidgetProps {
   tribeName: string;
   tribeDescription: string;
   tribeMembers: number;
+  tribeAvatar?: string;
 };
 
 export const mockTribeInfoWidgetData = {
@@ -20,14 +21,17 @@ export default function TribeInfoWidget({
   tribeName,
   tribeDescription,
   tribeMembers,
+  tribeAvatar,
 }: TribeInfoWidgetProps) {
+  const avatarFallback = tribeName.substring(0, 2).toUpperCase()
+
   return (
     <Card>
       <CardHeader className="text-center pb-3">
         <div className="flex justify-center mb-4">
           <Avatar className="h-24 w-24 border-4 border-primary/20">
-            <AvatarImage src="/tribe-logo.jpg" />
-            <AvatarFallback className="text-2xl bg-primary text-primary-foreground">TR</AvatarFallback>
+            <AvatarImage src={tribeAvatar || "/placeholder.svg"} />
+            <AvatarFallback className="text-2xl bg-primary text-primary-foreground">{avatarFallback}</AvatarFallback>
           </Avatar>
         </div>
         <CardTitle className="text-2xl">{tribeName}</CardTitle>
