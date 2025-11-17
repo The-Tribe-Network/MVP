@@ -25,6 +25,11 @@ export const auth = betterAuth({
       verification,
     }
   }),
+  advanced: {
+    database: {
+      generateId: false, // Let database generate UUIDs automatically
+    },
+  },
   socialProviders: {
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID as string,

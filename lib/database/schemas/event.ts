@@ -1,14 +1,14 @@
-import { pgTable, text, timestamp, unique } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, unique, uuid } from "drizzle-orm/pg-core";
 import { tribe } from "./tribe";
 import { user } from "./auth";
 import { eventStatus } from "./enums";
 
 export const event = pgTable("event", {
-  id: text("id").primaryKey(),
-  tribeId: text("tribe_id")
+  id: uuid("id").primaryKey().defaultRandom(),
+  tribeId: uuid("tribe_id")
     .notNull()
     .references(() => tribe.id, { onDelete: "cascade" }),
-  createdBy: text("created_by")
+  createdBy: uuid("created_by")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
@@ -25,11 +25,11 @@ export const event = pgTable("event", {
 });
 
 export const eventAttendee = pgTable("event_attendee", {
-  id: text("id").primaryKey(),
-  eventId: text("event_id")
+  id: uuid("id").primaryKey().defaultRandom(),
+  eventId: uuid("event_id")
     .notNull()
     .references(() => event.id, { onDelete: "cascade" }),
-  userId: text("user_id")
+  userId: uuid("user_id")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
   status: text("status").notNull().default("going"),

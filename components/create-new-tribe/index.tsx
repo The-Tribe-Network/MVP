@@ -13,10 +13,13 @@ import { PrivacyStep } from './PrivacyStep'
 import { InviteMembersStep } from './InviteMembersStep'
 import { InvitedMember, PrivacyType } from './types'
 import { STEP_CONFIG, TOTAL_STEPS } from './stepConfig'
+import { useCreateTribe } from '@/lib/hooks/use-tribes'
+import { toast } from 'sonner'
 
 export default function CreateTribePage() {
   const router = useRouter()
   const [currentStep, setCurrentStep] = useState(1)
+  const createTribe = useCreateTribe()
 
   // Form state
   const [tribeName, setTribeName] = useState('')
@@ -54,11 +57,23 @@ export default function CreateTribePage() {
     setInviteEmails(inviteEmails.map((m) => (m.email === email ? { ...m, role: newRole } : m)))
   }
 
-  const handleSubmit = () => {
-    // Handle tribe creation logic here
-    console.log('[v0] Creating tribe:', { tribeName, description, avatar, location, privacy, inviteEmails })
-    // Redirect to the new tribe dashboard
-    router.push('/')
+  const handleSubmit = async () => {
+    try {
+      const result = await createTribe.mutateAsync({
+        name: tribeName,
+        description: description || undefined,
+        avatar: avatar || undefined,
+        location: location || undefined,
+        privacy: privacy,
+        category: 'other', // Default category, can be enhanced later
+      })
+
+      toast.success('Tribe created successfully!')
+      // Redirect to the new tribe dashboard
+      router.push(`/tribe/${result.id}`)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to create tribe')
+    }
   }
 
   const isStepValid = (): boolean => {
@@ -142,6 +157,7 @@ export default function CreateTribePage() {
               onBack={handleBack}
               onNext={handleNext}
               onSubmit={handleSubmit}
+              isSubmitting={createTribe.isPending}
             />
           </CardContent>
         </Card>
