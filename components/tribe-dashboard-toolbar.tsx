@@ -30,6 +30,18 @@ export function TribeDashboardToolbar() {
         return 'Post';
       case `/tribe/${tribe_id}/events`:
         return 'Events';
+      case `/tribe/new`:
+        return 'Create New Tribe';
+      case `/discover`:
+        return 'Discover';
+      case `/dashboard`:
+        return 'Dashboard';
+      case `/profile`:
+        return 'Profile';
+      case `/settings`:
+        return 'Settings';
+      case `/help`:
+        return 'Help';
       default:
         return 'Dashboard';
     }
@@ -46,7 +58,7 @@ export function TribeDashboardToolbar() {
               orientation="vertical"
               className="mr-2 data-[orientation=vertical]:h-4"
             />
-            <h1 className="text-xl font-semibold">{getTitle()}</h1>
+            <h1 className="text-xl font-semibold">Tribe</h1>
           </div>
 
           <div className="hidden md:flex flex-1 max-w-md">

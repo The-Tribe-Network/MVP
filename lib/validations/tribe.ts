@@ -33,7 +33,7 @@ export const createTribeSchema = z.object({
     .transform((val) => (val === "" ? undefined : val))
     .optional(),
   avatar: z
-    .union([z.string().url("Avatar must be a valid URL"), z.literal("")])
+    .union([uuidSchema, z.literal("")])
     .transform((val) => (val === "" ? undefined : val))
     .optional(),
   location: z
@@ -61,7 +61,7 @@ export const updateTribeSchema = z.object({
     .transform((val) => (val === "" ? undefined : val))
     .optional(),
   avatar: z
-    .union([z.string().url("Avatar must be a valid URL"), z.literal("")])
+    .union([uuidSchema, z.literal("")])
     .transform((val) => (val === "" ? undefined : val))
     .optional(),
   location: z

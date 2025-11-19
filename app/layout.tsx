@@ -1,6 +1,5 @@
 import type React from "react";
 import type { Metadata } from "next";
-import { ThemeProvider } from "next-themes";
 import { Geist, Manrope } from "next/font/google";
 
 import { getServerUser } from "@/lib/services/auth";
@@ -16,6 +15,7 @@ import { queryKeys } from "@/lib/constants/query-keys";
 import { Toaster } from "@/components/ui/toaster";
 
 import "./globals.css";
+import { ThemeProvider } from "@/components/theme-provider";
 
 const geist = Geist({
   subsets: ["latin"],

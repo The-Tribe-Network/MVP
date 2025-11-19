@@ -8,7 +8,7 @@ import {
   dehydrateQueryClient,
 } from '@/lib/utils/query-server'
 import { queryKeys } from '@/lib/constants/query-keys'
-import { TribeDashboardContent } from '@/components/tribe-dashboard/tribe-dashboard-content'
+import { TribeDashboardContent } from '@/app-pages/tribe-dashboard'
 import type { TribeWithMembers } from '@/lib/database/types'
 
 export default async function TribeDashboardPage({ params }: PageProps) {

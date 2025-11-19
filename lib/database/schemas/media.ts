@@ -30,7 +30,6 @@ export const media = pgTable("media", {
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
   tribeId: uuid("tribe_id")
-    .notNull()
     .references(() => tribe.id, { onDelete: "cascade" }),
   fileUrl: text("file_url").notNull(),
   fileType: mediaType("file_type").notNull(),

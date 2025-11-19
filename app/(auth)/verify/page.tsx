@@ -1,4 +1,4 @@
-import { OTPVerificationForm } from "@/components/auth/forms/otp-verification-form";
+import { OTPVerificationForm } from "@/app-pages/auth/forms/otp-verification-form";
 import { OTP_VERIFICATION_TYPES } from "@/lib/constants/auth";
 import type { OTPVerificationType } from "@/lib/constants/auth";
 import { redirect } from "next/navigation";
@@ -12,7 +12,7 @@ export default async function VerifyPage({ searchParams }: PageProps) {
 
   if (type && !OTP_VERIFICATION_TYPES.includes(type)) {
     return redirect("/sign-in");
-  }else if (!type) {
+  } else if (!type) {
     return redirect("/sign-in");
   }
 

@@ -6,7 +6,12 @@ export const tribe = pgTable("tribe", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
   description: text("description"),
-  avatar: text("avatar"),
+  avatar: uuid("avatar").references((): any => {
+    // Lazy reference to avoid circular dependency with media schema
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { media } = require("./media");
+    return media.id;
+  }, { onDelete: "set null" }),
   location: text("location"),
   privacy: privacyType("privacy").notNull().default("private"),
   category: tribeCategory("category").notNull().default("other"),

@@ -9,7 +9,8 @@
     "start": "next start",
     "migrate-auth": "npx @better-auth/cli migrate --config lib/clients/auth.ts",
     "generate-auth": "npx @better-auth/cli generate --config lib/clients/auth.ts --output ./lib/database/schemas/auth.ts",
-    "push-db": "drizzle-kit push"
+    "push-db": "drizzle-kit push",
+    "migrate-avatar": "npx tsx lib/database/migrations/run-migration.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -47,6 +48,7 @@
     "autoprefixer": "^10.4.20",
     "better-auth": "latest",
     "class-variance-authority": "^0.7.1",
+    "cloudinary": "^2.8.0",
     "clsx": "^2.1.1",
     "cmdk": "1.0.4",
     "date-fns": "4.1.0",
@@ -58,7 +60,7 @@
     "input-otp": "1.4.1",
     "lucide-react": "^0.454.0",
     "next": "^16.0.3",
-    "next-themes": "latest",
+    "next-themes": "^0.4.6",
     "prettier": "^3.6.2",
     "react": "^19",
     "react-day-picker": "9.8.0",

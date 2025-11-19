@@ -1,6 +1,7 @@
 import { db } from "@/lib/database/client";
 import { tribe, tribeMember } from "@/lib/database/schemas/tribe";
 import { user } from "@/lib/database/schemas/auth";
+import { media } from "@/lib/database/schemas/media";
 import { eq, count } from "drizzle-orm";
 import type { TribeInsert, TribeWithCreator, TribeWithMembers, Tribe } from "@/lib/database/types";
 
@@ -74,14 +75,32 @@ export async function createTribe(
 
 /**
  * Get tribe by ID with creator information and member count
+ * Resolves avatar ID to URL if avatar exists
  */
-export async function getTribeById(id: string): Promise<TribeWithMembers | null> {
-  // Fetch tribe
-  const [tribeData] = await db
-    .select()
+export async function getTribeById(id: string, includeAvatar: boolean = false): Promise<TribeWithMembers | null> {
+  // Fetch tribe with avatar URL if avatar exists
+  const tribeQuery = db
+    .select({
+      id: tribe.id,
+      name: tribe.name,
+      description: tribe.description,
+      avatar: tribe.avatar,
+      location: tribe.location,
+      privacy: tribe.privacy,
+      category: tribe.category,
+      isFeatured: tribe.isFeatured,
+      isTrending: tribe.isTrending,
+      createdBy: tribe.createdBy,
+      createdAt: tribe.createdAt,
+      updatedAt: tribe.updatedAt,
+      avatarUrl: media.fileUrl,
+    })
     .from(tribe)
+    .leftJoin(media, eq(tribe.avatar, media.id))
     .where(eq(tribe.id, id))
     .limit(1);
+
+  const [tribeData] = await tribeQuery;
 
   if (!tribeData) {
     return null;
@@ -104,8 +123,12 @@ export async function getTribeById(id: string): Promise<TribeWithMembers | null>
     .from(tribeMember)
     .where(eq(tribeMember.tribeId, id));
 
+  // Replace avatar ID with URL if available
+  const { avatarUrl, ...tribeFields } = tribeData;
+
   return {
-    ...tribeData,
+    ...tribeFields,
+    avatar: avatarUrl || tribeData.avatar, // Use URL if available, otherwise keep original (null or ID)
     creator,
     memberCount: memberCountResult?.count || 0,
   };
@@ -114,6 +137,7 @@ export async function getTribeById(id: string): Promise<TribeWithMembers | null>
 /**
  * Get all tribes a user is a member of
  * Returns basic tribe information (id, name, avatar) for sidebar display
+ * Resolves avatar ID to URL if avatar exists
  */
 export async function getUserTribes(userId: string): Promise<Array<{ id: string; name: string; avatar: string | null }>> {
   const userTribes = await db
@@ -121,11 +145,17 @@ export async function getUserTribes(userId: string): Promise<Array<{ id: string;
       id: tribe.id,
       name: tribe.name,
       avatar: tribe.avatar,
+      avatarUrl: media.fileUrl,
     })
     .from(tribeMember)
     .innerJoin(tribe, eq(tribeMember.tribeId, tribe.id))
+    .leftJoin(media, eq(tribe.avatar, media.id))
     .where(eq(tribeMember.userId, userId));
 
-  return userTribes;
+  // Replace avatar ID with URL if available
+  return userTribes.map(({ avatarUrl, avatar, ...rest }) => ({
+    ...rest,
+    avatar: avatarUrl || avatar, // Use URL if available, otherwise keep original (null or ID)
+  }));
 }
 

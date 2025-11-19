@@ -242,8 +242,8 @@ export default function DiscoverPage() {
   )
 
   return (
-    <div className="flex-1 overflow-auto p-6 bg-background">
-      <div className="mx-auto max-w-7xl space-y-6">
+    <div className="flex-1 overflow-auto bg-background">
+      <div className="mx-auto space-y-6 pt-12">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2">Discover Tribes</h1>
