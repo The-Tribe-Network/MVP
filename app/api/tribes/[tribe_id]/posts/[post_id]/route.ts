@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
-import { getPostById, updatePost, deletePost } from "@/lib/services/post";
+import { getPostById, getPostByIdWithMetadata, updatePost, deletePost } from "@/lib/services/post";
 import { checkTribeMembership } from "@/lib/services/permissions";
 import { updatePostSchema, tribePostIdParamSchema, validateApiRequest } from "@/lib/validations/post";
 
@@ -41,8 +41,11 @@ export async function GET(
       );
     }
 
-    // Fetch post
-    const postData = await getPostById(paramValidation.data.post_id);
+    // Fetch post with metadata
+    const postData = await getPostByIdWithMetadata(
+      paramValidation.data.post_id,
+      user.id
+    );
 
     if (!postData) {
       return NextResponse.json({ error: "Post not found" }, { status: 404 });

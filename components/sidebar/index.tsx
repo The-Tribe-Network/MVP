@@ -30,10 +30,9 @@ import {
 import TribeList from "./tribe-list";
 import { useUserTribes } from "@/lib/hooks/use-tribes";
 import { cn } from "@/lib/utils";
+import TribeSidebar from "./tribe-nav";
 
-export default function AppSidebar(
-  props: React.ComponentProps<typeof Sidebar>
-) {
+export default function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { user } = useAuth();
   const pathname = usePathname();
   const { setOpen } = useSidebar();
@@ -86,7 +85,7 @@ export default function AppSidebar(
           </SidebarMenu>
         </SidebarHeader>
         <SidebarSeparator className="mx-auto !w-3/4" />
-        <SidebarContent className="pt-4">
+        <SidebarContent className="pt-2">
           <SidebarGroup>
             <SidebarGroupContent>
               <SidebarMenu className="gap-2">
@@ -171,13 +170,7 @@ export default function AppSidebar(
 
       {/* This is the second sidebar, it will act a navigation for within a tribe  */}
       {/* We disable collapsible and let it fill remaining space */}
-      {isTribeDashboard === true && (
-        <Sidebar collapsible="none" className="hidden flex-1 md:flex">
-          <SidebarHeader></SidebarHeader>
-          <SidebarContent></SidebarContent>
-          <SidebarFooter></SidebarFooter>
-        </Sidebar>
-      )}
+      {isTribeDashboard === true && <TribeSidebar />}
     </Sidebar>
   );
 }

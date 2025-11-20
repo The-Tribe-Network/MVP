@@ -1,6 +1,6 @@
 'use client'
 
-import { Bell, MessageSquare, Megaphone, User, Search } from 'lucide-react'
+import { Bell, MessageSquare, Megaphone, User, Search, PlusIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -75,8 +75,11 @@ export function TribeDashboardToolbar() {
           {/* Right side - Icons and User Menu */}
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" className="relative">
-              <Bell className="h-5 w-5" />
-              <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-primary" />
+              <PlusIcon className="h-5 w-5" />
+            </Button>
+
+            <Button variant="ghost" size="icon">
+              <Megaphone className="h-5 w-5" />
             </Button>
 
             <Button variant="ghost" size="icon" className="relative">
@@ -84,29 +87,10 @@ export function TribeDashboardToolbar() {
               <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-primary" />
             </Button>
 
-            <Button variant="ghost" size="icon">
-              <Megaphone className="h-5 w-5" />
+            <Button variant="ghost" size="icon" className="relative">
+              <Bell className="h-5 w-5" />
+              <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-primary" />
             </Button>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  <User className="h-5 w-5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuItem>
-                  <User className="mr-2 h-4 w-4" />
-                  Profile
-                </DropdownMenuItem>
-                <DropdownMenuItem>Settings</DropdownMenuItem>
-                <DropdownMenuItem>Help & Support</DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-destructive">
-                  Log out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
           </div>
         </div>
       </div>

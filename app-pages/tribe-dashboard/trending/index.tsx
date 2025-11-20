@@ -15,7 +15,7 @@ interface TrendingWidgetProps {
 export default function TrendingWidget({ trends }: TrendingWidgetProps) {
   return (
     <Card>
-      <CardHeader className="pb-3">
+      <CardHeader>
         <CardTitle className="text-lg flex items-center gap-2">
           <TrendingUp className="h-5 w-5 text-primary" />
           Trending

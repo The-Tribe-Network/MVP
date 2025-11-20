@@ -35,3 +35,57 @@ export function useUploadAvatar() {
   });
 }
 
+/**
+ * Hook for uploading post images
+ */
+export function useUploadPostImage() {
+  return useMutation({
+    mutationFn: async ({
+      file,
+      tribeId,
+      postId,
+    }: {
+      file: File;
+      tribeId: string;
+      postId?: string | null;
+    }): Promise<UploadAvatarResponse> => {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('tribeId', tribeId);
+      if (postId) {
+        formData.append('postId', postId);
+      }
+
+      const response = await fetch('/api/upload/post-image', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to upload post image');
+      }
+
+      return response.json();
+    },
+  });
+}
+
+/**
+ * Hook for deleting media
+ */
+export function useDeleteMedia() {
+  return useMutation({
+    mutationFn: async (mediaId: string): Promise<void> => {
+      const response = await fetch(`/api/media/${mediaId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to delete media');
+      }
+    },
+  });
+}
+

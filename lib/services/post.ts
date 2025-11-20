@@ -2,6 +2,7 @@ import { db } from "@/lib/database/client";
 import { post, postLike, comment } from "@/lib/database/schemas/post";
 import { tribeMember, tribeMemberPermission } from "@/lib/database/schemas/tribe";
 import { user } from "@/lib/database/schemas/auth";
+import { media } from "@/lib/database/schemas/media";
 import { eq, and, desc, count, inArray } from "drizzle-orm";
 import type { Post, PostInsert, PostWithAuthor } from "@/lib/database/types";
 import { checkTribeMembership, getUserTribeRole } from "./permissions";
@@ -83,7 +84,8 @@ async function canUserModeratePosts(tribeId: string, userId: string): Promise<bo
 export async function createPost(
   tribeId: string,
   userId: string,
-  content: string
+  content: string,
+  mediaId?: string | null
 ): Promise<PostWithAuthor> {
   // Check permission
   const canPost = await canUserPost(tribeId, userId);
@@ -100,6 +102,14 @@ export async function createPost(
       content: content.trim(),
     } as PostInsert)
     .returning();
+
+  // Link media to post if mediaId is provided
+  if (mediaId) {
+    await db
+      .update(media)
+      .set({ postId: createdPost.id })
+      .where(eq(media.id, mediaId));
+  }
 
   // Fetch author info
   const [author] = await db
@@ -128,14 +138,14 @@ export async function createPost(
 }
 
 /**
- * Get posts for a tribe with author info, like count, comment count, and user's like status
+ * Get posts for a tribe with author info, like count, comment count, user's like status, and image
  */
 export async function getTribePosts(
   tribeId: string,
   limit: number = 20,
   offset: number = 0,
   currentUserId?: string
-): Promise<Array<PostWithAuthor & { likeCount: number; commentCount: number; isLiked: boolean }>> {
+): Promise<Array<PostWithAuthor & { likeCount: number; commentCount: number; isLiked: boolean; image: { id: string; url: string; width?: number; height?: number } | null }>> {
   // Fetch posts with author
   const posts = await db
     .select({
@@ -193,12 +203,38 @@ export async function getTribePosts(
   // Get user's likes if currentUserId is provided
   const userLikes = currentUserId
     ? await db
-        .select({ postId: postLike.postId })
-        .from(postLike)
-        .where(and(inArray(postLike.postId, postIds), eq(postLike.userId, currentUserId)))
+      .select({ postId: postLike.postId })
+      .from(postLike)
+      .where(and(inArray(postLike.postId, postIds), eq(postLike.userId, currentUserId)))
     : [];
 
   const userLikedPostIds = new Set(userLikes.map((l) => l.postId));
+
+  // Get media records for all posts (first image only per post)
+  const postMedia = await db
+    .select({
+      postId: media.postId,
+      id: media.id,
+      fileUrl: media.fileUrl,
+      width: media.width,
+      height: media.height,
+    })
+    .from(media)
+    .where(and(inArray(media.postId, postIds), eq(media.fileType, 'image')))
+    .orderBy(media.createdAt);
+
+  // Group media by postId and take first image for each post
+  const mediaMap = new Map<string, { id: string; url: string; width?: number; height?: number }>();
+  for (const m of postMedia) {
+    if (m.postId && !mediaMap.has(m.postId)) {
+      mediaMap.set(m.postId, {
+        id: m.id,
+        url: m.fileUrl,
+        width: m.width || undefined,
+        height: m.height || undefined,
+      });
+    }
+  }
 
   // Create maps for quick lookup
   const likeCountMap = new Map(likeCounts.map((lc) => [lc.postId, Number(lc.count)]));
@@ -216,6 +252,7 @@ export async function getTribePosts(
     likeCount: likeCountMap.get(p.id) || 0,
     commentCount: commentCountMap.get(p.id) || 0,
     isLiked: userLikedPostIds.has(p.id),
+    image: mediaMap.get(p.id) || null,
   }));
 }
 
@@ -259,6 +296,109 @@ export async function getPostById(postId: string): Promise<PostWithAuthor | null
     createdAt: postData.createdAt,
     updatedAt: postData.updatedAt,
     author: postData.author,
+  };
+}
+
+/**
+ * Get a single post by ID with author info, like count, comment count, user's like status, and image
+ */
+export async function getPostByIdWithMetadata(
+  postId: string,
+  currentUserId?: string
+): Promise<(PostWithAuthor & { likeCount: number; commentCount: number; isLiked: boolean; image: { id: string; url: string; width?: number; height?: number } | null }) | null> {
+  // Fetch post with author
+  const [postData] = await db
+    .select({
+      id: post.id,
+      tribeId: post.tribeId,
+      authorId: post.authorId,
+      content: post.content,
+      createdAt: post.createdAt,
+      updatedAt: post.updatedAt,
+      author: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        emailVerified: user.emailVerified,
+        image: user.image,
+        username: user.username,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      },
+    })
+    .from(post)
+    .innerJoin(user, eq(post.authorId, user.id))
+    .where(eq(post.id, postId))
+    .limit(1);
+
+  if (!postData) {
+    return null;
+  }
+
+  // Get like count
+  const [likeCountResult] = await db
+    .select({
+      count: count(),
+    })
+    .from(postLike)
+    .where(eq(postLike.postId, postId));
+
+  const likeCount = Number(likeCountResult?.count || 0);
+
+  // Get comment count
+  const [commentCountResult] = await db
+    .select({
+      count: count(),
+    })
+    .from(comment)
+    .where(eq(comment.postId, postId));
+
+  const commentCount = Number(commentCountResult?.count || 0);
+
+  // Check if user has liked the post
+  let isLiked = false;
+  if (currentUserId) {
+    const [userLike] = await db
+      .select({ postId: postLike.postId })
+      .from(postLike)
+      .where(and(eq(postLike.postId, postId), eq(postLike.userId, currentUserId)))
+      .limit(1);
+    isLiked = !!userLike;
+  }
+
+  // Get media record for post (first image only)
+  const [postMedia] = await db
+    .select({
+      id: media.id,
+      fileUrl: media.fileUrl,
+      width: media.width,
+      height: media.height,
+    })
+    .from(media)
+    .where(and(eq(media.postId, postId), eq(media.fileType, 'image')))
+    .limit(1);
+
+  const image = postMedia
+    ? {
+      id: postMedia.id,
+      url: postMedia.fileUrl,
+      width: postMedia.width || undefined,
+      height: postMedia.height || undefined,
+    }
+    : null;
+
+  return {
+    id: postData.id,
+    tribeId: postData.tribeId,
+    authorId: postData.authorId,
+    content: postData.content,
+    createdAt: postData.createdAt,
+    updatedAt: postData.updatedAt,
+    author: postData.author,
+    likeCount,
+    commentCount,
+    isLiked,
+    image,
   };
 }
 

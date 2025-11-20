@@ -94,7 +94,8 @@ export async function POST(
     const newPost = await createPost(
       tribeValidation.data.tribe_id,
       user.id,
-      validation.data.content
+      validation.data.content,
+      validation.data.mediaId || null
     );
 
     return NextResponse.json(newPost, { status: 201 });

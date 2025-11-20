@@ -39,6 +39,12 @@ export const queryKeys = {
     users: () => ["activities", "users"] as const,
     user: (userId: string) => ["activities", "users", userId] as const,
   },
+
+  // Comment queries
+  comments: {
+    all: ["comments"] as const,
+    post: (postId: string) => ["comments", "post", postId] as const,
+  },
 } as const;
 
 

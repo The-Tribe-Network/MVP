@@ -3,6 +3,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Calendar, Clock, MapPin } from 'lucide-react'
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
 
 export interface Event {
   id: string
@@ -15,16 +17,23 @@ export interface Event {
 
 interface EventWidgetProps {
   events: Event[]
+  tribeId: string
 };
 
-export default function EventsWidget({ events }: EventWidgetProps) {
+export default function EventsWidget({ events, tribeId }: EventWidgetProps) {
   return (
     <Card>
-      <CardHeader className="pb-3">
+      <CardHeader className="flex items-center justify-between">
         <CardTitle className="text-lg flex items-center gap-2">
           <Calendar className="h-5 w-5 text-primary" />
           Upcoming Events
         </CardTitle>
+
+        <Link href={`/tribe/${tribeId}/events`} className="flex items-center">
+          <Button variant="ghost" size="sm" className="h-auto p-0 hover:text-primary/80 hover:cursor-pointer space-x-2">
+            View all
+          </Button>
+        </Link>
       </CardHeader>
       <CardContent className="space-y-4">
         {events.map((event) => (

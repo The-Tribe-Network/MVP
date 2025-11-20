@@ -31,8 +31,12 @@ export default function Tribelist({ data, pathname }: TribeNavButtonProps) {
                 // isActive={isActive}
                 >
                   <>
-                    <Avatar className="size-8 rounded-md">
-                      <AvatarImage src={tribe.avatar || undefined} alt={tribe.name} />
+                    <Avatar className={cn("size-8 rounded-md", isActive && tribe.avatar ? "border-2 border-primary/50" : "")}>
+                      <AvatarImage
+                        src={tribe.avatar || undefined}
+                        alt={tribe.name}
+
+                      />
                       <AvatarFallback
                         className={cn(
                           "bg-sidebar-primary text-sidebar-primary-foreground text-xs rounded-md",

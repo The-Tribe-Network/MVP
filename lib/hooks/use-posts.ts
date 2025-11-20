@@ -10,10 +10,12 @@ type PostWithStats = PostWithAuthor & {
   likeCount: number;
   commentCount: number;
   isLiked: boolean;
+  image: { id: string; url: string; width?: number; height?: number } | null;
 };
 
 type CreatePostInput = {
   content: string;
+  mediaId?: string | null;
 };
 
 type UpdatePostInput = {
@@ -46,6 +48,25 @@ export function useTribePosts(tribeId: string, options?: { limit?: number; offse
 }
 
 /**
+ * Fetch a single post by ID
+ */
+export function usePost(tribeId: string, postId: string) {
+  return useQuery<PostWithStats>({
+    queryKey: queryKeys.posts.detail(postId),
+    queryFn: async () => {
+      const response = await fetch(`${API_BASE}/${tribeId}/posts/${postId}`);
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to fetch post");
+      }
+
+      return response.json();
+    },
+  });
+}
+
+/**
  * Create a new post
  */
 export function useCreatePost() {
@@ -64,7 +85,10 @@ export function useCreatePost() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          content: data.content,
+          mediaId: data.mediaId || null,
+        }),
       });
 
       if (!response.ok) {
@@ -189,10 +213,14 @@ export function useLikePost() {
     onMutate: async (variables) => {
       // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: queryKeys.posts.tribe(variables.tribeId) });
+      await queryClient.cancelQueries({ queryKey: queryKeys.posts.detail(variables.postId) });
 
-      // Snapshot the previous value for rollback
+      // Snapshot the previous values for rollback
       const previousPosts = queryClient.getQueryData<PostWithStats[]>(
         queryKeys.posts.tribe(variables.tribeId)
+      );
+      const previousPost = queryClient.getQueryData<PostWithStats>(
+        queryKeys.posts.detail(variables.postId)
       );
 
       // Optimistically update the posts list
@@ -213,15 +241,34 @@ export function useLikePost() {
         }
       );
 
-      // Return context with the previous value for rollback
-      return { previousPosts };
+      // Optimistically update the post detail
+      queryClient.setQueryData<PostWithStats>(
+        queryKeys.posts.detail(variables.postId),
+        (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            isLiked: !old.isLiked,
+            likeCount: old.isLiked ? old.likeCount - 1 : old.likeCount + 1,
+          };
+        }
+      );
+
+      // Return context with the previous values for rollback
+      return { previousPosts, previousPost };
     },
     onError: (err, variables, context) => {
-      // Rollback to previous value on error
+      // Rollback to previous values on error
       if (context?.previousPosts) {
         queryClient.setQueryData(
           queryKeys.posts.tribe(variables.tribeId),
           context.previousPosts
+        );
+      }
+      if (context?.previousPost) {
+        queryClient.setQueryData(
+          queryKeys.posts.detail(variables.postId),
+          context.previousPost
         );
       }
     },
@@ -229,6 +276,9 @@ export function useLikePost() {
       // Invalidate to ensure we have the latest data (including activity updates)
       queryClient.invalidateQueries({
         queryKey: queryKeys.posts.tribe(variables.tribeId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.posts.detail(variables.postId),
       });
       // Also invalidate activities to show new like milestone activities
       queryClient.invalidateQueries({

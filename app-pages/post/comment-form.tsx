@@ -10,9 +10,16 @@ interface CommentFormProps {
   onChange: (value: string) => void
   onSubmit: () => void
   userAvatar?: string
+  disabled?: boolean
 }
 
-export function CommentForm({ value, onChange, onSubmit, userAvatar = '/diverse-user-avatars.png' }: CommentFormProps) {
+export function CommentForm({
+  value,
+  onChange,
+  onSubmit,
+  userAvatar = '/diverse-user-avatars.png',
+  disabled = false,
+}: CommentFormProps) {
   return (
     <div className="flex gap-3 mb-6">
       <Avatar>
@@ -25,9 +32,10 @@ export function CommentForm({ value, onChange, onSubmit, userAvatar = '/diverse-
           value={value}
           onChange={(e) => onChange(e.target.value)}
           className="min-h-[80px] resize-none bg-white/95 dark:bg-white/10 border-white/20"
+          disabled={disabled}
         />
         <div className="flex justify-end">
-          <Button onClick={onSubmit} disabled={!value.trim()} size="sm">
+          <Button onClick={onSubmit} disabled={!value.trim() || disabled} size="sm">
             <Send className="h-4 w-4 mr-2" />
             Comment
           </Button>

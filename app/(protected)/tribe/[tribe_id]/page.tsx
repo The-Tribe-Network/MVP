@@ -1,7 +1,6 @@
 import type { PageProps } from '@/.next/types/app/page'
 import { notFound } from 'next/navigation'
 import { getTribeById } from '@/lib/services/tribe'
-import { requireAuth } from '@/lib/services/auth'
 import {
   getQueryClient,
   prefetchQuery,
@@ -13,9 +12,6 @@ import type { TribeWithMembers } from '@/lib/database/types'
 
 export default async function TribeDashboardPage({ params }: PageProps) {
   const { tribe_id } = await params
-
-  // Ensure user is authenticated
-  await requireAuth()
 
   // Fetch tribe data server-side
   const tribeData = await getTribeById(tribe_id)

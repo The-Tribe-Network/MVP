@@ -84,13 +84,13 @@ async function getMediaData(): Promise<{
 }
 
 export default async function AlbumsPage({ params }: AlbumsPageProps) {
-  await params // Access params to ensure it's awaited
+  const { tribe_id } = await params // Access params to ensure it's awaited
   const { trendyAlbums, trendyPhotos, allAlbums } = await getMediaData()
 
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8 mt-16">
-        <MediaHeader />
+        <MediaHeader tribeId={tribe_id} />
 
         <TrendingSection albums={trendyAlbums} photos={trendyPhotos} />
 

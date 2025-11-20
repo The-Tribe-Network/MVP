@@ -10,6 +10,7 @@ export const createPostSchema = z.object({
     .min(1, "Post content is required")
     .max(5000, "Post content must be less than 5000 characters")
     .trim(),
+  mediaId: z.string().uuid("Invalid media ID format").optional().nullable(),
 });
 
 // Update post schema
