@@ -5,11 +5,14 @@ import { CalendarIcon, FlameIcon, HomeIcon, ImageIcon } from "lucide-react";
 import { useParams, usePathname } from "next/navigation";
 import SidebarTitleDropdown from "./title-dropdown";
 import { NavMain } from "./nav-main";
+import { useIsMobile } from "@/lib/hooks/use-mobile";
 
 export default function TribeSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const isMobile = useIsMobile();
   const { tribe_id: tribeId } = useParams<{ tribe_id: string }>();
 
   if (!tribeId) return null;
+  if (isMobile && !tribeId) return null;
 
   return (
     <Sidebar collapsible="none" className="hidden flex-1 md:flex" {...props}>

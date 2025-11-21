@@ -120,7 +120,7 @@ export default function CreateTribePage() {
 
   return (
     <div className="flex overflow-auto bg-background items-center justify-center h-full">
-      <div className="flex-1 ml-[72px] flex flex-col items-center justify-center p-8">
+      <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-8">
         <div className="mb-8 text-center">
           <h1 className="text-4xl font-bold mb-2">Create a New Tribe</h1>
           <p className="text-muted-foreground">Tell us about your tribe and we'll help you get started</p>
