@@ -30,8 +30,8 @@ export function TribeDashboardContent({
 
   return (
     <HydrationBoundary state={dehydratedState}>
-      <div className="min-h-screen bg-background">
-        <div className="mb-8 pt-6">
+      <div className="h-full bg-background">
+        <div className="mb-8 pt-6 hidden lg:block">
           <h1 className="text-4xl font-bold mb-2">Dashboard</h1>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -54,7 +54,7 @@ export function TribeDashboardContent({
           </div>
 
           {/* Middle Column - Timeline */}
-          <div className="lg:col-span-6">
+          <div className="lg:col-span-6 pt-6 lg:pt-0">
             <TimelineWidget tribeId={tribeId} />
           </div>
 
