@@ -5,6 +5,7 @@ import type { PostCard as PostCardType } from '@/components/post-card'
 import { NewPost } from './views/new-post'
 import TimelineHeader from './timeline-header'
 import PostsView from './views/posts'
+import { Separator } from '@/components/ui/separator'
 
 interface TimelineWidgetProps {
   tribeId: string
@@ -20,7 +21,7 @@ export default function TimelineWidget({ tribeId }: TimelineWidgetProps) {
         tribeId={tribeId}
         onViewChange={setView}
       />
-
+      <Separator className='mb-2' />
       {view === "new post" && <NewPost tribeId={tribeId} onViewChange={setView} />}
       {view === "posts" && <PostsView tribeId={tribeId} onViewChange={setView} />}
     </div>

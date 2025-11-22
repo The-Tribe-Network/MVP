@@ -21,7 +21,7 @@ export function CommentForm({
   disabled = false,
 }: CommentFormProps) {
   return (
-    <div className="flex gap-3 mb-6">
+    <div className="flex gap-3">
       <Avatar>
         <AvatarImage src={userAvatar} />
         <AvatarFallback>Y</AvatarFallback>

@@ -6,6 +6,7 @@ import { toast } from "sonner"
 import type { PostCard as PostCardType } from "@/components/post-card"
 import EmptyView from "./empty"
 import { Button } from "@/components/ui/button"
+import { Separator } from "@/components/ui/separator"
 
 interface PostsViewProps {
   tribeId: string
@@ -97,18 +98,22 @@ export default function PostsView({ tribeId, onViewChange }: PostsViewProps) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
       {transformedPosts.map((post) => (
-        <PostCard
-          key={post.id}
-          post={post}
-          tribeId={tribeId}
-          onLike={handleLike}
-          isLiking={likingPostId === post.id}
-          likeError={likingPostId === post.id ? likeError : null}
-          onDelete={handleDelete}
-          isDeleting={deletingPostId === post.id}
-        />
+        <>
+          <PostCard
+            key={post.id}
+            post={post}
+            tribeId={tribeId}
+            onLike={handleLike}
+            isLiking={likingPostId === post.id}
+            likeError={likingPostId === post.id ? likeError : null}
+            onDelete={handleDelete}
+            isDeleting={deletingPostId === post.id}
+          />
+          <Separator />
+        </>
+
       ))}
     </div>
   )

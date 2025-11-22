@@ -52,11 +52,11 @@ export function TribeDashboardToolbar() {
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between gap-4">
           {/* Left side - Toggle and Title */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <SidebarTrigger />
             <Separator
               orientation="vertical"
-              className="mr-2 data-[orientation=vertical]:h-4"
+              className="data-[orientation=vertical]:h-4"
             />
             <h1 className="text-xl font-semibold">Tribe</h1>
           </div>

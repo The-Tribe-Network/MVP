@@ -18,7 +18,8 @@ import { Heart, MessageCircle, Share2, Loader2, MoreVertical, Trash2 } from 'luc
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
 import { useAuth } from '@/lib/providers/auth-provider'
-import PhotoMediaDialog from './dialogs/photo-media'
+import PhotoMediaDialog from './dialog-content/photo-media'
+import { usePathname } from 'next/navigation'
 
 export interface PostCard {
   id: string
@@ -74,6 +75,7 @@ export default function PostCard({
   isDeleting = false,
 }: PostCardProps) {
   const [isImageDialogOpen, setIsImageDialogOpen] = useState(false)
+  const pathname = usePathname();
   const { user } = useAuth()
 
   // Check if current user is the author (by ID comparison)
@@ -97,7 +99,7 @@ export default function PostCard({
   const timestampClassName = contentSize === 'base' ? 'text-sm text-muted-foreground' : 'text-xs text-muted-foreground'
 
   const cardContent = (
-    <CardContent className="pt-3">
+    <CardContent className="pt-0 px-3">
       <div className="space-y-4">
         {/* Post Header */}
         <div className="flex items-start gap-3">
@@ -191,7 +193,7 @@ export default function PostCard({
           <div
             className={cn(
               "flex items-center gap-1",
-              showActionsSeparator ? "pt-4 border-t" : "pt-2"
+              showActionsSeparator ? "pt-4" : "pt-2"
             )}
             onClick={(e) => {
               // Stop all clicks in the actions area from bubbling to the Link
@@ -271,16 +273,21 @@ export default function PostCard({
     </CardContent>
   )
 
+  const transparentCardClassName = [
+    "bg-transparent transition-colors border-y-0 border-x-0 rounded-none hover:bg-card/80 hover:rounded-lg",
+    pathname === `/tribe/${tribeId}/post/${post.id}` ? "rounded-lg hover:bg-transparent" : "",
+  ];
+
   return (
     <>
       {clickable ? (
-        <Card className="hover:bg-card/80 transition-colors">
+        <Card className={cn(transparentCardClassName)}>
           <Link href={`/tribe/${tribeId}/post/${post.id}`}>
             {cardContent}
           </Link>
         </Card>
       ) : (
-        <Card>
+        <Card className={cn(transparentCardClassName)}>
           {cardContent}
         </Card>
       )}

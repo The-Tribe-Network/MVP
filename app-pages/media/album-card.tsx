@@ -6,7 +6,7 @@ import { Calendar, ImageIcon, TrendingUp } from 'lucide-react'
 import { Album } from './types'
 import { useParams, useRouter } from 'next/navigation'
 import { useState } from 'react'
-import PhotoMediaDialog from '@/components/dialogs/photo-media'
+import PhotoMediaDialog from '@/components/dialog-content/photo-media'
 
 interface AlbumCardProps {
   album: Album

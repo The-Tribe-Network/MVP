@@ -6,6 +6,7 @@ import { CommentForm } from './comment-form'
 import { CommentItem, Comment } from './comment-item'
 import { usePostComments, useCreateComment } from '@/lib/hooks/use-comments'
 import { useAuth } from '@/lib/providers/auth-provider'
+import { Separator } from '@/components/ui/separator'
 
 interface CommentsSectionProps {
   tribeId: string
@@ -61,40 +62,40 @@ export function CommentsSection({
   }
 
   return (
-    <Card>
-      <CardContent className="pt-6">
-        <h3 className="text-lg font-semibold mb-4">Comments</h3>
+    <div className='px-3'>
+      <h3 className="text-lg font-semibold mb-4">Comments</h3>
 
-        {/* New Comment */}
-        <CommentForm
-          value={newComment}
-          onChange={setNewComment}
-          onSubmit={handleComment}
-          userAvatar={user?.image || '/diverse-user-avatars.png'}
-          disabled={createCommentMutation.isPending}
-        />
+      {/* New Comment */}
+      <CommentForm
+        value={newComment}
+        onChange={setNewComment}
+        onSubmit={handleComment}
+        userAvatar={user?.image || '/diverse-user-avatars.png'}
+        disabled={createCommentMutation.isPending}
+      />
 
-        {/* Comments List */}
-        {isLoading ? (
-          <div className="text-sm text-muted-foreground py-4">Loading comments...</div>
-        ) : comments.length === 0 ? (
-          <div className="text-sm text-muted-foreground py-4">No comments yet. Be the first to comment!</div>
-        ) : (
-          <div className="space-y-4">
-            {comments.map((comment) => (
-              <CommentItem
-                key={comment.id}
-                comment={comment}
-                tribeId={tribeId}
-                postId={postId}
-                commentId={comment.id}
-                isLiked={comment.isLiked}
-              />
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+      {!isLoading && comments.length > 0 && !isLoadingComments && <Separator className='my-6' />}
+
+      {/* Comments List */}
+      {isLoading ? (
+        <div className="text-sm text-muted-foreground py-6 text-center">Loading comments...</div>
+      ) : comments.length === 0 ? (
+        <div className="text-sm text-muted-foreground py-6 text-center">No comments yet. Be the first to comment!</div>
+      ) : (
+        <div className="space-y-4">
+          {comments.map((comment) => (
+            <CommentItem
+              key={comment.id}
+              comment={comment}
+              tribeId={tribeId}
+              postId={postId}
+              commentId={comment.id}
+              isLiked={comment.isLiked}
+            />
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
 

@@ -12,6 +12,7 @@ import { usePostComments } from '@/lib/hooks/use-comments'
 import { formatRelativeTime } from '@/lib/utils'
 import { toast } from 'sonner'
 import type { PostWithAuthor } from '@/lib/database/types'
+import { Separator } from '@/components/ui/separator'
 
 type PostWithStats = PostWithAuthor & {
   likeCount: number
@@ -145,7 +146,7 @@ export function PostDetailContent({
     <HydrationBoundary state={dehydratedState}>
       <div className="flex h-screen">
         <div className="flex-1 overflow-y-auto">
-          <div className="max-w-3xl mx-auto p-6 space-y-6">
+          <div className="max-w-3xl mx-auto py-6 space-y-6">
             <PostHeader />
 
             <PostCard
@@ -161,6 +162,8 @@ export function PostDetailContent({
               onDelete={handleDelete}
               isDeleting={isDeleting}
             />
+
+            <Separator className='mb-6' />
 
             <CommentsSection
               tribeId={tribeId}
