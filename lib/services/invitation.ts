@@ -1,9 +1,12 @@
 import { db } from "@/lib/database/client";
-import { tribeInvitation, tribeMember } from "@/lib/database/schemas/tribe";
+import { tribeInvitation, tribeMember, tribe } from "@/lib/database/schemas/tribe";
 import { user } from "@/lib/database/schemas/auth";
-import { eq, and } from "drizzle-orm";
+import { media } from "@/lib/database/schemas/media";
+import { eq, and, or, gt, isNull, desc } from "drizzle-orm";
 import type { TribeInvitation } from "@/lib/database/types";
 import { sendTribeInvitationEmail } from "@/lib/email/templates/tribe-invitation/send-tribe-invitation-email";
+import { sendTribeInvitationRejectedEmail } from "@/lib/email/templates/tribe-invitation-rejected/send-tribe-invitation-rejected-email";
+import { sendTribeInvitationAcceptedEmail } from "@/lib/email/templates/tribe-invitation-accepted/send-tribe-invitation-accepted-email";
 
 /**
  * Create invitations for a tribe
@@ -153,6 +156,13 @@ export async function acceptInvitation(
     return { success: false, error: "User is already a member" };
   }
 
+  // Get user who accepted the invitation
+  const [acceptedUser] = await db
+    .select()
+    .from(user)
+    .where(eq(user.id, userId))
+    .limit(1);
+
   // Add user as member
   await db.insert(tribeMember)
     .values({
@@ -166,6 +176,145 @@ export async function acceptInvitation(
     .update(tribeInvitation)
     .set({ status: "accepted" })
     .where(eq(tribeInvitation.id, invitationId));
+
+  // Get tribe and inviter information for email notification
+  const [tribeData] = await db
+    .select()
+    .from(tribe)
+    .where(eq(tribe.id, invitation.tribeId))
+    .limit(1);
+
+  const [inviter] = await db
+    .select()
+    .from(user)
+    .where(eq(user.id, invitation.invitedBy))
+    .limit(1);
+
+  // Send acceptance email to inviter (non-blocking)
+  if (tribeData && inviter && acceptedUser) {
+    try {
+      await sendTribeInvitationAcceptedEmail({
+        to: inviter.email,
+        tribeName: tribeData.name,
+        inviterName: inviter.name || inviter.email || "Someone",
+        acceptedUserName: acceptedUser.name || acceptedUser.email || "Someone",
+        tribeId: invitation.tribeId,
+      });
+    } catch (error) {
+      console.error(`Failed to send acceptance email:`, error);
+    }
+  }
+
+  return { success: true };
+}
+
+/**
+ * Get pending invitations for a user by email
+ * Returns invitations with tribe and inviter information
+ */
+export async function getUserPendingInvitations(userEmail: string) {
+  const pendingInvitations = await db
+    .select({
+      invitation: tribeInvitation,
+      tribe: tribe,
+      tribeAvatar: media.fileUrl,
+      inviter: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        image: user.image,
+      },
+    })
+    .from(tribeInvitation)
+    .innerJoin(tribe, eq(tribeInvitation.tribeId, tribe.id))
+    .leftJoin(media, eq(tribe.avatar, media.id))
+    .innerJoin(user, eq(tribeInvitation.invitedBy, user.id))
+    .where(
+      and(
+        eq(tribeInvitation.email, userEmail),
+        eq(tribeInvitation.status, "pending"),
+        or(
+          isNull(tribeInvitation.expiresAt),
+          gt(tribeInvitation.expiresAt, new Date())
+        )
+      )
+    )
+    .orderBy(desc(tribeInvitation.createdAt));
+
+  return pendingInvitations.map((item) => ({
+    id: item.invitation.id,
+    tribeId: item.invitation.tribeId,
+    tribeName: item.tribe.name,
+    tribeAvatar: item.tribeAvatar || item.tribe.avatar,
+    invitedBy: item.inviter.name || item.inviter.email || "Someone",
+    inviterId: item.inviter.id,
+    role: item.invitation.role,
+    createdAt: item.invitation.createdAt,
+    expiresAt: item.invitation.expiresAt,
+  }));
+}
+
+/**
+ * Reject an invitation
+ */
+export async function rejectInvitation(
+  invitationId: string,
+  userId: string
+): Promise<{ success: boolean; error?: string }> {
+  const invitation = await getInvitationById(invitationId);
+
+  if (!invitation) {
+    return { success: false, error: "Invitation not found" };
+  }
+
+  if (invitation.status !== "pending") {
+    return { success: false, error: "Invitation is not pending" };
+  }
+
+  // Get user to verify email matches
+  const [currentUser] = await db
+    .select()
+    .from(user)
+    .where(eq(user.id, userId))
+    .limit(1);
+
+  if (!currentUser || currentUser.email !== invitation.email) {
+    return { success: false, error: "You are not authorized to reject this invitation" };
+  }
+
+  // Update invitation status to rejected
+  await db
+    .update(tribeInvitation)
+    .set({ status: "rejected" })
+    .where(eq(tribeInvitation.id, invitationId));
+
+  // Get tribe and inviter information for email notification
+  const [tribeData] = await db
+    .select()
+    .from(tribe)
+    .where(eq(tribe.id, invitation.tribeId))
+    .limit(1);
+
+  const [inviter] = await db
+    .select()
+    .from(user)
+    .where(eq(user.id, invitation.invitedBy))
+    .limit(1);
+
+  // Send rejection email to inviter (non-blocking)
+  if (tribeData && inviter) {
+    try {
+      await sendTribeInvitationRejectedEmail({
+        to: inviter.email,
+        tribeName: tribeData.name,
+        inviterName: inviter.name || inviter.email || "Someone",
+        rejectedUserName: currentUser.name || currentUser.email || "Someone",
+        tribeId: invitation.tribeId,
+      });
+    } catch (error) {
+      console.error(`Failed to send rejection email:`, error);
+    }
+  }
 
   return { success: true };
 }

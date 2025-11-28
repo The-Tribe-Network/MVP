@@ -2,7 +2,7 @@ import { db } from "@/lib/database/client";
 import { tribe, tribeMember } from "@/lib/database/schemas/tribe";
 import { user } from "@/lib/database/schemas/auth";
 import { media } from "@/lib/database/schemas/media";
-import { eq, count } from "drizzle-orm";
+import { eq, count, and } from "drizzle-orm";
 import type { TribeInsert, TribeWithCreator, TribeWithMembers, Tribe } from "@/lib/database/types";
 
 /**
@@ -157,5 +157,41 @@ export async function getUserTribes(userId: string): Promise<Array<{ id: string;
     ...rest,
     avatar: avatarUrl || avatar, // Use URL if available, otherwise keep original (null or ID)
   }));
+}
+
+/**
+ * Remove a user from a tribe (leave tribe)
+ * Returns success/error response
+ * Prevents owners from leaving without transferring ownership
+ */
+export async function leaveTribe(
+  tribeId: string,
+  userId: string
+): Promise<{ success: boolean; error?: string }> {
+  // Check if user is a member
+  const [member] = await db
+    .select({ role: tribeMember.role })
+    .from(tribeMember)
+    .where(and(eq(tribeMember.tribeId, tribeId), eq(tribeMember.userId, userId)))
+    .limit(1);
+
+  if (!member) {
+    return { success: false, error: "You are not a member of this tribe" };
+  }
+
+  // Prevent owners from leaving
+  if (member.role === "owner") {
+    return {
+      success: false,
+      error: "Tribe owners cannot leave. Please transfer ownership first.",
+    };
+  }
+
+  // Delete the member record
+  await db
+    .delete(tribeMember)
+    .where(and(eq(tribeMember.tribeId, tribeId), eq(tribeMember.userId, userId)));
+
+  return { success: true };
 }
 

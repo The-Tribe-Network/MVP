@@ -115,10 +115,31 @@ export const step3Schema = z.object({
 
 export const step4Schema = z.object({}).passthrough(); // Invites are optional, so this step is always valid
 
+// Tribe role enum
+const tribeRoleSchema = z.enum(["admin", "moderator", "member"], {
+  errorMap: () => ({
+    message: "Role must be one of: admin, moderator, member",
+  }),
+});
+
+// Invite tribe members schema
+export const inviteTribeMembersSchema = z.object({
+  invitations: z
+    .array(
+      z.object({
+        email: z.string().email("Invalid email address"),
+        role: tribeRoleSchema.optional().default("member"),
+      })
+    )
+    .min(1, "At least one invitation is required")
+    .max(50, "Cannot send more than 50 invitations at once"),
+});
+
 // Type exports
 export type CreateTribeInput = z.infer<typeof createTribeSchema>;
 export type UpdateTribeInput = z.infer<typeof updateTribeSchema>;
 export type TribeIdParam = z.infer<typeof tribeIdParamSchema>;
+export type InviteTribeMembersInput = z.infer<typeof inviteTribeMembersSchema>;
 
 // Validation helper for API routes
 export function validateApiRequest<T>(

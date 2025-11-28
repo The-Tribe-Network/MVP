@@ -1,6 +1,6 @@
 'use client'
 
-import { Bell, MessageSquare, Megaphone, User, Search, PlusIcon } from 'lucide-react'
+import { Bell, MessageSquare, Megaphone, User, Search, PlusIcon, Mail, Badge } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -13,8 +13,14 @@ import { Input } from '@/components/ui/input'
 import { usePathname, useParams } from 'next/navigation'
 import { SidebarTrigger } from './ui/sidebar'
 import { Separator } from './ui/separator'
+import { ViewInvitesDropdown } from './dropdowns/view-invites'
+import { TooltipButton } from './ui/tooltip-button'
+import { useState } from 'react'
+import { NotificationsDrawer } from '@/app-pages/tribe-dashboard/info/notifications-drawer'
 
 export function TribeDashboardToolbar() {
+  const [isNotificationsDrawerOpen, setIsNotificationsDrawerOpen] = useState(false)
+
   const pathname = usePathname()
   const { tribe_id, post_id } = useParams<{ tribe_id: string, post_id?: string }>();
 
@@ -49,6 +55,7 @@ export function TribeDashboardToolbar() {
 
   return (
     <div className="sticky top-0 z-50 border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
+      <NotificationsDrawer open={isNotificationsDrawerOpen} onOpenChange={setIsNotificationsDrawerOpen} />
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between gap-4">
           {/* Left side - Toggle and Title */}
@@ -74,23 +81,21 @@ export function TribeDashboardToolbar() {
 
           {/* Right side - Icons and User Menu */}
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="relative">
-              <PlusIcon className="h-5 w-5" />
-            </Button>
+            <ViewInvitesDropdown />
 
-            <Button variant="ghost" size="icon">
+            <TooltipButton message="Announcements" variant="ghost" size="icon">
               <Megaphone className="h-5 w-5" />
-            </Button>
+            </TooltipButton>
 
-            <Button variant="ghost" size="icon" className="relative">
+            <TooltipButton message="Messages" variant="ghost" size="icon" className="relative">
               <MessageSquare className="h-5 w-5" />
               <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-primary" />
-            </Button>
+            </TooltipButton>
 
-            <Button variant="ghost" size="icon" className="relative">
+            <TooltipButton message="Notifications" variant="ghost" size="icon" className="relative" onClick={() => setIsNotificationsDrawerOpen(true)}>
               <Bell className="h-5 w-5" />
               <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-primary" />
-            </Button>
+            </TooltipButton>
           </div>
         </div>
       </div>

@@ -15,7 +15,7 @@ if (!LOCAL_ORIGIN || LOCAL_ORIGIN === undefined || LOCAL_ORIGIN === '' && NODE_E
 };
 
 export const auth = betterAuth({
-  trustedOrigins: [LOCAL_ORIGIN],
+  trustedOrigins: [LOCAL_ORIGIN, "http://localhost:3000"],
   database: drizzleAdapter(db, {
     provider: "pg",
     schema: {

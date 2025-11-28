@@ -18,7 +18,7 @@ import { Heart, MessageCircle, Share2, Loader2, MoreVertical, Trash2 } from 'luc
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
 import { useAuth } from '@/lib/providers/auth-provider'
-import PhotoMediaDialog from './dialog-content/photo-media'
+import PhotoMediaDialog from './dialogs/photo-media'
 import { usePathname } from 'next/navigation'
 
 export interface PostCard {

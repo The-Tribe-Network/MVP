@@ -42,6 +42,7 @@ export function TribeDashboardContent({
                 <div>Loading tribe info...</div>
               ) : tribeInfo ? (
                 <TribeInfoWidget
+                  tribeId={tribeId}
                   tribeName={tribeInfo.name}
                   tribeDescription={tribeInfo.description || ""}
                   tribeMembers={tribeInfo.memberCount}

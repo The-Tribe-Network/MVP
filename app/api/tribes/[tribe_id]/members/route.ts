@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
-import { getTribeById } from "@/lib/services/tribe";
+import { leaveTribe } from "@/lib/services/tribe";
 import { checkTribeMembership } from "@/lib/services/permissions";
 import { tribeIdParamSchema, validateApiRequest } from "@/lib/validations/tribe";
 
-export async function GET(
+export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ tribe_id: string }> }
 ) {
@@ -26,27 +26,30 @@ export async function GET(
       );
     }
 
-    // Fetch tribe
-    const tribeData = await getTribeById(validation.data.id);
-
-    if (!tribeData) {
-      return NextResponse.json({ error: "Tribe not found" }, { status: 404 });
-    }
-
     // Check if user is a member of the tribe
     const isMember = await checkTribeMembership(validation.data.id, user.id);
     if (!isMember) {
       return NextResponse.json(
-        { error: "You must be a member of this tribe to access it" },
+        { error: "You must be a member of this tribe to leave it" },
         { status: 403 }
       );
     }
 
-    return NextResponse.json(tribeData);
+    // Attempt to leave the tribe
+    const result = await leaveTribe(validation.data.id, user.id);
+
+    if (!result.success) {
+      return NextResponse.json(
+        { error: result.error || "Failed to leave tribe" },
+        { status: 400 }
+      );
+    }
+
+    return NextResponse.json({ success: true, message: "Successfully left tribe" });
   } catch (error) {
-    console.error("Error fetching tribe:", error);
+    console.error("Error leaving tribe:", error);
     return NextResponse.json(
-      { error: "Failed to fetch tribe" },
+      { error: "Failed to leave tribe" },
       { status: 500 }
     );
   }
