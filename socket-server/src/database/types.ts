@@ -1,5 +1,5 @@
 import { InferSelectModel, InferInsertModel } from "drizzle-orm";
-import { SelectUser } from "@/lib/@types/auth";
+import { User } from "better-auth"
 import {
   tribe,
   tribeMember,
@@ -32,10 +32,6 @@ import {
   message,
   messageRead,
 } from "./schemas/message";
-
-// Note: Auth types (User, Session, Account, Verification) are provided by Better Auth
-// Using SelectUser from @/lib/@types/auth for extended types
-type User = SelectUser;
 
 // ============================================
 // Tribe types
