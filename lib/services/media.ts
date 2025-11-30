@@ -235,7 +235,7 @@ export async function getMediaByTribe(
   const { albumId, type, limit = 50, offset = 0 } = filters;
 
   // Build all where conditions
-  const conditions = [eq(media.tribeId, tribeId)];
+  const conditions = [eq(media.tribeId, tribeId), eq(media.addToAlbum, true)];
 
   // Apply filters
   if (albumId !== undefined) {

@@ -7,7 +7,7 @@ import { useState } from "react"
 import { signIn } from "@/lib/clients/auth-client"
 
 interface OAuthButtonProps {
-  provider: "google" | "github"
+  provider: "google" | "discord"
   children: React.ReactNode
   disabled?: boolean
 }
