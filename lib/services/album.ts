@@ -256,10 +256,10 @@ export async function addMediaToAlbum(
     throw new Error("User does not have permission to modify this media");
   }
 
-  // Update the media's albumId
+  // Update the media's albumId and set addToAlbum to true
   const updated = await db
     .update(media)
-    .set({ albumId })
+    .set({ albumId, addToAlbum: true })
     .where(eq(media.id, mediaId))
     .returning();
 
@@ -289,10 +289,10 @@ export async function removeMediaFromAlbum(mediaId: string, userId: string) {
     throw new Error("User does not have permission to modify this media");
   }
 
-  // Set albumId to null
+  // Set albumId to null and set addToAlbum to false
   const updated = await db
     .update(media)
-    .set({ albumId: null })
+    .set({ albumId: null, addToAlbum: false })
     .where(eq(media.id, mediaId))
     .returning();
 

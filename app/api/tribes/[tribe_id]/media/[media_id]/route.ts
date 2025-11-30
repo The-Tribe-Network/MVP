@@ -29,11 +29,12 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { albumId, altText } = body;
+    const { albumId, altText, addToAlbum } = body;
 
     const updatedMedia = await updateMedia(media_id, user.id, {
       albumId,
       altText,
+      addToAlbum,
     });
 
     return NextResponse.json({ media: updatedMedia }, { status: 200 });

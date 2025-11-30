@@ -83,17 +83,20 @@ export async function POST(request: NextRequest) {
       postId || null
     );
 
-    // If user's preference is to NOT auto-add, remove tribeId from media
+    // If user's preference is to NOT auto-add, remove tribeId from media and set addToAlbum to false
     // This prevents the media from showing up in the tribe media page
     if (!autoAdd && result.id) {
-      await updateMedia(result.id, currentUser.id, { albumId: null });
+      await updateMedia(result.id, currentUser.id, { albumId: null, addToAlbum: false });
       // Also update the tribeId to null in the database directly
       await db.update(media).set({ tribeId: null }).where(eq(media.id, result.id));
     }
 
-    // If album is selected, update the media to assign it to the album
+    // If album is selected, update the media to assign it to the album and set addToAlbum to true
     if (albumId && result.id) {
-      await updateMedia(result.id, currentUser.id, { albumId });
+      await updateMedia(result.id, currentUser.id, { albumId, addToAlbum: true });
+    } else if (!albumId && result.id && autoAdd) {
+      // If no album selected but autoAdd is true, set addToAlbum to true (media will be in general album)
+      await updateMedia(result.id, currentUser.id, { addToAlbum: true });
     }
 
     return NextResponse.json({

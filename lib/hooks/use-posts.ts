@@ -15,6 +15,7 @@ type PostWithStats = PostWithAuthor & {
 
 type CreatePostInput = {
   content: string;
+  addToAlbum: boolean;
   mediaId?: string | null;
   albumId?: string | null;
 };
@@ -90,6 +91,7 @@ export function useCreatePost() {
           content: data.content,
           mediaId: data.mediaId || null,
           albumId: data.albumId || null,
+          addToAlbum: data.addToAlbum,
         }),
       });
 

@@ -10,7 +10,7 @@ import { checkTribeMembership } from '@/lib/services/permissions';
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ tribe_id: string }> }
+  ctx: RouteContext<'/api/tribes/[tribe_id]/media'>
 ) {
   try {
     const user = await getServerUser();
@@ -18,7 +18,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { tribe_id } = await params;
+    const { tribe_id } = await ctx.params;
 
     // Check tribe membership
     const isMember = await checkTribeMembership(tribe_id, user.id);
@@ -81,6 +81,18 @@ export async function POST(
       );
     }
 
+    // Parse addToAlbum from form data (can be string "true"/"false" or boolean)
+    const addToAlbumValue = formData.get('addToAlbum');
+    let addToAlbum: boolean;
+    if (addToAlbumValue === null || addToAlbumValue === undefined) {
+      // Default to false if not provided
+      addToAlbum = false;
+    } else if (typeof addToAlbumValue === 'string') {
+      addToAlbum = addToAlbumValue === 'true';
+    } else {
+      addToAlbum = Boolean(addToAlbumValue);
+    }
+
     // Validate file
     const validation = validateImageFile(file);
     if (!validation.valid) {
@@ -100,7 +112,8 @@ export async function POST(
       user.id,
       file.type,
       tribe_id,
-      albumId || null
+      albumId || null,
+      addToAlbum
     );
 
     return NextResponse.json({

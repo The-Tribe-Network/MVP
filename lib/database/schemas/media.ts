@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, integer, bigint, uuid, unique } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, integer, bigint, uuid, unique, boolean } from "drizzle-orm/pg-core";
 import { tribe } from "./tribe";
 import { user } from "./auth";
 import { post } from "./post";
@@ -40,6 +40,7 @@ export const media = pgTable("media", {
   height: integer("height"),
   duration: integer("duration"),
   thumbnailUrl: text("thumbnail_url"),
+  addToAlbum: boolean("add_to_album").notNull().default(true),
   altText: text("alt_text"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

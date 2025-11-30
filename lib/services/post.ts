@@ -58,8 +58,9 @@ export async function createPost(
   tribeId: string,
   userId: string,
   content: string,
+  addToAlbum: boolean,
   mediaId?: string | null,
-  albumId?: string | null
+  albumId?: string | null,
 ): Promise<PostWithAuthor> {
   // Check permission
   const canPost = await canUserPost(tribeId, userId);
@@ -77,17 +78,23 @@ export async function createPost(
     } as PostInsert)
     .returning();
 
-  // Link media to post if mediaId is provided
-  if (mediaId && albumId) {
-    await db
-      .update(media)
-      .set({ postId: createdPost.id, albumId })
-      .where(eq(media.id, mediaId));
-  } else if (mediaId && !albumId) {
-    await db
-      .update(media)
-      .set({ postId: createdPost.id })
-      .where(eq(media.id, mediaId));
+  if (mediaId) {
+    if (addToAlbum === true && albumId) {
+      await db
+        .update(media)
+        .set({ postId: createdPost.id, albumId, addToAlbum: true })
+        .where(eq(media.id, mediaId));
+    } else if (addToAlbum === true && !albumId) {
+      await db
+        .update(media)
+        .set({ postId: createdPost.id, albumId: null, addToAlbum: true })
+        .where(eq(media.id, mediaId));
+    } else if (addToAlbum === false) {
+      await db
+        .update(media)
+        .set({ postId: createdPost.id, albumId: null, addToAlbum: false })
+        .where(eq(media.id, mediaId));
+    }
   }
 
   // Fetch author info

@@ -57,6 +57,7 @@ export async function uploadAvatar(
     duration: null,
     thumbnailUrl: null,
     altText: null,
+    addToAlbum: false,
   };
 
   const [createdMedia] = await db
@@ -115,6 +116,7 @@ export async function uploadPostImage(
     duration: null,
     thumbnailUrl: null,
     altText: null,
+    addToAlbum: false,
   };
 
   const [createdMedia] = await db
@@ -215,6 +217,7 @@ export interface MediaFilters {
 
 export interface UpdateMediaData {
   albumId?: string | null;
+  addToAlbum?: boolean;
   altText?: string;
 }
 
@@ -231,7 +234,23 @@ export async function getMediaByTribe(
 ) {
   const { albumId, type, limit = 50, offset = 0 } = filters;
 
-  let query = db
+  // Build all where conditions
+  const conditions = [eq(media.tribeId, tribeId)];
+
+  // Apply filters
+  if (albumId !== undefined) {
+    if (albumId === null) {
+      conditions.push(isNull(media.albumId));
+    } else {
+      conditions.push(eq(media.albumId, albumId));
+    }
+  }
+
+  if (type) {
+    conditions.push(eq(media.fileType, type));
+  }
+
+  const query = db
     .select({
       id: media.id,
       fileUrl: media.fileUrl,
@@ -248,6 +267,7 @@ export async function getMediaByTribe(
       postId: media.postId,
       albumId: media.albumId,
       tribeId: media.tribeId,
+      addToAlbum: media.addToAlbum,
       uploader: {
         id: user.id,
         name: user.name,
@@ -260,21 +280,7 @@ export async function getMediaByTribe(
     .leftJoin(user, eq(media.uploadedBy, user.id))
     .leftJoin(mediaLike, eq(media.id, mediaLike.mediaId))
     .leftJoin(comment, eq(media.postId, comment.postId))
-    .where(eq(media.tribeId, tribeId))
-    .$dynamic();
-
-  // Apply filters
-  if (albumId !== undefined) {
-    if (albumId === null) {
-      query = query.where(isNull(media.albumId));
-    } else {
-      query = query.where(eq(media.albumId, albumId));
-    }
-  }
-
-  if (type) {
-    query = query.where(eq(media.fileType, type));
-  }
+    .where(and(...conditions));
 
   const results = await query
     .groupBy(media.id, user.id)
@@ -305,6 +311,10 @@ export async function getLooseMedia(tribeId: string) {
       altText: media.altText,
       createdAt: media.createdAt,
       uploadedBy: media.uploadedBy,
+      postId: media.postId,
+      albumId: media.albumId,
+      tribeId: media.tribeId,
+      addToAlbum: media.addToAlbum,
       uploader: {
         id: user.id,
         name: user.name,
@@ -463,7 +473,8 @@ export async function uploadTribeMedia(
   userId: string,
   mimeType: string,
   tribeId: string,
-  albumId: string | null = null
+  albumId: string | null = null,
+  addToAlbum: boolean = false
 ): Promise<UploadAvatarResult> {
   // Check permissions
   const hasPermission = await canUserUploadMedia(tribeId, userId);
@@ -500,6 +511,7 @@ export async function uploadTribeMedia(
     duration: null,
     thumbnailUrl: null,
     altText: null,
+    addToAlbum,
   };
 
   const [createdMedia] = await db

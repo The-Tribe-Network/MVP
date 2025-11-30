@@ -60,7 +60,7 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ tribe_id: string }> }
+  ctx: RouteContext<'/api/tribes/[tribe_id]/posts'>
 ) {
   try {
     // Check authentication
@@ -69,7 +69,7 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { tribe_id } = await params;
+    const { tribe_id } = await ctx.params;
 
     // Validate tribe ID parameter
     const tribeValidation = validateApiRequest(tribeIdParamSchema, { tribe_id });
@@ -95,8 +95,9 @@ export async function POST(
       tribeValidation.data.tribe_id,
       user.id,
       validation.data.content,
+      validation.data.addToAlbum,
       validation.data.mediaId || null,
-      validation.data.albumId || null
+      validation.data.albumId || null,
     );
 
     return NextResponse.json(newPost, { status: 201 });

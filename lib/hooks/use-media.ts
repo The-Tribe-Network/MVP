@@ -21,6 +21,7 @@ export interface MediaItem {
   postId: string | null;
   albumId: string | null;
   tribeId: string;
+  addToAlbum: boolean;
   uploader: {
     id: string;
     name: string | null;
@@ -45,8 +46,10 @@ export interface MediaFilters {
  * Fetch media for a tribe with optional filters
  */
 export function useTribeMedia(tribeId: string, filters?: MediaFilters) {
+  const filtersObject = filters ? Object.fromEntries(Object.entries(filters).filter(([_, value]) => value !== undefined)) : undefined;
+
   return useQuery<MediaItem[]>({
-    queryKey: queryKeys.media.tribe(tribeId, filters),
+    queryKey: queryKeys.media.tribe(tribeId, filtersObject),
     queryFn: async () => {
       const params = new URLSearchParams();
       if (filters?.albumId !== undefined) {
