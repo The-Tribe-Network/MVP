@@ -6,7 +6,7 @@ import { createPostSchema, tribeIdParamSchema, validateApiRequest } from "@/lib/
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ tribe_id: string }> }
+  ctx: RouteContext<'/api/tribes/[tribe_id]/posts'>
 ) {
   try {
     // Check authentication
@@ -15,7 +15,7 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { tribe_id } = await params;
+    const { tribe_id } = await ctx.params;
 
     // Validate tribe ID parameter
     const tribeValidation = validateApiRequest(tribeIdParamSchema, { tribe_id });

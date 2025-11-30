@@ -10,7 +10,7 @@ const invitationIdSchema = z.object({
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ invitation_id: string }> }
+  ctx: RouteContext<'/api/invitations/[invitation_id]/accept'>
 ) {
   try {
     // Check authentication
@@ -19,7 +19,7 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { invitation_id } = await params;
+    const { invitation_id } = await ctx.params;
 
     // Validate invitation ID parameter
     const validation = validateApiRequest(invitationIdSchema, { id: invitation_id });

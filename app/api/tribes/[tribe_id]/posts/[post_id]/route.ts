@@ -8,7 +8,7 @@ import { updatePostSchema, tribePostIdParamSchema, validateApiRequest } from "@/
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ tribe_id: string; post_id: string }> }
+  ctx: RouteContext<'/api/tribes/[tribe_id]/posts/[post_id]'>
 ) {
   try {
     // Check authentication
@@ -17,7 +17,7 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { tribe_id, post_id } = await params;
+    const { tribe_id, post_id } = await ctx.params;
 
     // Validate parameters
     const paramValidation = validateApiRequest(tribePostIdParamSchema, {
@@ -63,7 +63,7 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ tribe_id: string; post_id: string }> }
+  ctx: RouteContext<'/api/tribes/[tribe_id]/posts/[post_id]'>
 ) {
   try {
     // Check authentication
@@ -72,7 +72,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { tribe_id, post_id } = await params;
+    const { tribe_id, post_id } = await ctx.params;
 
     // Validate parameters
     const paramValidation = validateApiRequest(tribePostIdParamSchema, {
@@ -122,7 +122,7 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ tribe_id: string; post_id: string }> }
+  ctx: RouteContext<'/api/tribes/[tribe_id]/posts/[post_id]'>
 ) {
   try {
     // Check authentication
@@ -131,7 +131,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { tribe_id, post_id } = await params;
+    const { tribe_id, post_id } = await ctx.params;
 
     // Validate parameters
     const paramValidation = validateApiRequest(tribePostIdParamSchema, {

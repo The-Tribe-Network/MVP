@@ -9,7 +9,7 @@ import { checkTribeMembership } from '@/lib/services/permissions';
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ tribe_id: string }> }
+  ctx: RouteContext<'/api/tribes/[tribe_id]/albums'>
 ) {
   try {
     const user = await getServerUser();
@@ -17,7 +17,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { tribe_id } = await params;
+    const { tribe_id } = await ctx.params;
 
     // Check tribe membership
     const isMember = await checkTribeMembership(tribe_id, user.id);
@@ -51,7 +51,7 @@ export async function GET(
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ tribe_id: string }> }
+  ctx: RouteContext<'/api/tribes/[tribe_id]/albums'>
 ) {
   try {
     const user = await getServerUser();
@@ -59,7 +59,7 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { tribe_id } = await params;
+    const { tribe_id } = await ctx.params;
     const body = await request.json();
 
     const { name, description, coverImageUrl, privacy } = body;

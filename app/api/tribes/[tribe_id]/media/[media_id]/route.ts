@@ -9,7 +9,7 @@ import { checkTribeMembership } from '@/lib/services/permissions';
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ tribe_id: string; media_id: string }> }
+  ctx: RouteContext<'/api/tribes/[tribe_id]/media/[media_id]'>
 ) {
   try {
     const user = await getServerUser();
@@ -17,7 +17,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { tribe_id, media_id } = await params;
+    const { tribe_id, media_id } = await ctx.params;
 
     // Check tribe membership
     const isMember = await checkTribeMembership(tribe_id, user.id);
@@ -63,7 +63,7 @@ export async function PATCH(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ tribe_id: string; media_id: string }> }
+  ctx: RouteContext<'/api/tribes/[tribe_id]/media/[media_id]'>
 ) {
   try {
     const user = await getServerUser();
@@ -71,7 +71,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { tribe_id, media_id } = await params;
+    const { tribe_id, media_id } = await ctx.params;
 
     await deleteMediaWithPermissions(media_id, tribe_id, user.id);
 

@@ -10,7 +10,7 @@ import { tribePostIdParamSchema, validateApiRequest } from "@/lib/validations/po
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ tribe_id: string; post_id: string }> }
+  ctx: RouteContext<'/api/tribes/[tribe_id]/posts/[post_id]/like'>
 ) {
   try {
     // Check authentication
@@ -19,7 +19,7 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { tribe_id, post_id } = await params;
+    const { tribe_id, post_id } = await ctx.params;
 
     // Validate parameters
     const paramValidation = validateApiRequest(tribePostIdParamSchema, {

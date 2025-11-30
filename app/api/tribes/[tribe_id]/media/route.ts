@@ -59,7 +59,7 @@ export async function GET(
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ tribe_id: string }> }
+  ctx: RouteContext<'/api/tribes/[tribe_id]/media'>
 ) {
   try {
     const user = await getServerUser();
@@ -67,7 +67,7 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { tribe_id } = await params;
+    const { tribe_id } = await ctx.params;
 
     // Parse form data
     const formData = await request.formData();

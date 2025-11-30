@@ -6,7 +6,7 @@ import { tribeIdParamSchema, validateApiRequest } from "@/lib/validations/tribe"
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ tribe_id: string }> }
+  ctx: RouteContext<'/api/tribes/[tribe_id]/members'>
 ) {
   try {
     // Check authentication
@@ -15,7 +15,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { tribe_id } = await params;
+    const { tribe_id } = await ctx.params;
 
     // Validate tribe ID parameter
     const validation = validateApiRequest(tribeIdParamSchema, { id: tribe_id });
