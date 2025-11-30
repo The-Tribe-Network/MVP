@@ -18,9 +18,32 @@ export default async function ProtectedLayout({
   // Check if profile is complete - redirect to welcome if not
   // Exception: Allow access to /welcome page itself
   const headersList = await headers();
-  const pathname = headersList.get("x-invoke-path") || "";
 
-  if (!pathname.includes("/welcome")) {
+  // Get pathname - try multiple sources for reliability
+  let pathname = headersList.get("x-invoke-path") ||
+    headersList.get("x-pathname") ||
+    "";
+
+  // Get referer for fallback pathname detection and loop prevention
+  const referer = headersList.get("referer");
+
+  // Fallback: extract from referer header if available
+  if (!pathname && referer) {
+    try {
+      const urlObj = new URL(referer);
+      pathname = urlObj.pathname;
+    } catch {
+      // Invalid URL, continue
+    }
+  }
+
+  // Check if we're on the welcome page
+  const isWelcomePage = pathname && pathname.includes("/welcome");
+
+  // Only check profile and redirect if we're NOT on the welcome page
+  // Skip check if pathname is empty (can't determine current route) to prevent loops
+  // The welcome page itself will handle the profile check
+  if (pathname && !isWelcomePage) {
     const profileComplete = await isProfileComplete(user.id);
     if (!profileComplete) {
       redirect("/welcome");

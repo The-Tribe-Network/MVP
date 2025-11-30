@@ -38,6 +38,16 @@ import {
 type User = SelectUser;
 
 // ============================================
+// User types
+// ============================================
+export type UserWithProfile = User & {
+  displayName: string;
+  bio: string | null;
+  location: string;
+  profileCompleted: boolean;
+};
+
+// ============================================
 // Tribe types
 // ============================================
 export type Tribe = InferSelectModel<typeof tribe>;

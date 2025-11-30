@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerUser } from '@/lib/services/auth';
 import { uploadAvatar } from '@/lib/services/media';
 import { validateImageFile, MAX_FILE_SIZE, ALLOWED_MIME_TYPES } from '@/lib/utils/image';
+import { db } from '@/lib/database/client';
+import { user as userSchema } from '@/lib/database/schemas/auth';
+import { eq } from 'drizzle-orm';
 
 export async function POST(request: NextRequest) {
   try {
@@ -37,6 +40,12 @@ export async function POST(request: NextRequest) {
 
     // Upload to Cloudinary and create media record
     const result = await uploadAvatar(buffer, user.id, file.type, null);
+
+    // Update user.image with the Cloudinary URL
+    await db
+      .update(userSchema)
+      .set({ image: result.url })
+      .where(eq(userSchema.id, user.id));
 
     return NextResponse.json({
       id: result.id,

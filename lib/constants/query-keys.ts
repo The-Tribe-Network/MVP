@@ -65,6 +65,12 @@ export const queryKeys = {
     all: ["preferences"] as const,
     tribeMember: (tribeId: string) => ["preferences", "tribe-member", tribeId] as const,
   },
+
+  // Profile queries
+  profile: {
+    all: ["profile"] as const,
+    current: () => ["profile", "current"] as const,
+  },
 } as const;
 
 

@@ -25,6 +25,31 @@ export const auth = betterAuth({
       verification,
     }
   }),
+  user: {
+    additionalFields: {
+      username: {
+        type: "string",
+        required: false,
+      },
+      displayName: {
+        type: "string",
+        required: false,
+      },
+      bio: {
+        type: "string",
+        required: false,
+      },
+      location: {
+        type: "string",
+        required: false,
+      },
+      profileCompleted: {
+        type: "boolean",
+        required: false,
+        defaultValue: false,
+      },
+    },
+  },
   advanced: {
     database: {
       generateId: false, // Let database generate UUIDs automatically
