@@ -92,7 +92,7 @@ Services handle business logic and database queries. Key services:
 - `invitation.ts` - Tribe invitations with email notifications
 
 **Performance Optimizations**:
-- Services are optimized to minimize database queries (see PERFORMANCE_OPTIMIZATIONS.md)
+- Services are optimized to minimize database queries (see docs/PERFORMANCE_OPTIMIZATIONS.md)
 - Use `getMemberWithPermissions()` instead of separate membership + permission queries
 - Joins are used to fetch related data in single queries
 - Avatar URLs are resolved via joins instead of separate queries
@@ -270,7 +270,7 @@ if (!isMember) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
 - Use joins instead of sequential queries
 - Fetch related data in parallel with `Promise.all()`
 - Leverage `getMemberWithPermissions()` for membership + permissions in one query
-- See PERFORMANCE_OPTIMIZATIONS.md for patterns
+- See docs/PERFORMANCE_OPTIMIZATIONS.md for patterns
 
 ### 4. Type Safety
 - Always use types from `lib/database/types.ts`
@@ -323,11 +323,11 @@ There is a `socket-server/` directory for real-time messaging (Socket.IO). This 
 
 ## Documentation Files
 
-- `MVP_PRD.md` - Minimum viable product requirements
-- `PRD.md` - Full product requirements document
-- `PERFORMANCE_OPTIMIZATIONS.md` - Database query optimization guide
-- `PHASE_1_OPTIMIZATIONS.md`, `PHASE_2_OPTIMIZATIONS.md` - Implementation phases
-- `google_mvp_prd.md` - Google-specific MVP requirements
+- `docs/MVP_PRD.md` - Minimum viable product requirements
+- `docs/PRD.md` - Full product requirements document
+- `docs/PERFORMANCE_OPTIMIZATIONS.md` - Database query optimization guide
+- `docs/PHASE_1_OPTIMIZATIONS.md`, `docs/PHASE_2_OPTIMIZATIONS.md` - Implementation phases
+- `docs/google_mvp_prd.md` - Google-specific MVP requirements
 
 ## Common Pitfalls to Avoid
 

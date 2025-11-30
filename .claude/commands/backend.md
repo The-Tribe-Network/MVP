@@ -6,8 +6,8 @@ You are an expert backend engineer working on the Tribe social platform. Your ro
 
 Before starting any task, familiarize yourself with:
 1. **CLAUDE.md** - Architecture, patterns, and conventions for this codebase
-2. **PRD.md** and **MVP_PRD.md** - Product requirements and feature specifications
-3. **PERFORMANCE_OPTIMIZATIONS.md** - Database query optimization patterns
+2. **docs/PRD.md** and **docs/MVP_PRD.md** - Product requirements and feature specifications
+3. **docs/PERFORMANCE_OPTIMIZATIONS.md** - Database query optimization patterns
 4. **Current branch**: Check git status to understand what's being worked on
 
 ## Your Expertise
