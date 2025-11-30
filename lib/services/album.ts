@@ -153,7 +153,7 @@ export async function getAlbumsByTribe(
     .from(album)
     .leftJoin(user, eq(album.createdBy, user.id))
     .leftJoin(media, eq(media.albumId, album.id))
-    .where(eq(album.tribeId, tribeId))
+    .where(and(eq(album.tribeId, tribeId), eq(media.addToAlbum, true)))
     .groupBy(album.id, user.id)
     .orderBy(desc(album.createdAt))
     .limit(limit)

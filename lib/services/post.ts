@@ -78,23 +78,12 @@ export async function createPost(
     } as PostInsert)
     .returning();
 
+  // Update the newly uploaded media to cloudinary during post creation
   if (mediaId) {
-    if (addToAlbum === true && albumId) {
       await db
         .update(media)
-        .set({ postId: createdPost.id, albumId, addToAlbum: true })
+        .set({ postId: createdPost.id, albumId: albumId || null, addToAlbum })
         .where(eq(media.id, mediaId));
-    } else if (addToAlbum === true && !albumId) {
-      await db
-        .update(media)
-        .set({ postId: createdPost.id, albumId: null, addToAlbum: true })
-        .where(eq(media.id, mediaId));
-    } else if (addToAlbum === false) {
-      await db
-        .update(media)
-        .set({ postId: createdPost.id, albumId: null, addToAlbum: false })
-        .where(eq(media.id, mediaId));
-    }
   }
 
   // Fetch author info
