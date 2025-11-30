@@ -27,6 +27,7 @@ import {
   TooltipTrigger,
   TooltipProvider,
 } from "@/components/ui/tooltip";
+import { Skeleton } from "@/components/ui/skeleton";
 import TribeList from "./tribe-list";
 import { useUserTribes } from "@/lib/hooks/use-tribes";
 import { cn } from "@/lib/utils";
@@ -56,6 +57,21 @@ export default function AppSidebar({ ...props }: React.ComponentProps<typeof Sid
 
   // Fetch user's tribes
   const { data: userTribes = [], isLoading: isLoadingTribes } = useUserTribes();
+
+  // Skeleton component for tribe list loading state
+  function TribeListSkeleton() {
+    return (
+      <>
+        {Array.from({ length: 3 }).map((_, index) => (
+          <SidebarMenuItem key={`skeleton-${index}`}>
+            <SidebarMenuButton size="lg" className="md:h-8 md:p-0" disabled>
+              <Skeleton className="size-8 rounded-md" />
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        ))}
+      </>
+    );
+  }
 
   return (
     <Sidebar
@@ -88,7 +104,11 @@ export default function AppSidebar({ ...props }: React.ComponentProps<typeof Sid
           <SidebarGroup>
             <SidebarGroupContent>
               <SidebarMenu className="gap-2">
-                <TribeList data={userTribes} pathname={pathname} />
+                {isLoadingTribes ? (
+                  <TribeListSkeleton />
+                ) : (
+                  <TribeList data={userTribes} pathname={pathname} />
+                )}
 
                 {/* Discover Button */}
                 <SidebarMenuItem>

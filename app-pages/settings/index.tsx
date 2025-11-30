@@ -2,7 +2,7 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { SettingsHeader } from './settings-header'
-import { ProfileTab } from './profile-tab'
+import { ProfileTab } from './profiles/profile-tab'
 import { AccountTab } from './account-tab'
 import { NotificationsTab } from './notifications-tab'
 import { PrivacyTab } from './privacy-tab'
@@ -10,8 +10,11 @@ import { SecurityTab } from './security-tab'
 import { InvitesTab } from './invites-tab'
 import { SubscriptionsTab } from './subscriptions-tab'
 import { PreferencesTab } from './preferences-tab'
+import { useSearchParams } from 'next/navigation'
 
 export default function SettingsPageContent() {
+  const searchParams = useSearchParams()
+  const tab = searchParams.get('tab') || 'profile'
 
   return (
     <div className="flex h-screen overflow-hidden">
@@ -19,7 +22,7 @@ export default function SettingsPageContent() {
         <div className="mx-auto max-w-5xl space-y-6">
           <SettingsHeader />
 
-          <Tabs defaultValue="profile" className="space-y-6">
+          <Tabs defaultValue={tab} className="space-y-6">
             <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8">
               <TabsTrigger value="profile">Profile</TabsTrigger>
               <TabsTrigger value="account">Account</TabsTrigger>

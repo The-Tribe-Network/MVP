@@ -1,10 +1,29 @@
 "use client";
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/constants/query-keys";
 import type { UpdateProfileInput } from "@/lib/validations/profile";
 
 const API_BASE = "/api/user/profile";
+
+/**
+ * Fetch current user profile
+ */
+export function useProfile() {
+  return useQuery({
+    queryKey: queryKeys.profile.current(),
+    queryFn: async () => {
+      const response = await fetch(API_BASE);
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to fetch profile");
+      }
+
+      return response.json();
+    },
+  });
+}
 
 /**
  * Update user profile
@@ -32,6 +51,8 @@ export function useUpdateProfile() {
     onSuccess: () => {
       // Invalidate auth queries to refresh user data
       queryClient.invalidateQueries({ queryKey: queryKeys.auth.all });
+      // Also invalidate profile query
+      queryClient.invalidateQueries({ queryKey: queryKeys.profile.current() });
     },
   });
 }
@@ -76,6 +97,8 @@ export function useCompleteProfile() {
     onSuccess: () => {
       // Invalidate auth queries to refresh user data
       queryClient.invalidateQueries({ queryKey: queryKeys.auth.all });
+      // Also invalidate profile query
+      queryClient.invalidateQueries({ queryKey: queryKeys.profile.current() });
     },
   });
 }

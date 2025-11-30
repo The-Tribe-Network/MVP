@@ -1,5 +1,5 @@
 import { InferSelectModel, InferInsertModel } from "drizzle-orm";
-import { SelectUser } from "@/lib/@types/auth";
+import { SelectUser, SelectSession } from "@/lib/@types/auth";
 import {
   tribe,
   tribeMember,
@@ -15,6 +15,7 @@ import {
 import {
   album,
   media,
+  albumMedia,
 } from "./schemas/media";
 import {
   event,
@@ -180,5 +181,17 @@ export type ActivityWithUser = Activity & {
   event?: Event;
   media?: Media;
   targetUser?: User;
+};
+
+// ============================================
+// Security types
+// ============================================
+export type SessionWithDevice = SelectSession & {
+  deviceName: string;
+  browser: string;
+  os: string;
+  location: string | null;
+  isCurrentSession: boolean;
+  lastActive: Date;
 };
 

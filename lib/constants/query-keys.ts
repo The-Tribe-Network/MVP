@@ -71,6 +71,12 @@ export const queryKeys = {
     all: ["profile"] as const,
     current: () => ["profile", "current"] as const,
   },
+
+  // Security queries
+  security: {
+    all: ["security"] as const,
+    sessions: () => ["security", "sessions"] as const,
+  },
 } as const;
 
 

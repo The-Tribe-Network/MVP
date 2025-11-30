@@ -36,9 +36,18 @@ export function useFormValidation<T>({
     setErrors({})
   }
 
+  const clearFieldError = (field: string) => {
+    setErrors((prev) => {
+      const newErrors = { ...prev }
+      delete newErrors[field]
+      return newErrors
+    })
+  }
+
   return {
     errors,
     validate,
     clearErrors,
+    clearFieldError,
   }
 }

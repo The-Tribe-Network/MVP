@@ -72,6 +72,7 @@ export const updateProfileSchema = z.object({
     .union([uuidSchema, z.literal("")])
     .transform((val) => (val === "" ? undefined : val))
     .optional(),
+  removeAvatar: z.boolean().optional(),
   username: z
     .string()
     .min(3, "Username must be at least 3 characters")

@@ -10,6 +10,7 @@ export interface UpdateProfileInput {
   username?: string;
   location?: string;
   avatar?: string;
+  removeAvatar?: boolean;
 }
 
 /**
@@ -22,7 +23,11 @@ export async function updateUserProfile(userId: string, data: UpdateProfileInput
   if (data.bio !== undefined) updateData.bio = data.bio;
   if (data.username !== undefined) updateData.username = data.username.toLowerCase();
   if (data.location !== undefined) updateData.location = data.location;
-  // Avatar is handled by the upload endpoint which updates user.image
+  // Avatar removal: set image to null if removeAvatar is true
+  if (data.removeAvatar === true) {
+    updateData.image = null;
+  }
+  // Avatar upload is handled by the upload endpoint which updates user.image
 
   const [updatedUser] = await db
     .update(user)

@@ -14,7 +14,8 @@ export const album = pgTable("album", {
     .references(() => user.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   description: text("description"),
-  coverImageUrl: text("cover_image_url"),
+  coverId: uuid("cover_id").references((): any => media.id, { onDelete: "set null" }),
+  coverImageUrl: text("cover_image_url"), // DEPRECATED: Will be removed after migration
   privacy: albumPrivacy("privacy").default("public").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
@@ -26,7 +27,7 @@ export const album = pgTable("album", {
 export const media = pgTable("media", {
   id: uuid("id").primaryKey().defaultRandom(),
   postId: uuid("post_id").references(() => post.id, { onDelete: "cascade" }),
-  albumId: uuid("album_id").references((): any => album.id, { onDelete: "set null" }),
+  albumId: uuid("album_id").references((): any => album.id, { onDelete: "set null" }), // DEPRECATED: Will be removed after migration
   uploadedBy: uuid("uploaded_by")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
@@ -44,6 +45,24 @@ export const media = pgTable("media", {
   altText: text("alt_text"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+// Junction table for many-to-many album-media relationship
+export const albumMedia = pgTable("album_media", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  albumId: uuid("album_id")
+    .notNull()
+    .references(() => album.id, { onDelete: "cascade" }),
+  mediaId: uuid("media_id")
+    .notNull()
+    .references(() => media.id, { onDelete: "cascade" }),
+  addedAt: timestamp("added_at").defaultNow().notNull(),
+  addedBy: uuid("added_by")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  displayOrder: integer("display_order"),
+}, (table) => ({
+  uniqueAlbumMedia: unique().on(table.albumId, table.mediaId),
+}));
 
 export const mediaLike = pgTable("media_like", {
   id: uuid("id").primaryKey().defaultRandom(),
