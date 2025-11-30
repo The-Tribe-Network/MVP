@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
-import { getPostById, getPostByIdWithMetadata, updatePost, deletePost } from "@/lib/services/post";
-import { checkTribeMembership } from "@/lib/services/permissions";
+import { getPostByIdWithMetadata, updatePost, deletePost, verifyPostAccessAndMembership } from "@/lib/services/post";
 import { updatePostSchema, tribePostIdParamSchema, validateApiRequest } from "@/lib/validations/post";
 
+/**
+ * OPTIMIZED: GET reduced from 2 sequential queries to 2 parallel queries
+ */
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ tribe_id: string; post_id: string }> }
@@ -29,33 +31,23 @@ export async function GET(
       );
     }
 
-    // Check tribe membership
-    const isMember = await checkTribeMembership(
-      paramValidation.data.tribe_id,
-      user.id
-    );
-    if (!isMember) {
+    // Fetch post and verify access in parallel
+    const [postAccess, postData] = await Promise.all([
+      verifyPostAccessAndMembership(
+        paramValidation.data.post_id,
+        paramValidation.data.tribe_id,
+        user.id
+      ),
+      getPostByIdWithMetadata(
+        paramValidation.data.post_id,
+        user.id
+      ),
+    ]);
+
+    if (!postAccess || !postData) {
       return NextResponse.json(
-        { error: "You must be a member of this tribe to view posts" },
-        { status: 403 }
-      );
-    }
-
-    // Fetch post with metadata
-    const postData = await getPostByIdWithMetadata(
-      paramValidation.data.post_id,
-      user.id
-    );
-
-    if (!postData) {
-      return NextResponse.json({ error: "Post not found" }, { status: 404 });
-    }
-
-    // Verify post belongs to the tribe
-    if (postData.tribeId !== paramValidation.data.tribe_id) {
-      return NextResponse.json(
-        { error: "Post does not belong to this tribe" },
-        { status: 400 }
+        { error: "Post not found or you are not a member of this tribe" },
+        { status: 404 }
       );
     }
 

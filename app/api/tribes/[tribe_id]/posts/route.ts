@@ -95,7 +95,8 @@ export async function POST(
       tribeValidation.data.tribe_id,
       user.id,
       validation.data.content,
-      validation.data.mediaId || null
+      validation.data.mediaId || null,
+      validation.data.albumId || null
     );
 
     return NextResponse.json(newPost, { status: 201 });

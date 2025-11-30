@@ -16,6 +16,7 @@ export {
   invitationStatus,
   eventStatus,
   messageType,
+  albumPrivacy,
 } from "@/lib/database/schemas/enums";
 
 // Tribe tables
@@ -24,6 +25,7 @@ export {
   tribeMember,
   tribeMemberPermission,
   tribeInvitation,
+  tribeMemberPreference,
 } from "@/lib/database/schemas/tribe";
 
 // Post tables
@@ -38,6 +40,7 @@ export {
 export {
   album,
   media,
+  mediaLike,
 } from "@/lib/database/schemas/media";
 
 // Event tables

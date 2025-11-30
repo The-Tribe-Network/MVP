@@ -1,8 +1,8 @@
-import { pgTable, text, timestamp, integer, bigint, uuid } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, integer, bigint, uuid, unique } from "drizzle-orm/pg-core";
 import { tribe } from "./tribe";
 import { user } from "./auth";
 import { post } from "./post";
-import { mediaType } from "./enums";
+import { mediaType, albumPrivacy } from "./enums";
 
 export const album = pgTable("album", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -15,6 +15,7 @@ export const album = pgTable("album", {
   name: text("name").notNull(),
   description: text("description"),
   coverImageUrl: text("cover_image_url"),
+  privacy: albumPrivacy("privacy").default("public").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .defaultNow()
@@ -42,4 +43,17 @@ export const media = pgTable("media", {
   altText: text("alt_text"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+export const mediaLike = pgTable("media_like", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  mediaId: uuid("media_id")
+    .notNull()
+    .references(() => media.id, { onDelete: "cascade" }),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  uniqueMediaUser: unique().on(table.mediaId, table.userId),
+}));
 

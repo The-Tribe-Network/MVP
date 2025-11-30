@@ -40,3 +40,5 @@ export const eventStatus = pgEnum("event_status", [
 
 export const messageType = pgEnum("message_type", ["group", "direct"]);
 
+export const albumPrivacy = pgEnum("album_privacy", ["public", "private", "admin_only"]);
+

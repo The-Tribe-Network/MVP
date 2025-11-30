@@ -44,16 +44,23 @@ export function useUploadPostImage() {
       file,
       tribeId,
       postId,
+      albumId,
     }: {
       file: File;
       tribeId: string;
       postId?: string | null;
+      albumId?: string | null;
     }): Promise<UploadAvatarResponse> => {
       const formData = new FormData();
       formData.append('file', file);
       formData.append('tribeId', tribeId);
       if (postId) {
         formData.append('postId', postId);
+      }
+      // Only append albumId if it's a valid string (not null/undefined)
+      // null means "General" (no specific album), so we don't send it
+      if (albumId) {
+        formData.append('albumId', albumId);
       }
 
       const response = await fetch('/api/upload/post-image', {

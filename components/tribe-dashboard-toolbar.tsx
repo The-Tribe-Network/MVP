@@ -36,7 +36,7 @@ export function TribeDashboardToolbar() {
         return 'Post';
       case `/tribe/${tribe_id}/events`:
         return 'Events';
-      case `/tribe/new`:
+      case `/new`:
         return 'Create New Tribe';
       case `/discover`:
         return 'Discover';

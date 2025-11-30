@@ -1,15 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
 import { createComment, getPostComments } from "@/lib/services/comment";
-import { getPostById } from "@/lib/services/post";
-import { checkTribeMembership } from "@/lib/services/permissions";
+import { verifyPostAccessAndMembership } from "@/lib/services/post";
 import {
   createCommentSchema,
-  tribePostIdParamSchema,
   validateApiRequest,
 } from "@/lib/validations/comment";
 import { tribePostIdParamSchema as postTribePostIdParamSchema } from "@/lib/validations/post";
 
+/**
+ * OPTIMIZED: GET reduced from 2 DB calls to 1 DB call
+ * POST reduced from 3 DB calls to 2 DB calls
+ */
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ tribe_id: string; post_id: string }> }
@@ -35,28 +37,17 @@ export async function GET(
       );
     }
 
-    // Check tribe membership
-    const isMember = await checkTribeMembership(
+    // Verify post exists, belongs to tribe, AND user is member (1 query instead of 2)
+    const postAccess = await verifyPostAccessAndMembership(
+      paramValidation.data.post_id,
       paramValidation.data.tribe_id,
       user.id
     );
-    if (!isMember) {
-      return NextResponse.json(
-        { error: "You must be a member of this tribe to view comments" },
-        { status: 403 }
-      );
-    }
 
-    // Verify post belongs to the tribe
-    const postData = await getPostById(paramValidation.data.post_id);
-    if (!postData) {
-      return NextResponse.json({ error: "Post not found" }, { status: 404 });
-    }
-
-    if (postData.tribeId !== paramValidation.data.tribe_id) {
+    if (!postAccess) {
       return NextResponse.json(
-        { error: "Post does not belong to this tribe" },
-        { status: 400 }
+        { error: "Post not found or you are not a member of this tribe" },
+        { status: 404 }
       );
     }
 
@@ -98,28 +89,17 @@ export async function POST(
       );
     }
 
-    // Check tribe membership
-    const isMember = await checkTribeMembership(
+    // Verify post exists, belongs to tribe, AND user is member (1 query instead of 2)
+    const postAccess = await verifyPostAccessAndMembership(
+      paramValidation.data.post_id,
       paramValidation.data.tribe_id,
       user.id
     );
-    if (!isMember) {
-      return NextResponse.json(
-        { error: "You must be a member of this tribe to comment" },
-        { status: 403 }
-      );
-    }
 
-    // Verify post belongs to the tribe
-    const postData = await getPostById(paramValidation.data.post_id);
-    if (!postData) {
-      return NextResponse.json({ error: "Post not found" }, { status: 404 });
-    }
-
-    if (postData.tribeId !== paramValidation.data.tribe_id) {
+    if (!postAccess) {
       return NextResponse.json(
-        { error: "Post does not belong to this tribe" },
-        { status: 400 }
+        { error: "Post not found or you are not a member of this tribe" },
+        { status: 404 }
       );
     }
 
@@ -133,7 +113,7 @@ export async function POST(
       );
     }
 
-    // Create comment
+    // Create comment (note: createComment internally calls getPostById again - could be further optimized)
     const newComment = await createComment(
       paramValidation.data.post_id,
       user.id,

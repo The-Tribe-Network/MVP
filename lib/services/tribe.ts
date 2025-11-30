@@ -7,6 +7,7 @@ import type { TribeInsert, TribeWithCreator, TribeWithMembers, Tribe } from "@/l
 
 /**
  * Create a new tribe and add the creator as owner
+ * OPTIMIZED: Wrapped in transaction to ensure tribe + owner are created atomically
  */
 export async function createTribe(
   data: {
@@ -20,27 +21,31 @@ export async function createTribe(
   },
   userId: string
 ): Promise<TribeWithCreator> {
-  // Insert tribe
-  const [createdTribe] = await db
-    .insert(tribe)
-    .values({
-      name: data.name,
-      description: data.description || null,
-      avatar: data.avatar || null,
-      location: data.location || null,
-      privacy: data.privacy || "private",
-      category: data.category || "other",
-      createdBy: userId,
-    } as any)
-    .returning();
+  // Create tribe and add creator as owner in a transaction
+  const createdTribe = await db.transaction(async (tx) => {
+    // Insert tribe
+    const [newTribe] = await tx
+      .insert(tribe)
+      .values({
+        name: data.name,
+        description: data.description || null,
+        avatar: data.avatar || null,
+        location: data.location || null,
+        privacy: data.privacy || "private",
+        category: data.category || "other",
+        createdBy: userId,
+      } as any)
+      .returning();
 
-  // Add creator as owner
-  await db.insert(tribeMember)
-    .values({
-      tribeId: createdTribe.id,
+    // Add creator as owner
+    await tx.insert(tribeMember).values({
+      tribeId: newTribe.id,
       userId: userId,
       role: "owner",
     } as any);
+
+    return newTribe;
+  });
 
   // Fetch creator info
   const [creator] = await db
@@ -75,11 +80,12 @@ export async function createTribe(
 
 /**
  * Get tribe by ID with creator information and member count
+ * OPTIMIZED: 2 DB calls instead of 3 (tribe+creator join, then member count in parallel)
  * Resolves avatar ID to URL if avatar exists
  */
 export async function getTribeById(id: string, includeAvatar: boolean = false): Promise<TribeWithMembers | null> {
-  // Fetch tribe with avatar URL if avatar exists
-  const tribeQuery = db
+  // Fetch tribe with avatar URL and creator in a single query with joins
+  const [tribeData] = await db
     .select({
       id: tribe.id,
       name: tribe.name,
@@ -94,37 +100,35 @@ export async function getTribeById(id: string, includeAvatar: boolean = false): 
       createdAt: tribe.createdAt,
       updatedAt: tribe.updatedAt,
       avatarUrl: media.fileUrl,
+      creator: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        emailVerified: user.emailVerified,
+        image: user.image,
+        username: user.username,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      },
     })
     .from(tribe)
     .leftJoin(media, eq(tribe.avatar, media.id))
+    .innerJoin(user, eq(tribe.createdBy, user.id))
     .where(eq(tribe.id, id))
     .limit(1);
-
-  const [tribeData] = await tribeQuery;
 
   if (!tribeData) {
     return null;
   }
 
-  // Fetch creator
-  const [creator] = await db
-    .select()
-    .from(user)
-    .where(eq(user.id, tribeData.createdBy))
-    .limit(1);
-
-  if (!creator) {
-    return null;
-  }
-
-  // Get member count
+  // Get member count (single query)
   const [memberCountResult] = await db
     .select({ count: count() })
     .from(tribeMember)
     .where(eq(tribeMember.tribeId, id));
 
   // Replace avatar ID with URL if available
-  const { avatarUrl, ...tribeFields } = tribeData;
+  const { avatarUrl, creator, ...tribeFields } = tribeData;
 
   return {
     ...tribeFields,

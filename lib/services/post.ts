@@ -5,40 +5,24 @@ import { user } from "@/lib/database/schemas/auth";
 import { media } from "@/lib/database/schemas/media";
 import { eq, and, desc, count, inArray } from "drizzle-orm";
 import type { Post, PostInsert, PostWithAuthor } from "@/lib/database/types";
-import { checkTribeMembership, getUserTribeRole } from "./permissions";
+import { getMemberWithPermissions } from "./permissions";
 
 /**
  * Check if user can post in a tribe
+ * OPTIMIZED: 1 DB call instead of 3
  * - Must be a member
  * - If permission override exists and is false, cannot post
  * - Otherwise, members can post by default
  */
 async function canUserPost(tribeId: string, userId: string): Promise<boolean> {
-  // Check membership
-  const isMember = await checkTribeMembership(tribeId, userId);
-  if (!isMember) {
+  // Get member and permissions in a single query
+  const memberData = await getMemberWithPermissions(tribeId, userId);
+  if (!memberData) {
     return false;
   }
-
-  // Check for permission override
-  const [member] = await db
-    .select({ id: tribeMember.id })
-    .from(tribeMember)
-    .where(and(eq(tribeMember.tribeId, tribeId), eq(tribeMember.userId, userId)))
-    .limit(1);
-
-  if (!member) {
-    return false;
-  }
-
-  const [permission] = await db
-    .select({ canPost: tribeMemberPermission.canPost })
-    .from(tribeMemberPermission)
-    .where(eq(tribeMemberPermission.tribeMemberId, member.id))
-    .limit(1);
 
   // If permission override exists and is false, cannot post
-  if (permission?.canPost === false) {
+  if (memberData.permissions?.canPost === false) {
     return false;
   }
 
@@ -48,34 +32,23 @@ async function canUserPost(tribeId: string, userId: string): Promise<boolean> {
 
 /**
  * Check if user can moderate posts (can edit/delete any post)
+ * OPTIMIZED: 1 DB call instead of 3
  */
 async function canUserModeratePosts(tribeId: string, userId: string): Promise<boolean> {
-  const role = await getUserTribeRole(tribeId, userId);
+  // Get member and permissions in a single query
+  const memberData = await getMemberWithPermissions(tribeId, userId);
+  if (!memberData) {
+    return false;
+  }
+
+  const role = memberData.member.role;
   if (role === "owner" || role === "admin" || role === "moderator") {
     return true;
   }
 
   // Check for permission override
-  const [member] = await db
-    .select({ id: tribeMember.id })
-    .from(tribeMember)
-    .where(and(eq(tribeMember.tribeId, tribeId), eq(tribeMember.userId, userId)))
-    .limit(1);
-
-  if (!member) {
-    return false;
-  }
-
-  const [permission] = await db
-    .select({
-      canModeratePosts: tribeMemberPermission.canModeratePosts,
-      canDeleteAnyPost: tribeMemberPermission.canDeleteAnyPost,
-    })
-    .from(tribeMemberPermission)
-    .where(eq(tribeMemberPermission.tribeMemberId, member.id))
-    .limit(1);
-
-  return permission?.canModeratePosts === true || permission?.canDeleteAnyPost === true;
+  return memberData.permissions?.canModeratePosts === true ||
+    memberData.permissions?.canDeleteAnyPost === true;
 }
 
 /**
@@ -85,7 +58,8 @@ export async function createPost(
   tribeId: string,
   userId: string,
   content: string,
-  mediaId?: string | null
+  mediaId?: string | null,
+  albumId?: string | null
 ): Promise<PostWithAuthor> {
   // Check permission
   const canPost = await canUserPost(tribeId, userId);
@@ -104,7 +78,12 @@ export async function createPost(
     .returning();
 
   // Link media to post if mediaId is provided
-  if (mediaId) {
+  if (mediaId && albumId) {
+    await db
+      .update(media)
+      .set({ postId: createdPost.id, albumId })
+      .where(eq(media.id, mediaId));
+  } else if (mediaId && !albumId) {
     await db
       .update(media)
       .set({ postId: createdPost.id })
@@ -301,6 +280,7 @@ export async function getPostById(postId: string): Promise<PostWithAuthor | null
 
 /**
  * Get a single post by ID with author info, like count, comment count, user's like status, and image
+ * OPTIMIZED: 2 DB calls instead of 5 (1 for post, 1 parallel for all metadata)
  */
 export async function getPostByIdWithMetadata(
   postId: string,
@@ -335,55 +315,52 @@ export async function getPostByIdWithMetadata(
     return null;
   }
 
-  // Get like count
-  const [likeCountResult] = await db
-    .select({
-      count: count(),
-    })
-    .from(postLike)
-    .where(eq(postLike.postId, postId));
-
-  const likeCount = Number(likeCountResult?.count || 0);
-
-  // Get comment count
-  const [commentCountResult] = await db
-    .select({
-      count: count(),
-    })
-    .from(comment)
-    .where(eq(comment.postId, postId));
-
-  const commentCount = Number(commentCountResult?.count || 0);
-
-  // Check if user has liked the post
-  let isLiked = false;
-  if (currentUserId) {
-    const [userLike] = await db
-      .select({ postId: postLike.postId })
-      .from(postLike)
-      .where(and(eq(postLike.postId, postId), eq(postLike.userId, currentUserId)))
-      .limit(1);
-    isLiked = !!userLike;
-  }
-
-  // Get media record for post (first image only)
-  const [postMedia] = await db
-    .select({
+  // Fetch all metadata in parallel
+  const metadataQueries = [
+    // Get like count
+    db.select({ count: count() }).from(postLike).where(eq(postLike.postId, postId)),
+    // Get comment count
+    db.select({ count: count() }).from(comment).where(eq(comment.postId, postId)),
+    // Get media record
+    db.select({
       id: media.id,
       fileUrl: media.fileUrl,
       width: media.width,
       height: media.height,
-    })
-    .from(media)
-    .where(and(eq(media.postId, postId), eq(media.fileType, 'image')))
-    .limit(1);
+    }).from(media).where(and(eq(media.postId, postId), eq(media.fileType, 'image'))).limit(1),
+    // Add user like check if currentUserId provided
+    ...(currentUserId
+      ? [
+        db
+          .select({ postId: postLike.postId })
+          .from(postLike)
+          .where(and(eq(postLike.postId, postId), eq(postLike.userId, currentUserId)))
+          .limit(1) as Promise<Array<{ postId: string }>>,
+      ]
+      : []),
+  ];
 
-  const image = postMedia
+  const results = await Promise.all(metadataQueries);
+  const likeCountResult = results[0] as Array<{ count: number }>;
+  const commentCountResult = results[1] as Array<{ count: number }>;
+  const postMedia = results[2] as Array<{
+    id: string;
+    fileUrl: string;
+    width: number | null;
+    height: number | null;
+  }>;
+  const userLike = results[3] as Array<{ postId: string }> | undefined;
+
+  const likeCount = Number(likeCountResult[0]?.count || 0);
+  const commentCount = Number(commentCountResult[0]?.count || 0);
+  const isLiked = currentUserId ? !!userLike?.[0] : false;
+
+  const image = postMedia?.[0]
     ? {
-      id: postMedia.id,
-      url: postMedia.fileUrl,
-      width: postMedia.width || undefined,
-      height: postMedia.height || undefined,
+      id: postMedia[0].id,
+      url: postMedia[0].fileUrl,
+      width: postMedia[0].width || undefined,
+      height: postMedia[0].height || undefined,
     }
     : null;
 
@@ -460,6 +437,44 @@ export async function deletePost(postId: string, userId: string): Promise<void> 
 
   // Delete post (cascade will handle likes and comments)
   await db.delete(post).where(eq(post.id, postId));
+}
+
+/**
+ * Verify post exists and user is tribe member in a single query
+ * OPTIMIZED: Replaces separate checkTribeMembership + getPostById calls
+ * @returns Post data with tribeId, or null if post not found or user not member
+ */
+export async function verifyPostAccessAndMembership(
+  postId: string,
+  tribeId: string,
+  userId: string
+): Promise<{ tribeId: string; authorId: string } | null> {
+  const [result] = await db
+    .select({
+      postTribeId: post.tribeId,
+      postAuthorId: post.authorId,
+      memberExists: tribeMember.id,
+    })
+    .from(post)
+    .leftJoin(
+      tribeMember,
+      and(
+        eq(tribeMember.tribeId, post.tribeId),
+        eq(tribeMember.userId, userId)
+      )
+    )
+    .where(eq(post.id, postId))
+    .limit(1);
+
+  // Check if post exists, belongs to tribe, and user is member
+  if (!result || result.postTribeId !== tribeId || !result.memberExists) {
+    return null;
+  }
+
+  return {
+    tribeId: result.postTribeId,
+    authorId: result.postAuthorId,
+  };
 }
 
 /**

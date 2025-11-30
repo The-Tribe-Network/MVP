@@ -45,8 +45,7 @@ export default function AppSidebar({ ...props }: React.ComponentProps<typeof Sid
   const userAvatar = image || DEFAULT_USER_IMAGE;
   const userEmail = email || "Not Applicable";
 
-  const isTribeDashboard =
-    pathname.startsWith("/tribe/") && pathname !== "/tribe/new";
+  const isTribeDashboard = pathname.startsWith("/tribe/");
 
   // Collapse the outer sidebar when the second sidebar is not visible
   useEffect(() => {
@@ -127,14 +126,14 @@ export default function AppSidebar({ ...props }: React.ComponentProps<typeof Sid
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger>
-                        <Link href="/tribe/new">
+                        <Link href="/new">
                           <SidebarMenuButton
                             size="lg"
                             asChild
                             className={
                               cn(
                                 "md:h-8 md:p-0",
-                                pathname === "/tribe/new" ?
+                                pathname === "/new" ?
                                   "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary hover:text-sidebar-primary-foreground" :
                                   "bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                               )

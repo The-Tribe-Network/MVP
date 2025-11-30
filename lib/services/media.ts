@@ -1,8 +1,11 @@
 import { db } from '@/lib/database/client';
-import { media } from '@/lib/database/schemas/media';
+import { media, mediaLike } from '@/lib/database/schemas/media';
+import { user } from '@/lib/database/schemas/auth';
+import { comment } from '@/lib/database/schemas/post';
 import { cloudinary } from '@/lib/clients/cloudinary';
-import { eq } from 'drizzle-orm';
+import { eq, and, desc, isNull, count, sql } from 'drizzle-orm';
 import type { Media, MediaInsert } from '@/lib/database/types';
+import { canUserUploadMedia, canUserDeleteMedia } from './permissions';
 
 export interface UploadAvatarResult {
   id: string;
@@ -145,6 +148,7 @@ export async function getMediaById(id: string): Promise<Media | null> {
 
 /**
  * Delete media from Cloudinary and database
+ * @deprecated Use deleteMediaWithPermissions instead
  */
 export async function deleteMedia(id: string): Promise<void> {
   const mediaRecord = await getMediaById(id);
@@ -182,5 +186,335 @@ export async function deleteMedia(id: string): Promise<void> {
 
   // Delete from database
   await db.delete(media).where(eq(media.id, id));
+}
+
+/**
+ * Delete media from Cloudinary and database with permission checks
+ */
+export async function deleteMediaWithPermissions(
+  mediaId: string,
+  tribeId: string,
+  userId: string
+): Promise<void> {
+  // Check permissions
+  const hasPermission = await canUserDeleteMedia(tribeId, userId, mediaId);
+  if (!hasPermission) {
+    throw new Error('User does not have permission to delete this media');
+  }
+
+  // Use existing deleteMedia function
+  await deleteMedia(mediaId);
+}
+
+export interface MediaFilters {
+  albumId?: string | null;
+  type?: "image" | "video" | "document";
+  limit?: number;
+  offset?: number;
+}
+
+export interface UpdateMediaData {
+  albumId?: string | null;
+  altText?: string;
+}
+
+/**
+ * Get media by tribe with filters
+ * OPTIMIZED: Replaced N+1 subquery with LEFT JOIN for comment counts
+ * @param tribeId - The tribe ID
+ * @param filters - Optional filters for media
+ * @returns Array of media records with like counts
+ */
+export async function getMediaByTribe(
+  tribeId: string,
+  filters: MediaFilters = {}
+) {
+  const { albumId, type, limit = 50, offset = 0 } = filters;
+
+  let query = db
+    .select({
+      id: media.id,
+      fileUrl: media.fileUrl,
+      fileType: media.fileType,
+      fileSize: media.fileSize,
+      mimeType: media.mimeType,
+      width: media.width,
+      height: media.height,
+      duration: media.duration,
+      thumbnailUrl: media.thumbnailUrl,
+      altText: media.altText,
+      createdAt: media.createdAt,
+      uploadedBy: media.uploadedBy,
+      postId: media.postId,
+      albumId: media.albumId,
+      tribeId: media.tribeId,
+      uploader: {
+        id: user.id,
+        name: user.name,
+        image: user.image,
+      },
+      likeCount: count(sql`DISTINCT ${mediaLike.id}`),
+      commentCount: count(sql`DISTINCT ${comment.id}`),
+    })
+    .from(media)
+    .leftJoin(user, eq(media.uploadedBy, user.id))
+    .leftJoin(mediaLike, eq(media.id, mediaLike.mediaId))
+    .leftJoin(comment, eq(media.postId, comment.postId))
+    .where(eq(media.tribeId, tribeId))
+    .$dynamic();
+
+  // Apply filters
+  if (albumId !== undefined) {
+    if (albumId === null) {
+      query = query.where(isNull(media.albumId));
+    } else {
+      query = query.where(eq(media.albumId, albumId));
+    }
+  }
+
+  if (type) {
+    query = query.where(eq(media.fileType, type));
+  }
+
+  const results = await query
+    .groupBy(media.id, user.id)
+    .orderBy(desc(media.createdAt))
+    .limit(limit)
+    .offset(offset);
+
+  return results;
+}
+
+/**
+ * Get loose media (not in any album or post) for a tribe
+ * @param tribeId - The tribe ID
+ * @returns Array of media records not assigned to albums or posts
+ */
+export async function getLooseMedia(tribeId: string) {
+  const results = await db
+    .select({
+      id: media.id,
+      fileUrl: media.fileUrl,
+      fileType: media.fileType,
+      fileSize: media.fileSize,
+      mimeType: media.mimeType,
+      width: media.width,
+      height: media.height,
+      duration: media.duration,
+      thumbnailUrl: media.thumbnailUrl,
+      altText: media.altText,
+      createdAt: media.createdAt,
+      uploadedBy: media.uploadedBy,
+      uploader: {
+        id: user.id,
+        name: user.name,
+        image: user.image,
+      },
+      likeCount: count(mediaLike.id),
+    })
+    .from(media)
+    .leftJoin(user, eq(media.uploadedBy, user.id))
+    .leftJoin(mediaLike, eq(media.id, mediaLike.mediaId))
+    .where(
+      and(
+        eq(media.tribeId, tribeId),
+        isNull(media.albumId),
+        isNull(media.postId)
+      )
+    )
+    .groupBy(media.id, user.id)
+    .orderBy(desc(media.createdAt));
+
+  return results;
+}
+
+/**
+ * Update media
+ * @param mediaId - The media ID
+ * @param userId - The user ID (must be uploader or admin)
+ * @param updateData - The data to update
+ * @returns The updated media record
+ */
+export async function updateMedia(
+  mediaId: string,
+  userId: string,
+  updateData: UpdateMediaData
+) {
+  // Get the media to check ownership
+  const mediaRecord = await db
+    .select()
+    .from(media)
+    .where(eq(media.id, mediaId))
+    .limit(1);
+
+  if (!mediaRecord[0]) {
+    throw new Error("Media not found");
+  }
+
+  // Check if user is the uploader
+  // TODO: Add check for admin/mod permissions
+  if (mediaRecord[0].uploadedBy !== userId) {
+    throw new Error("User does not have permission to update this media");
+  }
+
+  // Update the media
+  const updated = await db
+    .update(media)
+    .set(updateData)
+    .where(eq(media.id, mediaId))
+    .returning();
+
+  return updated[0];
+}
+
+/**
+ * Like a media
+ * @param mediaId - The media ID
+ * @param userId - The user ID
+ */
+export async function likeMedia(mediaId: string, userId: string) {
+  // Check if already liked
+  const existing = await db
+    .select()
+    .from(mediaLike)
+    .where(and(eq(mediaLike.mediaId, mediaId), eq(mediaLike.userId, userId)))
+    .limit(1);
+
+  if (existing[0]) {
+    throw new Error("Media already liked");
+  }
+
+  // Create like
+  const like = await db
+    .insert(mediaLike)
+    .values({
+      mediaId,
+      userId,
+    })
+    .returning();
+
+  return like[0];
+}
+
+/**
+ * Unlike a media
+ * @param mediaId - The media ID
+ * @param userId - The user ID
+ */
+export async function unlikeMedia(mediaId: string, userId: string) {
+  // Delete the like
+  await db
+    .delete(mediaLike)
+    .where(and(eq(mediaLike.mediaId, mediaId), eq(mediaLike.userId, userId)));
+}
+
+/**
+ * Check if user has liked a media
+ * @param mediaId - The media ID
+ * @param userId - The user ID
+ * @returns true if user has liked the media
+ */
+export async function hasUserLikedMedia(
+  mediaId: string,
+  userId: string
+): Promise<boolean> {
+  const result = await db
+    .select()
+    .from(mediaLike)
+    .where(and(eq(mediaLike.mediaId, mediaId), eq(mediaLike.userId, userId)))
+    .limit(1);
+
+  return result.length > 0;
+}
+
+/**
+ * Get total media count for a tribe
+ * @param tribeId - The tribe ID
+ * @returns The total number of media items
+ */
+export async function getTribeMediaCount(tribeId: string): Promise<number> {
+  const result = await db
+    .select({ count: count() })
+    .from(media)
+    .where(eq(media.tribeId, tribeId));
+
+  return result[0]?.count || 0;
+}
+
+/**
+ * Get total storage used by a tribe
+ * @param tribeId - The tribe ID
+ * @returns The total storage in bytes
+ */
+export async function getTribeStorageUsed(tribeId: string): Promise<number> {
+  const result = await db
+    .select({ total: sql<number>`SUM(${media.fileSize})` })
+    .from(media)
+    .where(eq(media.tribeId, tribeId));
+
+  return result[0]?.total || 0;
+}
+
+/**
+ * Upload media directly to tribe (not attached to post)
+ */
+export async function uploadTribeMedia(
+  fileBuffer: Buffer,
+  userId: string,
+  mimeType: string,
+  tribeId: string,
+  albumId: string | null = null
+): Promise<UploadAvatarResult> {
+  // Check permissions
+  const hasPermission = await canUserUploadMedia(tribeId, userId);
+  if (!hasPermission) {
+    throw new Error('User does not have permission to upload media');
+  }
+
+  // Upload to Cloudinary with transformations
+  const base64Data = fileBuffer.toString('base64');
+  const dataUri = `data:${mimeType};base64,${base64Data}`;
+
+  const uploadResult = await cloudinary.uploader.upload(dataUri, {
+    folder: 'tribes/media',
+    transformation: [
+      { width: 1200, height: 1200, crop: 'limit' },
+      { quality: 'auto:good' },
+      { fetch_format: 'auto' },
+    ],
+    resource_type: 'image',
+  });
+
+  // Create media record
+  const mediaData: Omit<MediaInsert, 'id' | 'createdAt'> = {
+    fileUrl: uploadResult.secure_url,
+    fileType: 'image',
+    fileSize: uploadResult.bytes,
+    mimeType,
+    width: uploadResult.width,
+    height: uploadResult.height,
+    uploadedBy: userId,
+    tribeId,
+    albumId,
+    postId: null,
+    duration: null,
+    thumbnailUrl: null,
+    altText: null,
+  };
+
+  const [createdMedia] = await db
+    .insert(media)
+    // @ts-ignore - id is auto-generated by defaultRandom()
+    .values(mediaData as any)
+    .returning();
+
+  return {
+    id: createdMedia.id,
+    url: createdMedia.fileUrl,
+    width: createdMedia.width || uploadResult.width,
+    height: createdMedia.height || uploadResult.height,
+    fileSize: createdMedia.fileSize || uploadResult.bytes,
+    mimeType: createdMedia.mimeType || mimeType,
+  };
 }
 

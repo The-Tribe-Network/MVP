@@ -45,6 +45,26 @@ export const queryKeys = {
     all: ["comments"] as const,
     post: (postId: string) => ["comments", "post", postId] as const,
   },
+
+  // Album queries
+  albums: {
+    all: ["albums"] as const,
+    tribe: (tribeId: string) => ["albums", "tribe", tribeId] as const,
+  },
+
+  // Media queries
+  media: {
+    all: ["media"] as const,
+    tribes: () => ["media", "tribes"] as const,
+    tribe: (tribeId: string, filters?: Record<string, unknown>) =>
+      ["media", "tribes", tribeId, filters] as const,
+  },
+
+  // Preferences queries
+  preferences: {
+    all: ["preferences"] as const,
+    tribeMember: (tribeId: string) => ["preferences", "tribe-member", tribeId] as const,
+  },
 } as const;
 
 

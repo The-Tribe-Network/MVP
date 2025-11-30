@@ -2,7 +2,7 @@ import { db } from "@/lib/database/client";
 import { tribeInvitation, tribeMember, tribe } from "@/lib/database/schemas/tribe";
 import { user } from "@/lib/database/schemas/auth";
 import { media } from "@/lib/database/schemas/media";
-import { eq, and, or, gt, isNull, desc } from "drizzle-orm";
+import { eq, and, or, gt, isNull, desc, inArray } from "drizzle-orm";
 import type { TribeInvitation } from "@/lib/database/types";
 import { sendTribeInvitationEmail } from "@/lib/email/templates/tribe-invitation/send-tribe-invitation-email";
 import { sendTribeInvitationRejectedEmail } from "@/lib/email/templates/tribe-invitation-rejected/send-tribe-invitation-rejected-email";
@@ -10,6 +10,8 @@ import { sendTribeInvitationAcceptedEmail } from "@/lib/email/templates/tribe-in
 
 /**
  * Create invitations for a tribe
+ * OPTIMIZED: Batch queries instead of N+1 loops
+ * Reduces from 4N database calls to ~5 database calls total
  */
 export async function createTribeInvitations(
   tribeId: string,
@@ -18,82 +20,87 @@ export async function createTribeInvitations(
   invitedBy: string,
   inviterName: string
 ): Promise<TribeInvitation[]> {
-  const createdInvitations: TribeInvitation[] = [];
+  if (invitations.length === 0) return [];
 
-  for (const invitation of invitations) {
-    // Check if user exists by email
-    const [invitedUser] = await db
-      .select()
-      .from(user)
-      .where(eq(user.email, invitation.email))
-      .limit(1);
+  const emails = invitations.map(inv => inv.email);
 
-    // If user exists, check if they're already a member
-    if (invitedUser) {
-      const [existingMember] = await db
-        .select()
-        .from(tribeMember)
-        .where(
-          and(
-            eq(tribeMember.tribeId, tribeId),
-            eq(tribeMember.userId, invitedUser.id)
-          )
-        )
-        .limit(1);
+  // Batch fetch all data in parallel (3 queries instead of 3N queries)
+  const [existingUsers, existingMembers, existingInvitations] = await Promise.all([
+    // Get all users by email
+    db.select().from(user).where(inArray(user.email, emails)),
 
-      if (existingMember) {
-        continue; // Skip if already a member
-      }
-    }
-
-    // Check if there's already a pending invitation
-    const [existingInvitation] = await db
-      .select()
-      .from(tribeInvitation)
-      .where(
-        and(
-          eq(tribeInvitation.tribeId, tribeId),
-          eq(tribeInvitation.email, invitation.email),
-          eq(tribeInvitation.status, "pending")
-        )
+    // Get all existing members for this tribe whose emails match
+    db.select({
+      userId: tribeMember.userId,
+      userEmail: user.email,
+    })
+    .from(tribeMember)
+    .innerJoin(user, eq(tribeMember.userId, user.id))
+    .where(
+      and(
+        eq(tribeMember.tribeId, tribeId),
+        inArray(user.email, emails)
       )
-      .limit(1);
+    ),
 
-    if (existingInvitation) {
-      continue; // Skip if already invited
-    }
+    // Get all pending invitations for this tribe
+    db.select()
+    .from(tribeInvitation)
+    .where(
+      and(
+        eq(tribeInvitation.tribeId, tribeId),
+        inArray(tribeInvitation.email, emails),
+        eq(tribeInvitation.status, "pending")
+      )
+    ),
+  ]);
 
-    // Create invitation with 7 day expiration
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7);
+  // Create lookup sets for fast checking
+  const existingMemberEmails = new Set(existingMembers.map(m => m.userEmail));
+  const existingInvitationEmails = new Set(existingInvitations.map(inv => inv.email));
 
-    const [createdInvitation] = await db
-      .insert(tribeInvitation)
-      .values({
+  // Filter invitations to only valid ones
+  const validInvitations = invitations.filter(invitation => {
+    // Skip if already a member
+    if (existingMemberEmails.has(invitation.email)) return false;
+
+    // Skip if already has pending invitation
+    if (existingInvitationEmails.has(invitation.email)) return false;
+
+    return true;
+  });
+
+  if (validInvitations.length === 0) return [];
+
+  // Batch insert all valid invitations (1 query instead of N queries)
+  const expiresAt = new Date();
+  expiresAt.setDate(expiresAt.getDate() + 7);
+
+  const createdInvitations = await db
+    .insert(tribeInvitation)
+    .values(
+      validInvitations.map(invitation => ({
         tribeId,
         email: invitation.email,
         role: invitation.role,
         invitedBy,
-        status: "pending",
+        status: "pending" as const,
         expiresAt,
-      } as any)
-      .returning();
+      }))
+    )
+    .returning();
 
-    createdInvitations.push(createdInvitation);
-
-    // Send invitation email (non-blocking - don't fail if email service is unavailable)
-    // The invitation is already created in the database, so email failure won't affect it
+  // Send invitation emails (non-blocking)
+  for (const createdInvitation of createdInvitations) {
     try {
       await sendTribeInvitationEmail({
-        to: invitation.email,
+        to: createdInvitation.email,
         tribeName,
         inviterName,
         invitationId: createdInvitation.id,
       });
     } catch (error) {
-      // Log error but continue - invitation is already saved in database
-      console.error(`Failed to send invitation email to ${invitation.email}:`, error);
-      // Invitation record exists, user can still accept it via other means
+      console.error(`Failed to send invitation email to ${createdInvitation.email}:`, error);
     }
   }
 
@@ -115,6 +122,7 @@ export async function getInvitationById(id: string): Promise<TribeInvitation | n
 
 /**
  * Accept an invitation
+ * OPTIMIZED: Reduces from 7 DB calls to 4 DB calls (with 2 in parallel)
  */
 export async function acceptInvitation(
   invitationId: string,
@@ -134,19 +142,24 @@ export async function acceptInvitation(
     return { success: false, error: "Invitation has expired" };
   }
 
-  // Check if user is already a member
-  const [existingMember] = await db
-    .select()
-    .from(tribeMember)
-    .where(
-      and(
-        eq(tribeMember.tribeId, invitation.tribeId),
-        eq(tribeMember.userId, userId)
+  // Check if user is already a member and get user info in parallel
+  const [existingMember, acceptedUser] = await Promise.all([
+    db.select()
+      .from(tribeMember)
+      .where(
+        and(
+          eq(tribeMember.tribeId, invitation.tribeId),
+          eq(tribeMember.userId, userId)
+        )
       )
-    )
-    .limit(1);
+      .limit(1),
+    db.select()
+      .from(user)
+      .where(eq(user.id, userId))
+      .limit(1),
+  ]);
 
-  if (existingMember) {
+  if (existingMember[0]) {
     // Update invitation status to accepted
     await db
       .update(tribeInvitation)
@@ -156,48 +169,34 @@ export async function acceptInvitation(
     return { success: false, error: "User is already a member" };
   }
 
-  // Get user who accepted the invitation
-  const [acceptedUser] = await db
-    .select()
-    .from(user)
-    .where(eq(user.id, userId))
-    .limit(1);
-
-  // Add user as member
-  await db.insert(tribeMember)
-    .values({
+  // Add user as member and update invitation in a transaction
+  // OPTIMIZED: Wrapped in transaction to ensure data consistency
+  await db.transaction(async (tx) => {
+    await tx.insert(tribeMember).values({
       tribeId: invitation.tribeId,
       userId: userId,
       role: invitation.role,
     } as any);
 
-  // Update invitation status
-  await db
-    .update(tribeInvitation)
-    .set({ status: "accepted" })
-    .where(eq(tribeInvitation.id, invitationId));
+    await tx.update(tribeInvitation)
+      .set({ status: "accepted" })
+      .where(eq(tribeInvitation.id, invitationId));
+  });
 
-  // Get tribe and inviter information for email notification
-  const [tribeData] = await db
-    .select()
-    .from(tribe)
-    .where(eq(tribe.id, invitation.tribeId))
-    .limit(1);
-
-  const [inviter] = await db
-    .select()
-    .from(user)
-    .where(eq(user.id, invitation.invitedBy))
-    .limit(1);
+  // Get tribe and inviter information for email notification in parallel
+  const [tribeData, inviter] = await Promise.all([
+    db.select().from(tribe).where(eq(tribe.id, invitation.tribeId)).limit(1),
+    db.select().from(user).where(eq(user.id, invitation.invitedBy)).limit(1),
+  ]);
 
   // Send acceptance email to inviter (non-blocking)
-  if (tribeData && inviter && acceptedUser) {
+  if (tribeData[0] && inviter[0] && acceptedUser[0]) {
     try {
       await sendTribeInvitationAcceptedEmail({
-        to: inviter.email,
-        tribeName: tribeData.name,
-        inviterName: inviter.name || inviter.email || "Someone",
-        acceptedUserName: acceptedUser.name || acceptedUser.email || "Someone",
+        to: inviter[0].email,
+        tribeName: tribeData[0].name,
+        inviterName: inviter[0].name || inviter[0].email || "Someone",
+        acceptedUserName: acceptedUser[0].name || acceptedUser[0].email || "Someone",
         tribeId: invitation.tribeId,
       });
     } catch (error) {
@@ -256,6 +255,7 @@ export async function getUserPendingInvitations(userEmail: string) {
 
 /**
  * Reject an invitation
+ * OPTIMIZED: Reduces DB calls by parallelizing queries
  */
 export async function rejectInvitation(
   invitationId: string,
@@ -282,32 +282,24 @@ export async function rejectInvitation(
     return { success: false, error: "You are not authorized to reject this invitation" };
   }
 
-  // Update invitation status to rejected
-  await db
-    .update(tribeInvitation)
-    .set({ status: "rejected" })
-    .where(eq(tribeInvitation.id, invitationId));
-
-  // Get tribe and inviter information for email notification
-  const [tribeData] = await db
-    .select()
-    .from(tribe)
-    .where(eq(tribe.id, invitation.tribeId))
-    .limit(1);
-
-  const [inviter] = await db
-    .select()
-    .from(user)
-    .where(eq(user.id, invitation.invitedBy))
-    .limit(1);
+  // Update invitation status and get tribe/inviter info in parallel
+  const [[, tribeData, inviter]] = await Promise.all([
+    Promise.all([
+      db.update(tribeInvitation)
+        .set({ status: "rejected" })
+        .where(eq(tribeInvitation.id, invitationId)),
+      db.select().from(tribe).where(eq(tribe.id, invitation.tribeId)).limit(1),
+      db.select().from(user).where(eq(user.id, invitation.invitedBy)).limit(1),
+    ]),
+  ]);
 
   // Send rejection email to inviter (non-blocking)
-  if (tribeData && inviter) {
+  if (tribeData[0] && inviter[0]) {
     try {
       await sendTribeInvitationRejectedEmail({
-        to: inviter.email,
-        tribeName: tribeData.name,
-        inviterName: inviter.name || inviter.email || "Someone",
+        to: inviter[0].email,
+        tribeName: tribeData[0].name,
+        inviterName: inviter[0].name || inviter[0].email || "Someone",
         rejectedUserName: currentUser.name || currentUser.email || "Someone",
         tribeId: invitation.tribeId,
       });

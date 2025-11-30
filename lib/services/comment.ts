@@ -4,39 +4,28 @@ import { tribeMember, tribeMemberPermission } from "@/lib/database/schemas/tribe
 import { user } from "@/lib/database/schemas/auth";
 import { eq, and, asc, count, inArray } from "drizzle-orm";
 import type { Comment, CommentInsert, CommentWithAuthor } from "@/lib/database/types";
-import { getUserTribeRole } from "./permissions";
+import { getMemberWithPermissions } from "./permissions";
 import { getPostById } from "./post";
 
 /**
  * Check if user can moderate comments (can edit/delete any comment)
+ * OPTIMIZED: 1 DB call instead of 3
  */
 async function canUserModerateComments(tribeId: string, userId: string): Promise<boolean> {
-  const role = await getUserTribeRole(tribeId, userId);
+  // Get member and permissions in a single query
+  const memberData = await getMemberWithPermissions(tribeId, userId);
+  if (!memberData) {
+    return false;
+  }
+
+  const role = memberData.member.role;
   if (role === "owner" || role === "admin" || role === "moderator") {
     return true;
   }
 
   // Check for permission override
-  const [member] = await db
-    .select({ id: tribeMember.id })
-    .from(tribeMember)
-    .where(and(eq(tribeMember.tribeId, tribeId), eq(tribeMember.userId, userId)))
-    .limit(1);
-
-  if (!member) {
-    return false;
-  }
-
-  const [permission] = await db
-    .select({
-      canModeratePosts: tribeMemberPermission.canModeratePosts,
-      canDeleteAnyPost: tribeMemberPermission.canDeleteAnyPost,
-    })
-    .from(tribeMemberPermission)
-    .where(eq(tribeMemberPermission.tribeMemberId, member.id))
-    .limit(1);
-
-  return permission?.canModeratePosts === true || permission?.canDeleteAnyPost === true;
+  return memberData.permissions?.canModeratePosts === true ||
+         memberData.permissions?.canDeleteAnyPost === true;
 }
 
 /**
@@ -206,27 +195,50 @@ export async function getCommentById(commentId: string): Promise<CommentWithAuth
 
 /**
  * Update a comment
+ * OPTIMIZED: Combines queries to reduce from 7 DB calls to 3 DB calls
  */
 export async function updateComment(
   commentId: string,
   userId: string,
   content: string
 ): Promise<CommentWithAuthor> {
-  // Get comment to check ownership
-  const existingComment = await getCommentById(commentId);
+  // Get comment with author and post info in single query with join
+  const [existingComment] = await db
+    .select({
+      id: comment.id,
+      postId: comment.postId,
+      authorId: comment.authorId,
+      content: comment.content,
+      parentCommentId: comment.parentCommentId,
+      createdAt: comment.createdAt,
+      updatedAt: comment.updatedAt,
+      author: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        emailVerified: user.emailVerified,
+        image: user.image,
+        username: user.username,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      },
+      post: {
+        tribeId: post.tribeId,
+      },
+    })
+    .from(comment)
+    .innerJoin(user, eq(comment.authorId, user.id))
+    .innerJoin(post, eq(comment.postId, post.id))
+    .where(eq(comment.id, commentId))
+    .limit(1);
+
   if (!existingComment) {
     throw new Error("Comment not found");
   }
 
-  // Get post to check tribe
-  const postData = await getPostById(existingComment.postId);
-  if (!postData) {
-    throw new Error("Post not found");
-  }
-
   // Check if user is author or moderator
   const isAuthor = existingComment.authorId === userId;
-  const canModerate = await canUserModerateComments(postData.tribeId, userId);
+  const canModerate = isAuthor ? false : await canUserModerateComments(existingComment.post.tribeId, userId);
 
   if (!isAuthor && !canModerate) {
     throw new Error("You do not have permission to edit this comment");
@@ -250,23 +262,31 @@ export async function updateComment(
 
 /**
  * Delete a comment
+ * OPTIMIZED: Combines queries to reduce from 7 DB calls to 3 DB calls
  */
 export async function deleteComment(commentId: string, userId: string): Promise<void> {
-  // Get comment to check ownership
-  const existingComment = await getCommentById(commentId);
+  // Get comment with post info in single query with join
+  const [existingComment] = await db
+    .select({
+      id: comment.id,
+      postId: comment.postId,
+      authorId: comment.authorId,
+      post: {
+        tribeId: post.tribeId,
+      },
+    })
+    .from(comment)
+    .innerJoin(post, eq(comment.postId, post.id))
+    .where(eq(comment.id, commentId))
+    .limit(1);
+
   if (!existingComment) {
     throw new Error("Comment not found");
   }
 
-  // Get post to check tribe
-  const postData = await getPostById(existingComment.postId);
-  if (!postData) {
-    throw new Error("Post not found");
-  }
-
   // Check if user is author or moderator
   const isAuthor = existingComment.authorId === userId;
-  const canModerate = await canUserModerateComments(postData.tribeId, userId);
+  const canModerate = isAuthor ? false : await canUserModerateComments(existingComment.post.tribeId, userId);
 
   if (!isAuthor && !canModerate) {
     throw new Error("You do not have permission to delete this comment");

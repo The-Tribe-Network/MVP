@@ -96,6 +96,7 @@ export async function createLikeActivity(
 
 /**
  * Check if milestone reached and create activity
+ * OPTIMIZED: Uses SQL WHERE clause instead of fetching and searching in JavaScript
  * Only creates activity if it's a new milestone (not duplicate)
  */
 export async function checkAndCreateLikeMilestone(
@@ -110,24 +111,21 @@ export async function checkAndCreateLikeMilestone(
     return null;
   }
 
-  // Check if activity already exists for this milestone
+  // Check if activity already exists for this specific milestone using SQL
   // This prevents duplicate activities if multiple likes happen simultaneously
-  const existingActivities = await db
-    .select()
+  const action = likeCount === 1 ? "liked a post" : `reached ${likeCount} likes`;
+
+  const [existingActivity] = await db
+    .select({ id: activity.id })
     .from(activity)
     .where(
       and(
         eq(activity.postId, postId),
-        eq(activity.type, "like")
+        eq(activity.type, "like"),
+        eq(activity.action, action)
       )
     )
-    .limit(10);
-  
-  // Check if any existing activity has the same milestone action
-  const existingActivity = existingActivities.find(a => 
-    a.action.includes(`${likeCount} likes`) || 
-    (likeCount === 1 && a.action.includes("liked a post"))
-  );
+    .limit(1);
 
   if (existingActivity) {
     // Activity already exists for this milestone
@@ -139,13 +137,16 @@ export async function checkAndCreateLikeMilestone(
 
 /**
  * Get activities for a tribe
+ * OPTIMIZED: Reduced user fields from 8 to 4 (50% reduction)
+ * OPTIMIZED: Reduced tribe fields from 11 to 3 (73% reduction)
+ * Security: Removed email field exposure
  */
 export async function getTribeActivities(
   tribeId: string,
   limit: number = 20,
   offset: number = 0
 ): Promise<ActivityWithUser[]> {
-  // Fetch activities with user info
+  // Fetch activities with user info - only essential fields
   const activities = await db
     .select({
       id: activity.id,
@@ -162,26 +163,13 @@ export async function getTribeActivities(
       user: {
         id: user.id,
         name: user.name,
-        email: user.email,
-        emailVerified: user.emailVerified,
         image: user.image,
         username: user.username,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
       },
       tribe: {
         id: tribe.id,
         name: tribe.name,
-        description: tribe.description,
         avatar: tribe.avatar,
-        location: tribe.location,
-        privacy: tribe.privacy,
-        category: tribe.category,
-        isFeatured: tribe.isFeatured,
-        isTrending: tribe.isTrending,
-        createdBy: tribe.createdBy,
-        createdAt: tribe.createdAt,
-        updatedAt: tribe.updatedAt,
       },
     })
     .from(activity)
@@ -212,6 +200,9 @@ export async function getTribeActivities(
 
 /**
  * Get activities from all tribes a user is a member of
+ * OPTIMIZED: Reduced user fields from 8 to 4 (50% reduction)
+ * OPTIMIZED: Reduced tribe fields from 11 to 3 (73% reduction)
+ * Security: Removed email field exposure
  */
 export async function getUserTribesActivities(
   tribeIds: string[],
@@ -222,7 +213,7 @@ export async function getUserTribesActivities(
     return [];
   }
 
-  // Fetch activities from all user's tribes
+  // Fetch activities from all user's tribes - only essential fields
   const activities = await db
     .select({
       id: activity.id,
@@ -239,26 +230,13 @@ export async function getUserTribesActivities(
       user: {
         id: user.id,
         name: user.name,
-        email: user.email,
-        emailVerified: user.emailVerified,
         image: user.image,
         username: user.username,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
       },
       tribe: {
         id: tribe.id,
         name: tribe.name,
-        description: tribe.description,
         avatar: tribe.avatar,
-        location: tribe.location,
-        privacy: tribe.privacy,
-        category: tribe.category,
-        isFeatured: tribe.isFeatured,
-        isTrending: tribe.isTrending,
-        createdBy: tribe.createdBy,
-        createdAt: tribe.createdAt,
-        updatedAt: tribe.updatedAt,
       },
     })
     .from(activity)
@@ -288,6 +266,9 @@ export async function getUserTribesActivities(
 
 /**
  * Get activities for a user (optional, for future use)
+ * OPTIMIZED: Reduced user fields from 8 to 4 (50% reduction)
+ * OPTIMIZED: Reduced tribe fields from 11 to 3 (73% reduction)
+ * Security: Removed email field exposure
  */
 export async function getUserActivities(
   userId: string,
@@ -310,26 +291,13 @@ export async function getUserActivities(
       user: {
         id: user.id,
         name: user.name,
-        email: user.email,
-        emailVerified: user.emailVerified,
         image: user.image,
         username: user.username,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
       },
       tribe: {
         id: tribe.id,
         name: tribe.name,
-        description: tribe.description,
         avatar: tribe.avatar,
-        location: tribe.location,
-        privacy: tribe.privacy,
-        category: tribe.category,
-        isFeatured: tribe.isFeatured,
-        isTrending: tribe.isTrending,
-        createdBy: tribe.createdBy,
-        createdAt: tribe.createdAt,
-        updatedAt: tribe.updatedAt,
       },
     })
     .from(activity)
