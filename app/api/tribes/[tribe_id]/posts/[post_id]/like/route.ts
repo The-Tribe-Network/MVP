@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
-import { togglePostLike, getPostById } from "@/lib/services/post";
-import { checkTribeMembership } from "@/lib/services/permissions";
+import { togglePostLike, verifyPostAccessAndMembership } from "@/lib/services/post";
 import { tribePostIdParamSchema, validateApiRequest } from "@/lib/validations/post";
 
+/**
+ * OPTIMIZED: Reduced from 3 DB calls to 2 DB calls
+ * - Combined checkTribeMembership + getPostById into single verifyPostAccessAndMembership query
+ * - togglePostLike still needs to fetch post for activity creation (could be further optimized)
+ */
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ tribe_id: string; post_id: string }> }
+  ctx: RouteContext<'/api/tribes/[tribe_id]/posts/[post_id]/like'>
 ) {
   try {
     // Check authentication
@@ -15,7 +19,7 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { tribe_id, post_id } = await params;
+    const { tribe_id, post_id } = await ctx.params;
 
     // Validate parameters
     const paramValidation = validateApiRequest(tribePostIdParamSchema, {
@@ -29,28 +33,17 @@ export async function POST(
       );
     }
 
-    // Check tribe membership
-    const isMember = await checkTribeMembership(
+    // Verify post exists, belongs to tribe, AND user is member (1 query instead of 2)
+    const postAccess = await verifyPostAccessAndMembership(
+      paramValidation.data.post_id,
       paramValidation.data.tribe_id,
       user.id
     );
-    if (!isMember) {
-      return NextResponse.json(
-        { error: "You must be a member of this tribe to like posts" },
-        { status: 403 }
-      );
-    }
 
-    // Verify post belongs to the tribe
-    const postData = await getPostById(paramValidation.data.post_id);
-    if (!postData) {
-      return NextResponse.json({ error: "Post not found" }, { status: 404 });
-    }
-
-    if (postData.tribeId !== paramValidation.data.tribe_id) {
+    if (!postAccess) {
       return NextResponse.json(
-        { error: "Post does not belong to this tribe" },
-        { status: 400 }
+        { error: "Post not found or you are not a member of this tribe" },
+        { status: 404 }
       );
     }
 

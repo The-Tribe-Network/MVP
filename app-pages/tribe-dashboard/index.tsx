@@ -2,7 +2,7 @@
 
 import { HydrationBoundary, type DehydratedState } from "@tanstack/react-query";
 import TribeInfoWidget from "@/app-pages/tribe-dashboard/info";
-import MediaWidget, { mockMediaWidgetData } from "@/app-pages/tribe-dashboard/media";
+import MediaWidget from "@/app-pages/tribe-dashboard/media";
 import EventsWidget, { eventsWidgetMockData } from "@/app-pages/tribe-dashboard/events";
 import TrendingWidget, { trendingWidgetMockData } from "@/app-pages/tribe-dashboard/trending";
 import TimelineWidget from "@/app-pages/tribe-dashboard/timeline";
@@ -50,7 +50,7 @@ export function TribeDashboardContent({
                   tribeLocation={tribeInfo.location}
                 />
               ) : null}
-              <MediaWidget media={mockMediaWidgetData} tribeId={tribeData?.id || ''} />
+              <MediaWidget tribeId={tribeId} />
             </div>
           </div>
 

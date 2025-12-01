@@ -5,11 +5,26 @@ import { Button } from '@/components/ui/button'
 import { TrendingUp, ImageIcon, Image } from 'lucide-react'
 import { TrendingAlbums } from './trending-albums'
 import { TrendingPhotos } from './trending-photos'
-import { Album, Photo } from './types'
+
+interface AlbumDisplay {
+  id: string
+  name: string
+  cover: string
+  photoCount: number
+  date: string
+}
+
+interface PhotoDisplay {
+  id: number | string
+  url: string
+  likes: number
+  comments: number
+  date: string
+}
 
 interface TrendingSectionProps {
-  albums: Album[]
-  photos: Photo[]
+  albums: AlbumDisplay[]
+  photos: PhotoDisplay[]
 }
 
 export function TrendingSection({ albums, photos }: TrendingSectionProps) {

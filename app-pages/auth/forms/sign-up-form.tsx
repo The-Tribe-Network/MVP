@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
@@ -14,6 +14,7 @@ import { FormField } from "./form-field"
 import { OAuthSection } from "./oauth-section"
 import { AUTH_CONSTANTS } from "@/lib/constants/auth"
 import { Muted } from "@/components/ui/typography"
+import { PasswordRequirementsIndicator } from "./password-requirements-indicator"
 
 export function SignUpForm() {
   const signUpMutation = useSignUpMutation()
@@ -28,7 +29,7 @@ export function SignUpForm() {
     agreeToTerms: false,
   })
 
-  const { errors, validate, clearErrors } = useFormValidation({
+  const { errors, validate, clearErrors, clearFieldError } = useFormValidation({
     schema: signUpSchema,
     onValidationSuccess: (data) => {
       signUpMutation.mutate({
@@ -39,6 +40,18 @@ export function SignUpForm() {
       })
     },
   })
+
+  // Clear confirmPassword error in real-time when passwords match
+  useEffect(() => {
+    if (
+      formData.password &&
+      formData.confirmPassword &&
+      formData.password === formData.confirmPassword &&
+      errors.confirmPassword
+    ) {
+      clearFieldError("confirmPassword")
+    }
+  }, [formData.password, formData.confirmPassword, errors.confirmPassword, clearFieldError])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -85,20 +98,25 @@ export function SignUpForm() {
           required
         />
 
-        <FormField
-          id="password"
-          label="Password"
-          type="password"
-          placeholder="Create a password"
-          value={formData.password}
-          onChange={(e) => setFormData((prev) => ({ ...prev, password: e.target.value }))}
-          error={errors.password}
-          required
-          minLength={8}
-        />
-        <Muted className="text-xs">
-          {AUTH_CONSTANTS.PASSWORD_REQUIREMENTS}
-        </Muted>
+        <div className="space-y-2">
+          <FormField
+            id="password"
+            label="Password"
+            type="password"
+            placeholder="Create a password"
+            value={formData.password}
+            onChange={(e) => setFormData((prev) => ({ ...prev, password: e.target.value }))}
+            error={errors.password}
+            required
+            minLength={8}
+          />
+          <PasswordRequirementsIndicator password={formData.password} />
+          {formData.password.length === 0 && (
+            <Muted className="text-xs">
+              {AUTH_CONSTANTS.PASSWORD_REQUIREMENTS}
+            </Muted>
+          )}
+        </div>
 
         <FormField
           id="confirmPassword"

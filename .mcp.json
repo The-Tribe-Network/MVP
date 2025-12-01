@@ -1,0 +1,26 @@
+{
+  "mcpServers": {
+    "postgres": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@anthropic/postgres-mcp-server"
+      ],
+      "env": {}
+    },
+    "github": {
+      "type": "http",
+      "url": "https://mcp.github.com/mcp"
+    },
+    "filesystem": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@anthropic/filesystem-mcp-server"
+      ],
+      "env": {}
+    }
+  }
+}

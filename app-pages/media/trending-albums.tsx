@@ -1,10 +1,17 @@
 'use client'
 
 import { AlbumCard } from './album-card'
-import { Album } from './types'
+
+interface AlbumDisplay {
+  id: string
+  name: string
+  cover: string
+  photoCount: number
+  date: string
+}
 
 interface TrendingAlbumsProps {
-  albums: Album[]
+  albums: AlbumDisplay[]
 }
 
 export function TrendingAlbums({ albums }: TrendingAlbumsProps) {

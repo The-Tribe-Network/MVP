@@ -27,6 +27,7 @@ import {
   TooltipTrigger,
   TooltipProvider,
 } from "@/components/ui/tooltip";
+import { Skeleton } from "@/components/ui/skeleton";
 import TribeList from "./tribe-list";
 import { useUserTribes } from "@/lib/hooks/use-tribes";
 import { cn } from "@/lib/utils";
@@ -45,8 +46,7 @@ export default function AppSidebar({ ...props }: React.ComponentProps<typeof Sid
   const userAvatar = image || DEFAULT_USER_IMAGE;
   const userEmail = email || "Not Applicable";
 
-  const isTribeDashboard =
-    pathname.startsWith("/tribe/") && pathname !== "/tribe/new";
+  const isTribeDashboard = pathname.startsWith("/tribe/");
 
   // Collapse the outer sidebar when the second sidebar is not visible
   useEffect(() => {
@@ -57,6 +57,21 @@ export default function AppSidebar({ ...props }: React.ComponentProps<typeof Sid
 
   // Fetch user's tribes
   const { data: userTribes = [], isLoading: isLoadingTribes } = useUserTribes();
+
+  // Skeleton component for tribe list loading state
+  function TribeListSkeleton() {
+    return (
+      <>
+        {Array.from({ length: 3 }).map((_, index) => (
+          <SidebarMenuItem key={`skeleton-${index}`}>
+            <SidebarMenuButton size="lg" className="md:h-8 md:p-0" disabled>
+              <Skeleton className="size-8 rounded-md" />
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        ))}
+      </>
+    );
+  }
 
   return (
     <Sidebar
@@ -89,7 +104,11 @@ export default function AppSidebar({ ...props }: React.ComponentProps<typeof Sid
           <SidebarGroup>
             <SidebarGroupContent>
               <SidebarMenu className="gap-2">
-                <TribeList data={userTribes} pathname={pathname} />
+                {isLoadingTribes ? (
+                  <TribeListSkeleton />
+                ) : (
+                  <TribeList data={userTribes} pathname={pathname} />
+                )}
 
                 {/* Discover Button */}
                 <SidebarMenuItem>
@@ -127,14 +146,14 @@ export default function AppSidebar({ ...props }: React.ComponentProps<typeof Sid
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger>
-                        <Link href="/tribe/new">
+                        <Link href="/new">
                           <SidebarMenuButton
                             size="lg"
                             asChild
                             className={
                               cn(
                                 "md:h-8 md:p-0",
-                                pathname === "/tribe/new" ?
+                                pathname === "/new" ?
                                   "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary hover:text-sidebar-primary-foreground" :
                                   "bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                               )

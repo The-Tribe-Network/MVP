@@ -11,9 +11,7 @@ import {
 
 export async function PATCH(
   request: NextRequest,
-  {
-    params,
-  }: { params: Promise<{ tribe_id: string; post_id: string; comment_id: string }> }
+  ctx: RouteContext<'/api/tribes/[tribe_id]/posts/[post_id]/comments/[comment_id]'>
 ) {
   try {
     // Check authentication
@@ -22,7 +20,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { tribe_id, post_id, comment_id } = await params;
+    const { tribe_id, post_id, comment_id } = await ctx.params;
 
     // Validate parameters
     const paramValidation = validateApiRequest(tribePostCommentIdParamSchema, {
@@ -111,9 +109,7 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  {
-    params,
-  }: { params: Promise<{ tribe_id: string; post_id: string; comment_id: string }> }
+  ctx: RouteContext<'/api/tribes/[tribe_id]/posts/[post_id]/comments/[comment_id]'>
 ) {
   try {
     // Check authentication
@@ -122,7 +118,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { tribe_id, post_id, comment_id } = await params;
+    const { tribe_id, post_id, comment_id } = await ctx.params;
 
     // Validate parameters
     const paramValidation = validateApiRequest(tribePostCommentIdParamSchema, {

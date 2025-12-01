@@ -3,13 +3,20 @@
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Calendar, ImageIcon, TrendingUp } from 'lucide-react'
-import { Album } from './types'
 import { useParams, useRouter } from 'next/navigation'
 import { useState } from 'react'
 import PhotoMediaDialog from '@/components/dialogs/photo-media'
 
+interface AlbumDisplay {
+  id: string
+  name: string
+  cover: string
+  photoCount: number
+  date: string
+}
+
 interface AlbumCardProps {
-  album: Album
+  album: AlbumDisplay
   variant?: 'trending' | 'default';
 }
 

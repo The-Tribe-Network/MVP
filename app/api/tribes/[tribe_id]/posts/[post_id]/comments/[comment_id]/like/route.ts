@@ -7,9 +7,7 @@ import { tribePostCommentIdParamSchema, validateApiRequest } from "@/lib/validat
 
 export async function POST(
   request: NextRequest,
-  {
-    params,
-  }: { params: Promise<{ tribe_id: string; post_id: string; comment_id: string }> }
+  ctx: RouteContext<'/api/tribes/[tribe_id]/posts/[post_id]/comments/[comment_id]/like'>
 ) {
   try {
     // Check authentication
@@ -18,7 +16,7 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { tribe_id, post_id, comment_id } = await params;
+    const { tribe_id, post_id, comment_id } = await ctx.params;
 
     // Validate parameters
     const paramValidation = validateApiRequest(tribePostCommentIdParamSchema, {

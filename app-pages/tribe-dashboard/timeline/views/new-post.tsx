@@ -1,14 +1,26 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { X, Loader2, Smile, Image } from "lucide-react";
+import { X, Loader2, Image, Paperclip, ImagePlus, AlbumIcon, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useRef, useState } from "react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useRef, useState, useEffect } from "react";
 import { useCreatePost } from "@/lib/hooks/use-posts";
 import { useDeleteMedia, useUploadPostImage } from "@/lib/hooks/use-upload";
+import { useTribeAlbums } from "@/lib/hooks/use-albums";
+import { useTribeMemberPreferences } from "@/lib/hooks/use-tribe-preferences";
 import { toast } from "sonner";
 import { validateImageFile } from "@/lib/utils/image";
 import { User } from "better-auth";
 import { useAuth } from "@/lib/providers/auth-provider";
+import NewPostAlbumToggle from "../components/new-post-album-toggle";
 
 interface NewPostProps {
   tribeId: string;
@@ -20,6 +32,8 @@ export function NewPost({ tribeId, onViewChange }: NewPostProps) {
   const [isUploadingImage, setIsUploadingImage] = useState(false)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [uploadedImageId, setUploadedImageId] = useState<string | null>(null)
+  const [addToAlbum, setAddToAlbum] = useState(true)
+  const [selectedAlbumId, setSelectedAlbumId] = useState<string | null>(null)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -28,6 +42,22 @@ export function NewPost({ tribeId, onViewChange }: NewPostProps) {
   const createPostMutation = useCreatePost()
   const deleteMediaMutation = useDeleteMedia()
   const uploadImageMutation = useUploadPostImage()
+  const { data: preferences, isLoading: isLoadingPreferences } = useTribeMemberPreferences(tribeId)
+  const { data: albums, isLoading: isLoadingAlbums } = useTribeAlbums(tribeId)
+
+  // Initialize state from preferences when they load
+  useEffect(() => {
+    if (preferences) {
+      setAddToAlbum(preferences.autoAddPostMediaToTribe)
+    }
+  }, [preferences])
+
+  // Reset album selection when image is removed
+  useEffect(() => {
+    if (!imagePreview && !uploadedImageId) {
+      setSelectedAlbumId(null)
+    }
+  }, [imagePreview, uploadedImageId])
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -53,10 +83,14 @@ export function NewPost({ tribeId, onViewChange }: NewPostProps) {
 
     setIsUploadingImage(true)
     try {
+      // Determine albumId based on toggle state
+      const albumId = addToAlbum ? selectedAlbumId : null
+
       const result = await uploadImageMutation.mutateAsync({
         file,
         tribeId,
         postId: null,
+        albumId: albumId || undefined, // Only send if not null
       })
       setUploadedImageId(result.id)
       setImagePreview(result.url)
@@ -95,6 +129,25 @@ export function NewPost({ tribeId, onViewChange }: NewPostProps) {
     fileInputRef.current?.click()
   }
 
+  const handleAttachMedia = () => {
+    // TODO: Implement attach existing media functionality
+    toast.info('Attach media feature coming soon')
+  }
+
+  const handleUploadNewMedia = () => {
+    fileInputRef.current?.click()
+  }
+
+  const handleAlbums = () => {
+    // TODO: Implement albums functionality
+    toast.info('Albums feature coming soon')
+  }
+
+  const handleEvents = () => {
+    // TODO: Implement events functionality
+    toast.info('Events feature coming soon')
+  }
+
   const handlePost = async () => {
     if (!newPost.trim() || !user) return
 
@@ -102,8 +155,10 @@ export function NewPost({ tribeId, onViewChange }: NewPostProps) {
       await createPostMutation.mutateAsync({
         tribeId,
         data: {
+          addToAlbum,
           content: newPost.trim(),
           mediaId: uploadedImageId || null,
+          albumId: addToAlbum ? selectedAlbumId || null : null,
         },
       })
       setNewPost('')
@@ -160,24 +215,66 @@ export function NewPost({ tribeId, onViewChange }: NewPostProps) {
         )}
 
         <div className="flex items-center justify-between">
-          <div className="flex gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9"
-              onClick={handleImageClick}
-              disabled={isUploadingImage || createPostMutation.isPending}
-            >
-              {isUploadingImage ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Image className="h-4 w-4" />
-              )}
-            </Button>
-            <Button variant="ghost" size="icon" className="h-9 w-9" disabled>
-              <Smile className="h-4 w-4" />
-            </Button>
+          <div className="flex items-center gap-3">
+            <div className="flex gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className="h-9 gap-2"
+                    disabled={isUploadingImage || createPostMutation.isPending}
+                  >
+                    {isUploadingImage ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Image className="h-4 w-4" />
+                    )}
+                    <span className="hidden md:inline">Photos</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  <DropdownMenuItem onClick={handleAttachMedia}>
+                    <Paperclip className="h-4 w-4 mr-2" />
+                    Attach tribe media
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleUploadNewMedia}>
+                    <ImagePlus className="h-4 w-4 mr-2" />
+                    Upload new media
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <Button
+                variant="ghost"
+                className="h-9 gap-2"
+                onClick={handleAlbums}
+                disabled={isUploadingImage || createPostMutation.isPending}
+              >
+                <AlbumIcon className="h-4 w-4" />
+                <span className="hidden md:inline">Albums</span>
+              </Button>
+              <Button
+                variant="ghost"
+                className="h-9 gap-2"
+                onClick={handleEvents}
+                disabled={isUploadingImage || createPostMutation.isPending}
+              >
+                <Calendar className="h-4 w-4" />
+                <span className="hidden md:inline">Events</span>
+              </Button>
+            </div>
+
+            <NewPostAlbumToggle
+              imagePreview={imagePreview}
+              addToAlbum={addToAlbum}
+              setAddToAlbum={setAddToAlbum}
+              isDisabled={isUploadingImage || createPostMutation.isPending || isLoadingPreferences}
+              selectedAlbumId={selectedAlbumId}
+              setSelectedAlbumId={setSelectedAlbumId}
+              albums={albums || []}
+              isLoadingAlbums={isLoadingAlbums}
+            />
           </div>
+
           <Button
             onClick={handlePost}
             disabled={!newPost.trim() || createPostMutation.isPending || isUploadingImage}

@@ -80,6 +80,7 @@ export const tribeMemberPermission = pgTable("tribe_member_permission", {
   canModerateComments: boolean("can_moderate_comments"),
   canDeleteAnyPost: boolean("can_delete_any_post"),
   canDeleteAnyComment: boolean("can_delete_any_comment"),
+  canDeleteAnyMedia: boolean("can_delete_any_media"),
 
   // Tribe management permissions
   canEditTribeSettings: boolean("can_edit_tribe_settings"),
@@ -94,6 +95,25 @@ export const tribeMemberPermission = pgTable("tribe_member_permission", {
   setBy: uuid("set_by")
     .notNull()
     .references(() => user.id, { onDelete: "restrict" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
+});
+
+export const tribeMemberPreference = pgTable("tribe_member_preference", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tribeMemberId: uuid("tribe_member_id")
+    .notNull()
+    .references(() => tribeMember.id, { onDelete: "cascade" }),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+
+  // Determines if the user wants to automatically add media to an album when they make a post
+  autoAddPostMediaToTribe: boolean("auto_add_post_media_to_tribe").default(true).notNull(),
+
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .defaultNow()

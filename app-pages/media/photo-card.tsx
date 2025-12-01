@@ -3,10 +3,17 @@
 import { Card, CardFooter } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { TrendingUp } from 'lucide-react'
-import { Photo } from './types'
+
+interface PhotoDisplay {
+  id: number | string
+  url: string
+  likes: number
+  comments: number
+  date: string
+}
 
 interface PhotoCardProps {
-  photo: Photo
+  photo: PhotoDisplay
 }
 
 export function PhotoCard({ photo }: PhotoCardProps) {

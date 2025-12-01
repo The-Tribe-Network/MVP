@@ -1,5 +1,5 @@
 import { InferSelectModel, InferInsertModel } from "drizzle-orm";
-import { SelectUser } from "@/lib/@types/auth";
+import { SelectUser, SelectSession } from "@/lib/@types/auth";
 import {
   tribe,
   tribeMember,
@@ -15,6 +15,7 @@ import {
 import {
   album,
   media,
+  albumMedia,
 } from "./schemas/media";
 import {
   event,
@@ -36,6 +37,16 @@ import {
 // Note: Auth types (User, Session, Account, Verification) are provided by Better Auth
 // Using SelectUser from @/lib/@types/auth for extended types
 type User = SelectUser;
+
+// ============================================
+// User types
+// ============================================
+export type UserWithProfile = User & {
+  displayName: string;
+  bio: string | null;
+  location: string;
+  profileCompleted: boolean;
+};
 
 // ============================================
 // Tribe types
@@ -66,6 +77,8 @@ export type CommentLikeInsert = InferInsertModel<typeof commentLike>;
 // ============================================
 export type Album = InferSelectModel<typeof album>;
 export type AlbumInsert = InferInsertModel<typeof album>;
+export type AlbumMedia = InferSelectModel<typeof albumMedia>;
+export type AlbumMediaInsert = InferInsertModel<typeof albumMedia>;
 export type Media = InferSelectModel<typeof media>;
 export type MediaInsert = InferInsertModel<typeof media>;
 
@@ -154,7 +167,16 @@ export type MediaWithUploader = Media & {
 export type AlbumWithCreator = Album & {
   creator: User;
   tribe: Tribe;
-  media?: Media[];
+  coverUrl?: string | null; // Resolved from coverId
+  photoCount?: number;
+};
+
+export type AlbumWithMedia = Album & {
+  creator: User;
+  tribe: Tribe;
+  coverUrl?: string | null;
+  media: Media[];
+  photoCount: number;
 };
 
 export type MessageWithSender = Message & {
@@ -170,5 +192,17 @@ export type ActivityWithUser = Activity & {
   event?: Event;
   media?: Media;
   targetUser?: User;
+};
+
+// ============================================
+// Security types
+// ============================================
+export type SessionWithDevice = SelectSession & {
+  deviceName: string;
+  browser: string;
+  os: string;
+  location: string | null;
+  isCurrentSession: boolean;
+  lastActive: Date;
 };
 

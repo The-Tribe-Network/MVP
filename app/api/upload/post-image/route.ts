@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerUser } from '@/lib/services/auth';
-import { uploadPostImage } from '@/lib/services/media';
+import { uploadPostImage, addMediaToAlbumJunction } from '@/lib/services/media';
 import { validateImageFile } from '@/lib/utils/image';
+import { canUserUploadMedia } from '@/lib/services/permissions';
 
 export async function POST(request: NextRequest) {
   try {
     // Check authentication
-    const user = await getServerUser();
-    if (!user) {
+    const currentUser = await getServerUser();
+    if (!currentUser) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -16,6 +17,7 @@ export async function POST(request: NextRequest) {
     const file = formData.get('file') as File | null;
     const postId = formData.get('postId') as string | null;
     const tribeId = formData.get('tribeId') as string | null;
+    const albumId = formData.get('albumId') as string | null;
 
     if (!file) {
       return NextResponse.json(
@@ -28,6 +30,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Tribe ID is required' },
         { status: 400 }
+      );
+    }
+
+    // Check upload permissions
+    const hasPermission = await canUserUploadMedia(tribeId, currentUser.id);
+    if (!hasPermission) {
+      return NextResponse.json(
+        { error: 'You do not have permission to upload media' },
+        { status: 403 }
       );
     }
 
@@ -47,11 +58,17 @@ export async function POST(request: NextRequest) {
     // Upload to Cloudinary and create media record
     const result = await uploadPostImage(
       buffer,
-      user.id,
+      currentUser.id,
       file.type,
       tribeId,
       postId || null
     );
+
+    // If albumId is provided (either specific album or null for general album),
+    // add this media to the album using the service function
+    // if (albumId !== undefined && result.id) {
+    //   await addMediaToAlbumJunction(result.id, albumId, currentUser.id);
+    // }
 
     return NextResponse.json({
       id: result.id,
@@ -63,6 +80,13 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error uploading post image:', error);
+
+    if (error instanceof Error) {
+      if (error.message.includes('permission')) {
+        return NextResponse.json({ error: error.message }, { status: 403 });
+      }
+    }
+
     return NextResponse.json(
       { error: 'Failed to upload post image' },
       { status: 500 }

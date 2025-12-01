@@ -13,6 +13,7 @@ import {
 import { queryKeys } from "@/lib/constants/query-keys";
 
 import { Toaster } from "@/components/ui/toaster";
+import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -74,6 +75,7 @@ export default async function RootLayout({
             >
               {children}
               <Toaster />
+              <SonnerToaster />
             </ThemeProvider>
           </AuthProvider>
         </QueryProvider>

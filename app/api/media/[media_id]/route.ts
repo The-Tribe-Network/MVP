@@ -4,7 +4,7 @@ import { deleteMedia, getMediaById } from '@/lib/services/media';
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ media_id: string }> }
+  ctx: RouteContext<'/api/media/[media_id]'> 
 ) {
   try {
     // Check authentication
@@ -13,7 +13,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { media_id } = await params;
+    const { media_id } = await ctx.params;
 
     // Get media record to verify ownership
     const mediaRecord = await getMediaById(media_id);

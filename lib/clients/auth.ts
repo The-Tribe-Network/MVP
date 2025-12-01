@@ -25,6 +25,31 @@ export const auth = betterAuth({
       verification,
     }
   }),
+  user: {
+    additionalFields: {
+      username: {
+        type: "string",
+        required: false,
+      },
+      displayName: {
+        type: "string",
+        required: false,
+      },
+      bio: {
+        type: "string",
+        required: false,
+      },
+      location: {
+        type: "string",
+        required: false,
+      },
+      profileCompleted: {
+        type: "boolean",
+        required: false,
+        defaultValue: false,
+      },
+    },
+  },
   advanced: {
     database: {
       generateId: false, // Let database generate UUIDs automatically
@@ -32,12 +57,13 @@ export const auth = betterAuth({
   },
   socialProviders: {
     google: {
+      prompt: "select_account",
       clientId: process.env.GOOGLE_CLIENT_ID as string,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
     },
-    github: {
-      clientId: process.env.GITHUB_CLIENT_ID as string,
-      clientSecret: process.env.GITHUB_CLIENT_SECRET as string,
+    discord: {
+      clientId: process.env.DISCORD_CLIENT_ID as string,
+      clientSecret: process.env.DISCORD_CLIENT_SECRET as string,
     },
   },
   plugins: [

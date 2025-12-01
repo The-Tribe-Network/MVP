@@ -1,4 +1,5 @@
 import PostCard from "@/components/post-card"
+import PostCardSkeleton from "@/components/post-card-skeleton"
 import { useDeletePost, useLikePost, useTribePosts } from "@/lib/hooks/use-posts"
 import { formatRelativeTime } from "@/lib/utils"
 import { useState } from "react"
@@ -14,7 +15,7 @@ interface PostsViewProps {
 }
 
 export default function PostsView({ tribeId, onViewChange }: PostsViewProps) {
-  const { data: posts, isError } = useTribePosts(tribeId)
+  const { data: posts, isError, isLoading } = useTribePosts(tribeId)
 
   const [likeError, setLikeError] = useState<string | null>(null)
   const [likingPostId, setLikingPostId] = useState<string | null>(null)
@@ -86,7 +87,17 @@ export default function PostsView({ tribeId, onViewChange }: PostsViewProps) {
     )
   }
 
-  if (transformedPosts.length === 0) {
+  if (isLoading) {
+    return (
+      <div className="space-y-2">
+        {[...Array(3)].map((_, index) => (
+          <PostCardSkeleton key={index} />
+        ))}
+      </div>
+    )
+  }
+
+  if (transformedPosts.length === 0 && !isLoading) {
     return (
       <EmptyView
         title="No Posts Yet"

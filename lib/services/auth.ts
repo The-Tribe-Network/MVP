@@ -2,6 +2,8 @@
 import { auth } from "../clients/auth"
 import { headers } from "next/headers"
 import { redirect } from "next/navigation"
+import { isProfileComplete } from "./user"
+import type { BetterAuthUser } from "../@types/auth"
 
 /**
  * Get the current session on the server side
@@ -17,9 +19,9 @@ export async function getServerSession() {
 /**
  * Get the current user on the server side
  */
-export async function getServerUser() {
+export async function getServerUser(): Promise<BetterAuthUser | null> {
   const session = await getServerSession()
-  return session?.user || null
+  return (session?.user as BetterAuthUser | undefined) || null
 }
 
 /**
@@ -37,12 +39,20 @@ export async function requireAuth() {
 
 /**
  * Redirect to dashboard if user is already authenticated
+ * If user is authenticated but profile is incomplete, redirect to welcome page
  */
 export async function redirectIfAuthenticated(route: string = "/dashboard?toast_code=SIGN_IN_SUCCESS") {
   const user = await getServerUser()
 
   if (user) {
-    redirect(route)
+    // Check if profile is complete
+    const profileComplete = await isProfileComplete(user.id);
+
+    if (!profileComplete) {
+      redirect("/welcome");
+    } else {
+      redirect(route);
+    }
   }
 }
 

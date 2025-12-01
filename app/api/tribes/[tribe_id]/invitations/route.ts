@@ -8,7 +8,7 @@ import { inviteTribeMembersSchema } from "@/lib/validations/tribe";
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ tribe_id: string }> }
+  ctx: RouteContext<'/api/tribes/[tribe_id]/invitations'>
 ) {
   try {
     // Check authentication
@@ -17,7 +17,7 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { tribe_id } = await params;
+    const { tribe_id } = await ctx.params;
 
     // Validate tribe ID parameter
     const tribeValidation = validateApiRequest(tribeIdParamSchema, { id: tribe_id });

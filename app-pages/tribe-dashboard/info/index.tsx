@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { UserPlus, Users, MapPin } from "lucide-react";
 import InviteDialogContent from "@/components/dialogs/invite";
+import PhotoMediaDialog from "@/components/dialogs/photo-media";
 import { TribeMembersModal } from "./tribe-members-modal";
 
 interface TribeInfoWidgetProps {
@@ -61,6 +62,7 @@ export default function TribeInfoWidget({
   tribeLocation,
 }: TribeInfoWidgetProps) {
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false)
+  const [isAvatarDialogOpen, setIsAvatarDialogOpen] = useState(false)
 
   const avatarFallback = tribeName.substring(0, 2).toUpperCase()
 
@@ -95,10 +97,21 @@ export default function TribeInfoWidget({
             </button>
           </TribeMembersModal>
           <div className="flex justify-center mb-4">
-            <Avatar className="h-24 w-24 border-4 border-primary/20">
-              <AvatarImage src={tribeAvatar || "/placeholder.svg"} />
-              <AvatarFallback className="text-2xl bg-primary text-primary-foreground">{avatarFallback}</AvatarFallback>
-            </Avatar>
+            <button
+              onClick={() => {
+                if (tribeAvatar && tribeAvatar !== "/placeholder.svg") {
+                  setIsAvatarDialogOpen(true)
+                }
+              }}
+              className="cursor-pointer hover:opacity-90 transition-opacity disabled:cursor-default disabled:opacity-100"
+              disabled={!tribeAvatar || tribeAvatar === "/placeholder.svg"}
+              aria-label="View tribe avatar"
+            >
+              <Avatar className="h-24 w-24 border-4 border-primary/20">
+                <AvatarImage src={tribeAvatar || "/placeholder.svg"} />
+                <AvatarFallback className="text-2xl bg-primary text-primary-foreground">{avatarFallback}</AvatarFallback>
+              </Avatar>
+            </button>
           </div>
           <CardTitle className="text-2xl">{tribeName}</CardTitle>
           {displayLocation && (
@@ -126,6 +139,13 @@ export default function TribeInfoWidget({
         tribeId={tribeId}
         tribeName={tribeName}
       />
+      {tribeAvatar && tribeAvatar !== "/placeholder.svg" && (
+        <PhotoMediaDialog
+          isOpen={isAvatarDialogOpen}
+          onOpenChange={setIsAvatarDialogOpen}
+          imageUrl={tribeAvatar}
+        />
+      )}
     </>
   )
 }
