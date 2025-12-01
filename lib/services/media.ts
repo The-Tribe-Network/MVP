@@ -1,5 +1,5 @@
 import { db } from '@/lib/database/client';
-import { media, mediaLike } from '@/lib/database/schemas/media';
+import { albumMedia, media, mediaLike } from '@/lib/database/schemas';
 import { user } from '@/lib/database/schemas/auth';
 import { comment } from '@/lib/database/schemas/post';
 import { cloudinary } from '@/lib/clients/cloudinary';
@@ -53,11 +53,9 @@ export async function uploadAvatar(
     uploadedBy: userId,
     tribeId: tribeId || null,
     postId: null,
-    albumId: null,
     duration: null,
     thumbnailUrl: null,
     altText: null,
-    addToAlbum: false,
   };
 
   const [createdMedia] = await db
@@ -112,11 +110,9 @@ export async function uploadPostImage(
     uploadedBy: userId,
     tribeId: tribeId || null,
     postId: postId || null,
-    albumId: null,
     duration: null,
     thumbnailUrl: null,
     altText: null,
-    addToAlbum: false,
   };
 
   const [createdMedia] = await db
@@ -208,6 +204,15 @@ export async function deleteMediaWithPermissions(
   await deleteMedia(mediaId);
 }
 
+/**
+ * Delete media without permission checks (for cleanup operations)
+ * CAUTION: Only use for system cleanup (e.g., cancelled uploads)
+ * @param mediaId - The media ID to delete
+ */
+export async function deleteMediaWithoutChecks(mediaId: string): Promise<void> {
+  await deleteMedia(mediaId);
+}
+
 export interface MediaFilters {
   albumId?: string | null;
   type?: "image" | "video" | "document";
@@ -216,17 +221,18 @@ export interface MediaFilters {
 }
 
 export interface UpdateMediaData {
-  albumId?: string | null;
-  addToAlbum?: boolean;
   altText?: string;
+  // Note: Album assignment is handled through the albumMedia junction table,
+  // not through this interface. Use addMediaToAlbum() from album service instead.
 }
 
 /**
- * Get media by tribe with filters
+ * Get album media by tribe with filters
+ * Selects from albumMedia table (album gallery items), not general media table
  * OPTIMIZED: Replaced N+1 subquery with LEFT JOIN for comment counts
  * @param tribeId - The tribe ID
- * @param filters - Optional filters for media
- * @returns Array of media records with like counts
+ * @param filters - Optional filters for album media
+ * @returns Array of album media records with like counts
  */
 export async function getMediaByTribe(
   tribeId: string,
@@ -234,15 +240,17 @@ export async function getMediaByTribe(
 ) {
   const { albumId, type, limit = 50, offset = 0 } = filters;
 
-  // Build all where conditions
-  const conditions = [eq(media.tribeId, tribeId), eq(media.addToAlbum, true)];
+  // Build where conditions
+  const conditions = [eq(media.tribeId, tribeId)];
 
-  // Apply filters
+  // Apply album filter
   if (albumId !== undefined) {
     if (albumId === null) {
-      conditions.push(isNull(media.albumId));
+      // Get general album items (albumId is null in albumMedia table)
+      conditions.push(isNull(albumMedia.albumId));
     } else {
-      conditions.push(eq(media.albumId, albumId));
+      // Get items in a specific album
+      conditions.push(eq(albumMedia.albumId, albumId));
     }
   }
 
@@ -252,7 +260,8 @@ export async function getMediaByTribe(
 
   const query = db
     .select({
-      id: media.id,
+      id: albumMedia.id,
+      mediaId: albumMedia.mediaId,
       fileUrl: media.fileUrl,
       fileType: media.fileType,
       fileSize: media.fileSize,
@@ -265,9 +274,9 @@ export async function getMediaByTribe(
       createdAt: media.createdAt,
       uploadedBy: media.uploadedBy,
       postId: media.postId,
-      albumId: media.albumId,
+      albumId: albumMedia.albumId,
+      addedAt: albumMedia.addedAt,
       tribeId: media.tribeId,
-      addToAlbum: media.addToAlbum,
       uploader: {
         id: user.id,
         name: user.name,
@@ -276,15 +285,20 @@ export async function getMediaByTribe(
       likeCount: count(sql`DISTINCT ${mediaLike.id}`),
       commentCount: count(sql`DISTINCT ${comment.id}`),
     })
-    .from(media)
+    .from(albumMedia)
+    .leftJoin(media, eq(albumMedia.mediaId, media.id))
     .leftJoin(user, eq(media.uploadedBy, user.id))
     .leftJoin(mediaLike, eq(media.id, mediaLike.mediaId))
     .leftJoin(comment, eq(media.postId, comment.postId))
     .where(and(...conditions));
 
   const results = await query
-    .groupBy(media.id, user.id)
-    .orderBy(desc(media.createdAt))
+    .groupBy(
+      albumMedia.id,
+      media.id,
+      user.id,
+    )
+    .orderBy(desc(albumMedia.addedAt))
     .limit(limit)
     .offset(offset);
 
@@ -312,9 +326,8 @@ export async function getLooseMedia(tribeId: string) {
       createdAt: media.createdAt,
       uploadedBy: media.uploadedBy,
       postId: media.postId,
-      albumId: media.albumId,
+      albumId: albumMedia.albumId,
       tribeId: media.tribeId,
-      addToAlbum: media.addToAlbum,
       uploader: {
         id: user.id,
         name: user.name,
@@ -325,15 +338,71 @@ export async function getLooseMedia(tribeId: string) {
     .from(media)
     .leftJoin(user, eq(media.uploadedBy, user.id))
     .leftJoin(mediaLike, eq(media.id, mediaLike.mediaId))
+    .leftJoin(albumMedia, eq(media.id, albumMedia.mediaId))
     .where(
       and(
         eq(media.tribeId, tribeId),
-        isNull(media.albumId),
+        isNull(albumMedia.albumId),
         isNull(media.postId)
       )
     )
     .groupBy(media.id, user.id)
     .orderBy(desc(media.createdAt));
+
+  return results;
+}
+
+/**
+ * Get ALL media for a tribe (regardless of album membership)
+ * Used for album cover selection and media browsing
+ * @param tribeId - The tribe ID
+ * @param options - Filter and pagination options
+ * @returns Array of all media records for the tribe
+ */
+export async function getAllTribeMedia(
+  tribeId: string,
+  options: { type?: 'image' | 'video' | 'document'; limit?: number; offset?: number } = {}
+) {
+  const { type, limit = 100, offset = 0 } = options;
+
+  const conditions = [eq(media.tribeId, tribeId)];
+  if (type) {
+    conditions.push(eq(media.fileType, type));
+  }
+
+  const results = await db
+    .select({
+      id: media.id,
+      fileUrl: media.fileUrl,
+      fileType: media.fileType,
+      fileSize: media.fileSize,
+      mimeType: media.mimeType,
+      width: media.width,
+      height: media.height,
+      duration: media.duration,
+      thumbnailUrl: media.thumbnailUrl,
+      altText: media.altText,
+      createdAt: media.createdAt,
+      uploadedBy: media.uploadedBy,
+      postId: media.postId,
+      tribeId: media.tribeId,
+      uploader: {
+        id: user.id,
+        name: user.name,
+        image: user.image,
+      },
+      likeCount: count(sql`DISTINCT ${mediaLike.id}`),
+      commentCount: count(sql`DISTINCT ${comment.id}`),
+    })
+    .from(media)
+    .leftJoin(user, eq(media.uploadedBy, user.id))
+    .leftJoin(mediaLike, eq(media.id, mediaLike.mediaId))
+    .leftJoin(comment, eq(media.postId, comment.postId))
+    .where(and(...conditions))
+    .groupBy(media.id, user.id)
+    .orderBy(desc(media.createdAt))
+    .limit(limit)
+    .offset(offset);
 
   return results;
 }
@@ -506,12 +575,10 @@ export async function uploadTribeMedia(
     height: uploadResult.height,
     uploadedBy: userId,
     tribeId,
-    albumId,
     postId: null,
     duration: null,
     thumbnailUrl: null,
     altText: null,
-    addToAlbum,
   };
 
   const [createdMedia] = await db
@@ -519,6 +586,15 @@ export async function uploadTribeMedia(
     // @ts-ignore - id is auto-generated by defaultRandom()
     .values(mediaData as any)
     .returning();
+
+  if (addToAlbum) {
+    await db.insert(albumMedia).values({
+      albumId: albumId || null,
+      mediaId: createdMedia.id,
+      addedBy: userId,
+      addedAt: new Date(),
+    });
+  }
 
   return {
     id: createdMedia.id,
@@ -528,5 +604,95 @@ export async function uploadTribeMedia(
     fileSize: createdMedia.fileSize || uploadResult.bytes,
     mimeType: createdMedia.mimeType || mimeType,
   };
+}
+
+/**
+ * Add media to an album via albumMedia junction table
+ * @param mediaId - The media ID to add
+ * @param albumId - The album ID (or null for general album)
+ * @param userId - The user performing the action
+ * @returns The created albumMedia record
+ */
+export async function addMediaToAlbumJunction(
+  mediaId: string,
+  albumId: string | null,
+  userId: string
+) {
+  // Check if already exists
+  const existing = await db
+    .select()
+    .from(albumMedia)
+    .where(eq(albumMedia.mediaId, mediaId))
+    .limit(1);
+
+  if (existing[0]) {
+    // Update existing albumMedia record
+    const [updated] = await db
+      .update(albumMedia)
+      .set({ albumId: albumId })
+      .where(eq(albumMedia.mediaId, mediaId))
+      .returning();
+    return updated;
+  } else {
+    // Create new albumMedia record
+    const [created] = await db
+      .insert(albumMedia)
+      .values({
+        albumId: albumId,
+        mediaId: mediaId,
+        addedBy: userId,
+        addedAt: new Date(),
+      })
+      .returning();
+    return created;
+  }
+}
+
+/**
+ * Remove media from all albums (delete albumMedia junction record)
+ * @param mediaId - The media ID to remove
+ */
+export async function removeMediaFromAlbums(mediaId: string) {
+  await db
+    .delete(albumMedia)
+    .where(eq(albumMedia.mediaId, mediaId));
+}
+
+/**
+ * Update media album assignment
+ * Handles adding to album, changing albums, or removing from albums
+ * @param mediaId - The media ID
+ * @param userId - The user ID (must be uploader or admin)
+ * @param albumId - The album ID (null for general album, undefined to remove from all albums)
+ * @param addToAlbum - Whether to add/keep in album (false removes from all albums)
+ * @returns The updated albumMedia record or null if removed
+ */
+export async function updateMediaAlbumAssignment(
+  mediaId: string,
+  userId: string,
+  albumId: string | null | undefined,
+  addToAlbum: boolean
+) {
+  // Verify user owns the media
+  const mediaRecord = await getMediaById(mediaId);
+  if (!mediaRecord) {
+    throw new Error("Media not found");
+  }
+  if (mediaRecord.uploadedBy !== userId) {
+    throw new Error("User does not have permission to update this media");
+  }
+
+  if (addToAlbum) {
+    // Add to album or change album
+    return await addMediaToAlbumJunction(
+      mediaId,
+      albumId === undefined ? null : albumId,
+      userId
+    );
+  } else {
+    // Remove from all albums
+    await removeMediaFromAlbums(mediaId);
+    return null;
+  }
 }
 

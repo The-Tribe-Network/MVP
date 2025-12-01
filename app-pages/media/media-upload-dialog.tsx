@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -19,51 +19,26 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Upload, ImageIcon, X } from 'lucide-react'
+import { Upload, ImageIcon, X, Loader2 } from 'lucide-react'
 import { FILE_SIZE_LIMITS } from '@/lib/constants/media'
+import { useTribeAlbums } from '@/lib/hooks/use-albums'
+import { useUploadTribeMedia } from '@/lib/hooks/use-upload'
+import { toast } from 'sonner'
 
 interface MediaUploadDialogProps {
   tribeId: string
-  onMediaUploaded?: () => void
 }
 
-interface Album {
-  id: string
-  name: string
-}
-
-export function MediaUploadDialog({ tribeId, onMediaUploaded }: MediaUploadDialogProps) {
+export function MediaUploadDialog({ tribeId }: MediaUploadDialogProps) {
   const [open, setOpen] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [selectedAlbum, setSelectedAlbum] = useState<string | null>(null)
-  const [albums, setAlbums] = useState<Album[]>([])
-  const [isLoading, setIsLoading] = useState(false)
-  const [isLoadingAlbums, setIsLoadingAlbums] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Fetch albums when dialog opens
-  useEffect(() => {
-    if (open) {
-      fetchAlbums()
-    }
-  }, [open])
-
-  const fetchAlbums = async () => {
-    setIsLoadingAlbums(true)
-    try {
-      const response = await fetch(`/api/tribes/${tribeId}/albums`)
-      if (response.ok) {
-        const data = await response.json()
-        setAlbums(data.albums || [])
-      }
-    } catch (err) {
-      console.error('Failed to fetch albums:', err)
-    } finally {
-      setIsLoadingAlbums(false)
-    }
-  }
+  // Use TanStack Query hooks
+  const { data: albums = [], isLoading: isLoadingAlbums } = useTribeAlbums(tribeId)
+  const uploadMedia = useUploadTribeMedia(tribeId)
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -71,17 +46,16 @@ export function MediaUploadDialog({ tribeId, onMediaUploaded }: MediaUploadDialo
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      setError('Please select an image file')
+      toast.error('Please select an image file')
       return
     }
 
     // Validate file size
     if (file.size > FILE_SIZE_LIMITS.PHOTO) {
-      setError(`File size must be less than ${FILE_SIZE_LIMITS.PHOTO / 1024 / 1024}MB`)
+      toast.error(`File size must be less than ${FILE_SIZE_LIMITS.PHOTO / 1024 / 1024}MB`)
       return
     }
 
-    setError(null)
     setSelectedFile(file)
 
     // Create preview
@@ -103,37 +77,20 @@ export function MediaUploadDialog({ tribeId, onMediaUploaded }: MediaUploadDialo
   const handleUpload = async () => {
     if (!selectedFile) return
 
-    setError(null)
-    setIsLoading(true)
-
     try {
-      const formData = new FormData()
-      formData.append('file', selectedFile)
-      if (selectedAlbum) {
-        formData.append('albumId', selectedAlbum)
-      }
-
-      const response = await fetch(`/api/tribes/${tribeId}/media`, {
-        method: 'POST',
-        body: formData,
+      await uploadMedia.mutateAsync({
+        file: selectedFile,
+        albumId: selectedAlbum && selectedAlbum !== 'none' ? selectedAlbum : null,
+        addToAlbum: true,
       })
 
-      if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || 'Failed to upload media')
-      }
-
-      // Reset form and close dialog
+      // Success - reset form and close
       handleRemoveFile()
       setSelectedAlbum(null)
       setOpen(false)
-
-      // Notify parent component
-      onMediaUploaded?.()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong')
-    } finally {
-      setIsLoading(false)
+      toast.success('Media uploaded successfully')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to upload media')
     }
   }
 
@@ -153,9 +110,10 @@ export function MediaUploadDialog({ tribeId, onMediaUploaded }: MediaUploadDialo
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
-          {error && (
+          {/* Show mutation error */}
+          {uploadMedia.error && (
             <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
-              {error}
+              {uploadMedia.error instanceof Error ? uploadMedia.error.message : 'Upload failed'}
             </div>
           )}
 
@@ -185,6 +143,7 @@ export function MediaUploadDialog({ tribeId, onMediaUploaded }: MediaUploadDialo
                   size="icon"
                   className="absolute top-2 right-2"
                   onClick={handleRemoveFile}
+                  disabled={uploadMedia.isPending}
                 >
                   <X className="h-4 w-4" />
                 </Button>
@@ -199,6 +158,7 @@ export function MediaUploadDialog({ tribeId, onMediaUploaded }: MediaUploadDialo
               accept="image/*"
               className="hidden"
               onChange={handleFileSelect}
+              disabled={uploadMedia.isPending}
             />
           </div>
 
@@ -207,9 +167,19 @@ export function MediaUploadDialog({ tribeId, onMediaUploaded }: MediaUploadDialo
             <Label htmlFor="album">
               Add to Album <span className="text-sm text-muted-foreground">(optional)</span>
             </Label>
-            <Select value={selectedAlbum || ''} onValueChange={setSelectedAlbum}>
+            <Select
+              value={selectedAlbum || ''}
+              onValueChange={setSelectedAlbum}
+              disabled={uploadMedia.isPending}
+            >
               <SelectTrigger>
-                <SelectValue placeholder={isLoadingAlbums ? 'Loading albums...' : 'Select an album'} />
+                <SelectValue
+                  placeholder={
+                    isLoadingAlbums
+                      ? 'Loading albums...'
+                      : 'Select an album'
+                  }
+                />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">Don't add to album</SelectItem>
@@ -227,15 +197,22 @@ export function MediaUploadDialog({ tribeId, onMediaUploaded }: MediaUploadDialo
             type="button"
             variant="outline"
             onClick={() => setOpen(false)}
-            disabled={isLoading}
+            disabled={uploadMedia.isPending}
           >
             Cancel
           </Button>
           <Button
             onClick={handleUpload}
-            disabled={isLoading || !selectedFile}
+            disabled={uploadMedia.isPending || !selectedFile}
           >
-            {isLoading ? 'Uploading...' : 'Upload'}
+            {uploadMedia.isPending ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Uploading...
+              </>
+            ) : (
+              'Upload'
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

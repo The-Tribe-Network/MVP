@@ -80,3 +80,29 @@ export function useTribeMedia(tribeId: string, filters?: MediaFilters) {
   });
 }
 
+
+/**
+ * Fetch public media for album creation selection
+ */
+export function usePublicMedia(tribeId: string, options?: { limit?: number; offset?: number }) {
+  return useQuery({
+    queryKey: queryKeys.media.tribe(tribeId, { public: true }),
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (options?.limit) params.set('limit', options.limit.toString());
+      if (options?.offset) params.set('offset', options.offset.toString());
+
+      const url = `${API_BASE}/${tribeId}/media/public`;
+      const queryString = params.toString();
+      const response = await fetch(queryString ? `${url}?${queryString}` : url);
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to fetch public media');
+      }
+
+      const data = await response.json();
+      return data.media;
+    },
+  });
+}

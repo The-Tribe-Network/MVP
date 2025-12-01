@@ -25,7 +25,7 @@ async function canUserModerateComments(tribeId: string, userId: string): Promise
 
   // Check for permission override
   return memberData.permissions?.canModeratePosts === true ||
-         memberData.permissions?.canDeleteAnyPost === true;
+    memberData.permissions?.canDeleteAnyPost === true;
 }
 
 /**
@@ -97,6 +97,10 @@ export async function getPostComments(
         username: user.username,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
+        displayName: user.displayName,
+        bio: user.bio,
+        location: user.location,
+        profileCompleted: user.profileCompleted,
       },
     })
     .from(comment)
@@ -123,9 +127,9 @@ export async function getPostComments(
   // Get user's likes if currentUserId is provided
   const userLikes = currentUserId
     ? await db
-        .select({ commentId: commentLike.commentId })
-        .from(commentLike)
-        .where(and(inArray(commentLike.commentId, commentIds), eq(commentLike.userId, currentUserId)))
+      .select({ commentId: commentLike.commentId })
+      .from(commentLike)
+      .where(and(inArray(commentLike.commentId, commentIds), eq(commentLike.userId, currentUserId)))
     : [];
 
   const userLikedCommentIds = new Set(userLikes.map((l) => l.commentId));
@@ -170,6 +174,10 @@ export async function getCommentById(commentId: string): Promise<CommentWithAuth
         username: user.username,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
+        displayName: user.displayName,
+        bio: user.bio,
+        location: user.location,
+        profileCompleted: user.profileCompleted,
       },
     })
     .from(comment)
@@ -221,6 +229,10 @@ export async function updateComment(
         username: user.username,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
+        displayName: user.displayName,
+        bio: user.bio,
+        location: user.location,
+        profileCompleted: user.profileCompleted,
       },
       post: {
         tribeId: post.tribeId,

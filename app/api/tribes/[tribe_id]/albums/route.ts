@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerUser } from '@/lib/services/auth';
-import { createAlbum, getAlbumsByTribe } from '@/lib/services/album';
+import { createAlbumWithMedia, getAlbumsByTribe } from '@/lib/services/album';
 import { checkTribeMembership } from '@/lib/services/permissions';
+import { createAlbumSchema, validateApiRequest } from "@/lib/validations/album";
 
 /**
  * GET /api/tribes/[tribe_id]/albums
@@ -48,6 +49,9 @@ export async function GET(
 /**
  * POST /api/tribes/[tribe_id]/albums
  * Create a new album
+/**
+ * POST /api/tribes/[tribe_id]/albums
+ * Create a new album with optional cover and media
  */
 export async function POST(
   request: NextRequest,
@@ -62,21 +66,24 @@ export async function POST(
     const { tribe_id } = await ctx.params;
     const body = await request.json();
 
-    const { name, description, coverImageUrl, privacy } = body;
-
-    if (!name) {
+    // Validate with Zod schema
+    const validation = validateApiRequest(createAlbumSchema, body);
+    if (!validation.success) {
       return NextResponse.json(
-        { error: 'Album name is required' },
+        { error: 'Validation failed', details: validation.error },
         { status: 400 }
       );
     }
 
-    const album = await createAlbum(user.id, {
+    const { name, description, privacy, coverId, mediaIds } = validation.data;
+
+    const album = await createAlbumWithMedia(user.id, {
       tribeId: tribe_id,
       name,
       description,
-      coverImageUrl,
       privacy,
+      coverId,
+      mediaIds,
     });
 
     return NextResponse.json({ album }, { status: 201 });
@@ -87,6 +94,9 @@ export async function POST(
       if (error.message.includes('permission')) {
         return NextResponse.json({ error: error.message }, { status: 403 });
       }
+      if (error.message.includes('not found') || error.message.includes('not accessible')) {
+        return NextResponse.json({ error: error.message }, { status: 400 });
+      }
     }
 
     return NextResponse.json(
@@ -95,3 +105,4 @@ export async function POST(
     );
   }
 }
+

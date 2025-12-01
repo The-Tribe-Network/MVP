@@ -80,7 +80,7 @@ export async function createLikeActivity(
   likeCount: number,
   postAuthorId: string
 ): Promise<Activity> {
-  const action = likeCount === 1 
+  const action = likeCount === 1
     ? "liked a post"
     : `reached ${likeCount} likes`;
 
@@ -165,11 +165,28 @@ export async function getTribeActivities(
         name: user.name,
         image: user.image,
         username: user.username,
+        displayName: user.displayName,
+        bio: user.bio,
+        location: user.location,
+        profileCompleted: user.profileCompleted,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+        email: user.email,
+        emailVerified: user.emailVerified,
       },
       tribe: {
         id: tribe.id,
         name: tribe.name,
         avatar: tribe.avatar,
+        location: tribe.location,
+        createdAt: tribe.createdAt,
+        updatedAt: tribe.updatedAt,
+        description: tribe.description,
+        privacy: tribe.privacy,
+        category: tribe.category,
+        isFeatured: tribe.isFeatured,
+        isTrending: tribe.isTrending,
+        createdBy: tribe.createdBy,
       },
     })
     .from(activity)
@@ -232,11 +249,28 @@ export async function getUserTribesActivities(
         name: user.name,
         image: user.image,
         username: user.username,
+        displayName: user.displayName,
+        bio: user.bio,
+        location: user.location,
+        profileCompleted: user.profileCompleted,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+        email: user.email,
+        emailVerified: user.emailVerified,
       },
       tribe: {
         id: tribe.id,
         name: tribe.name,
         avatar: tribe.avatar,
+        location: tribe.location,
+        createdAt: tribe.createdAt,
+        updatedAt: tribe.updatedAt,
+        description: tribe.description,
+        privacy: tribe.privacy,
+        category: tribe.category,
+        isFeatured: tribe.isFeatured,
+        isTrending: tribe.isTrending,
+        createdBy: tribe.createdBy,
       },
     })
     .from(activity)
@@ -291,13 +325,30 @@ export async function getUserActivities(
       user: {
         id: user.id,
         name: user.name,
+        email: user.email,
+        emailVerified: user.emailVerified,
         image: user.image,
         username: user.username,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+        displayName: user.displayName,
+        bio: user.bio,
+        location: user.location,
+        profileCompleted: user.profileCompleted,
       },
       tribe: {
         id: tribe.id,
         name: tribe.name,
         avatar: tribe.avatar,
+        location: tribe.location,
+        createdAt: tribe.createdAt,
+        updatedAt: tribe.updatedAt,
+        description: tribe.description,
+        privacy: tribe.privacy,
+        category: tribe.category,
+        isFeatured: tribe.isFeatured,
+        isTrending: tribe.isTrending,
+        createdBy: tribe.createdBy,
       },
     })
     .from(activity)

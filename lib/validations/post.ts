@@ -13,7 +13,6 @@ export const createPostSchema = z.object({
   addToAlbum: z.boolean(),
   mediaId: z.string().uuid("Invalid media ID format").optional().nullable(),
   albumId: z.string().uuid("Invalid album ID format").optional().nullable(),
-
 });
 
 // Update post schema

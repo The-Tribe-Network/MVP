@@ -2,7 +2,7 @@ import { db } from "@/lib/database/client";
 import { post, postLike, comment } from "@/lib/database/schemas/post";
 import { tribeMember, tribeMemberPermission } from "@/lib/database/schemas/tribe";
 import { user } from "@/lib/database/schemas/auth";
-import { media } from "@/lib/database/schemas/media";
+import { albumMedia, media } from "@/lib/database/schemas/media";
 import { eq, and, desc, count, inArray } from "drizzle-orm";
 import type { Post, PostInsert, PostWithAuthor } from "@/lib/database/types";
 import { getMemberWithPermissions } from "./permissions";
@@ -78,12 +78,29 @@ export async function createPost(
     } as PostInsert)
     .returning();
 
-  // Update the newly uploaded media to cloudinary during post creation
-  if (mediaId) {
-      await db
+  // If the user attached media to the post, we need to update the media record and add it to the album media table
+  if (mediaId && addToAlbum === true) {
+    // If the user wants to add the media to an album, add it to the album media table
+    await Promise.all([
+      db
         .update(media)
-        .set({ postId: createdPost.id, albumId: albumId || null, addToAlbum })
-        .where(eq(media.id, mediaId));
+        .set({ postId: createdPost.id })
+        .where(eq(media.id, mediaId)),
+      db
+        .insert(albumMedia)
+        .values({
+          addedAt: new Date(),
+          albumId: albumId || null, // If albumId is null, the media will be added to the general album
+          mediaId,
+          addedBy: userId,
+        }),
+    ]);
+  } else if (mediaId) {
+    // If the user doesnt want to add the media to an album and just attach a post to it
+    await db
+      .update(media)
+      .set({ postId: createdPost.id })
+      .where(eq(media.id, mediaId));
   }
 
   // Fetch author info
@@ -139,6 +156,10 @@ export async function getTribePosts(
         username: user.username,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
+        displayName: user.displayName,
+        bio: user.bio,
+        location: user.location,
+        profileCompleted: user.profileCompleted,
       },
     })
     .from(post)
@@ -223,7 +244,13 @@ export async function getTribePosts(
     content: p.content,
     createdAt: p.createdAt,
     updatedAt: p.updatedAt,
-    author: p.author,
+    author: {
+      ...p.author,
+      displayName: p.author.displayName || '',
+      bio: p.author.bio || null,
+      location: p.author.location || null,
+      profileCompleted: p.author.profileCompleted || false,
+    },
     likeCount: likeCountMap.get(p.id) || 0,
     commentCount: commentCountMap.get(p.id) || 0,
     isLiked: userLikedPostIds.has(p.id),
@@ -252,6 +279,10 @@ export async function getPostById(postId: string): Promise<PostWithAuthor | null
         username: user.username,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
+        displayName: user.displayName,
+        bio: user.bio,
+        location: user.location,
+        profileCompleted: user.profileCompleted,
       },
     })
     .from(post)
@@ -300,6 +331,10 @@ export async function getPostByIdWithMetadata(
         username: user.username,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
+        displayName: user.displayName,
+        bio: user.bio,
+        location: user.location,
+        profileCompleted: user.profileCompleted,
       },
     })
     .from(post)

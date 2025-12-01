@@ -40,6 +40,7 @@ export {
 export {
   album,
   media,
+  albumMedia,
   mediaLike,
 } from "@/lib/database/schemas/media";
 
@@ -66,3 +67,32 @@ export {
   message,
   messageRead,
 } from "@/lib/database/schemas/message";
+
+// Relations
+export {
+  accountRelations,
+  userRelations,
+  eventRelations,
+  tribeRelations,
+  activityRelations,
+  mediaRelations,
+  postRelations,
+  commentRelations,
+  commentLikeRelations,
+  eventAttendeeRelations,
+  messageRelations,
+  messageReadRelations,
+  notificationRelations,
+  postHashtagRelations,
+  hashtagRelations,
+  postLikeRelations,
+  sessionRelations,
+  tribeInvitationRelations,
+  tribeMemberRelations,
+  tribeMemberPermissionRelations,
+  albumRelations,
+  mediaLikeRelations,
+  tribeMemberPreferenceRelations,
+  albumMediaRelations,
+} from "@/lib/database/schemas/relations";
+

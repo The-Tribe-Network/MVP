@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, integer, bigint, uuid, unique, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, integer, bigint, uuid, unique, boolean, index } from "drizzle-orm/pg-core";
 import { tribe } from "./tribe";
 import { user } from "./auth";
 import { post } from "./post";
@@ -15,19 +15,19 @@ export const album = pgTable("album", {
   name: text("name").notNull(),
   description: text("description"),
   coverId: uuid("cover_id").references((): any => media.id, { onDelete: "set null" }),
-  coverImageUrl: text("cover_image_url"), // DEPRECATED: Will be removed after migration
   privacy: albumPrivacy("privacy").default("public").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .defaultNow()
     .$onUpdate(() => new Date())
     .notNull(),
-});
+}, (table) => ({
+  coverIdIdx: index("idx_album_cover_id").on(table.coverId),
+}));
 
 export const media = pgTable("media", {
   id: uuid("id").primaryKey().defaultRandom(),
   postId: uuid("post_id").references(() => post.id, { onDelete: "cascade" }),
-  albumId: uuid("album_id").references((): any => album.id, { onDelete: "set null" }), // DEPRECATED: Will be removed after migration
   uploadedBy: uuid("uploaded_by")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
@@ -41,17 +41,15 @@ export const media = pgTable("media", {
   height: integer("height"),
   duration: integer("duration"),
   thumbnailUrl: text("thumbnail_url"),
-  addToAlbum: boolean("add_to_album").notNull().default(true),
   altText: text("alt_text"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull()
 });
 
 // Junction table for many-to-many album-media relationship
 export const albumMedia = pgTable("album_media", {
   id: uuid("id").primaryKey().defaultRandom(),
   albumId: uuid("album_id")
-    .notNull()
-    .references(() => album.id, { onDelete: "cascade" }),
+    .references(() => album.id, { onDelete: "set null" }), // If albumId is null, the media will be added to the general album
   mediaId: uuid("media_id")
     .notNull()
     .references(() => media.id, { onDelete: "cascade" }),
@@ -62,6 +60,9 @@ export const albumMedia = pgTable("album_media", {
   displayOrder: integer("display_order"),
 }, (table) => ({
   uniqueAlbumMedia: unique().on(table.albumId, table.mediaId),
+  addedAtIdx: index("idx_album_media_added_at").on(table.addedAt),
+  albumIdIdx: index("idx_album_media_album_id").on(table.albumId),
+  mediaIdIdx: index("idx_album_media_media_id").on(table.mediaId),
 }));
 
 export const mediaLike = pgTable("media_like", {

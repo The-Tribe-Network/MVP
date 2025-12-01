@@ -1,10 +1,17 @@
 'use client'
 
 import { PhotoCard } from './photo-card'
-import { Photo } from './types'
+
+interface PhotoDisplay {
+  id: number | string
+  url: string
+  likes: number
+  comments: number
+  date: string
+}
 
 interface TrendingPhotosProps {
-  photos: Photo[]
+  photos: PhotoDisplay[]
 }
 
 export function TrendingPhotos({ photos }: TrendingPhotosProps) {

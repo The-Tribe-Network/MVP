@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerUser } from '@/lib/services/auth';
-import { updateMedia, deleteMediaWithPermissions } from '@/lib/services/media';
+import {
+  updateMedia,
+  deleteMediaWithPermissions,
+  getMediaById,
+  updateMediaAlbumAssignment
+} from '@/lib/services/media';
 import { checkTribeMembership } from '@/lib/services/permissions';
 
 /**
  * PATCH /api/tribes/[tribe_id]/media/[media_id]
- * Update media (change album, alt text, etc.)
+ * Update media (change album assignment, alt text, etc.)
  */
 export async function PATCH(
   request: NextRequest,
@@ -31,11 +36,24 @@ export async function PATCH(
     const body = await request.json();
     const { albumId, altText, addToAlbum } = body;
 
-    const updatedMedia = await updateMedia(media_id, user.id, {
-      albumId,
-      altText,
-      addToAlbum,
-    });
+    // Update altText if provided (media table field)
+    let updatedMedia = null;
+    if (altText !== undefined) {
+      updatedMedia = await updateMedia(media_id, user.id, { altText });
+    }
+
+    // Handle album assignment changes through service function
+    if (addToAlbum !== undefined) {
+      await updateMediaAlbumAssignment(media_id, user.id, albumId, addToAlbum);
+    } else if (albumId !== undefined) {
+      // Just changing album (keep in albums, just change which one)
+      await updateMediaAlbumAssignment(media_id, user.id, albumId, true);
+    }
+
+    // Fetch the updated media to return
+    if (!updatedMedia) {
+      updatedMedia = await getMediaById(media_id);
+    }
 
     return NextResponse.json({ media: updatedMedia }, { status: 200 });
   } catch (error) {

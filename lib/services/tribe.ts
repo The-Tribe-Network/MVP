@@ -109,6 +109,10 @@ export async function getTribeById(id: string, includeAvatar: boolean = false): 
         username: user.username,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
+        displayName: user.displayName,
+        bio: user.bio,
+        location: user.location,
+        profileCompleted: user.profileCompleted,
       },
     })
     .from(tribe)

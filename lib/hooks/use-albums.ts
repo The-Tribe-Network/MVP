@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/constants/query-keys";
 
 const API_BASE = "/api/tribes";
@@ -53,3 +53,40 @@ export function useTribeAlbums(tribeId: string, options?: { limit?: number; offs
   });
 }
 
+
+interface CreateAlbumInput {
+  name: string;
+  description?: string;
+  privacy?: "public" | "private" | "admin_only";
+  coverId?: string;
+  mediaIds?: string[];
+}
+
+/**
+ * Create album with cover and media
+ */
+export function useCreateAlbum(tribeId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: CreateAlbumInput) => {
+      const response = await fetch(`${API_BASE}/${tribeId}/albums`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to create album');
+      }
+
+      const data = await response.json();
+      return data.album;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.albums.tribe(tribeId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.media.tribe(tribeId) });
+    },
+  });
+}

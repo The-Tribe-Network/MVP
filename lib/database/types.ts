@@ -77,6 +77,8 @@ export type CommentLikeInsert = InferInsertModel<typeof commentLike>;
 // ============================================
 export type Album = InferSelectModel<typeof album>;
 export type AlbumInsert = InferInsertModel<typeof album>;
+export type AlbumMedia = InferSelectModel<typeof albumMedia>;
+export type AlbumMediaInsert = InferInsertModel<typeof albumMedia>;
 export type Media = InferSelectModel<typeof media>;
 export type MediaInsert = InferInsertModel<typeof media>;
 
@@ -165,7 +167,16 @@ export type MediaWithUploader = Media & {
 export type AlbumWithCreator = Album & {
   creator: User;
   tribe: Tribe;
-  media?: Media[];
+  coverUrl?: string | null; // Resolved from coverId
+  photoCount?: number;
+};
+
+export type AlbumWithMedia = Album & {
+  creator: User;
+  tribe: Tribe;
+  coverUrl?: string | null;
+  media: Media[];
+  photoCount: number;
 };
 
 export type MessageWithSender = Message & {

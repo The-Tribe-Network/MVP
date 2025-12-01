@@ -1,83 +1,51 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { HydrationBoundary, type DehydratedState } from '@tanstack/react-query'
+import { Loader2 } from 'lucide-react'
 import { MediaHeader } from './media-header'
 import { AllAlbumsSection } from './all-albums-section'
-import { Loader2 } from 'lucide-react'
+import { useTribeAlbums } from '@/lib/hooks/use-albums'
+import { useTribeMedia } from '@/lib/hooks/use-media'
+import type { Album } from '@/lib/hooks/use-albums'
+import type { MediaItem } from '@/lib/hooks/use-media'
+import Image from 'next/image'
 
 interface MediaPageClientProps {
   tribeId: string
+  dehydratedState?: DehydratedState
+  initialAlbums?: Album[]
+  initialMedia?: MediaItem[]
 }
 
-interface Album {
-  id: string
-  name: string
-  coverImageUrl?: string | null
-  mediaCount: number
-  createdAt: string
+export function MediaPageClient({
+  tribeId,
+  dehydratedState,
+  initialAlbums = [],
+  initialMedia = [],
+}: MediaPageClientProps) {
+  return (
+    <HydrationBoundary state={dehydratedState}>
+      <MediaPageContent
+        tribeId={tribeId}
+        initialAlbums={initialAlbums}
+        initialMedia={initialMedia}
+      />
+    </HydrationBoundary>
+  )
 }
 
-interface Media {
-  id: string
-  fileUrl: string
-  fileType: string
-  width?: number
-  height?: number
-  likeCount: number
-  commentCount: number
-  createdAt: string
-  uploader: {
-    name: string
-    image?: string
-  }
-}
-
-export function MediaPageClient({ tribeId }: MediaPageClientProps) {
-  const [albums, setAlbums] = useState<Album[]>([])
-  const [media, setMedia] = useState<Media[]>([])
-  const [isLoadingAlbums, setIsLoadingAlbums] = useState(true)
-  const [isLoadingMedia, setIsLoadingMedia] = useState(true)
-
-  const fetchAlbums = async () => {
-    try {
-      const response = await fetch(`/api/tribes/${tribeId}/albums`)
-      if (response.ok) {
-        const data = await response.json()
-        setAlbums(data.albums || [])
-      }
-    } catch (err) {
-      console.error('Failed to fetch albums:', err)
-    } finally {
-      setIsLoadingAlbums(false)
-    }
-  }
-
-  const fetchMedia = async () => {
-    try {
-      const response = await fetch(`/api/tribes/${tribeId}/media`)
-      if (response.ok) {
-        const data = await response.json()
-        setMedia(data.media || [])
-      }
-    } catch (err) {
-      console.error('Failed to fetch media:', err)
-    } finally {
-      setIsLoadingMedia(false)
-    }
-  }
-
-  useEffect(() => {
-    fetchAlbums()
-    fetchMedia()
-  }, [tribeId])
-
-  const handleMediaUploaded = () => {
-    fetchMedia()
-  }
-
-  const handleAlbumCreated = () => {
-    fetchAlbums()
-  }
+function MediaPageContent({
+  tribeId,
+  initialAlbums,
+  initialMedia,
+}: {
+  tribeId: string
+  initialAlbums: Album[]
+  initialMedia: MediaItem[]
+}) {
+  // Use TanStack Query hooks (will use prefetched data)
+  const { data: albums = initialAlbums, isLoading: isLoadingAlbums } = useTribeAlbums(tribeId)
+  const { data: media = initialMedia, isLoading: isLoadingMedia } = useTribeMedia(tribeId)
 
   if (isLoadingAlbums || isLoadingMedia) {
     return (
@@ -89,17 +57,14 @@ export function MediaPageClient({ tribeId }: MediaPageClientProps) {
 
   return (
     <>
-      <MediaHeader
-        tribeId={tribeId}
-        onMediaUploaded={handleMediaUploaded}
-        onAlbumCreated={handleAlbumCreated}
-      />
+      {/* No callbacks needed - mutations auto-invalidate queries */}
+      <MediaHeader tribeId={tribeId} />
 
       <AllAlbumsSection
         albums={albums.map((album) => ({
           id: album.id,
           name: album.name,
-          cover: album.coverImageUrl || 'https://via.placeholder.com/400x300',
+          cover: album.coverImageUrl || '/placeholder.svg',
           photoCount: album.mediaCount || 0,
           date: new Date(album.createdAt).toLocaleDateString('en-US', {
             month: 'short',
@@ -117,10 +82,11 @@ export function MediaPageClient({ tribeId }: MediaPageClientProps) {
                 key={item.id}
                 className="relative aspect-square group cursor-pointer overflow-hidden rounded-lg"
               >
-                <img
+                <Image
                   src={item.fileUrl}
-                  alt="Media"
-                  className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                  alt={item.altText || 'Media'}
+                  fill
+                  className="object-cover transition-transform group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                   <div className="text-white text-center">
@@ -138,7 +104,9 @@ export function MediaPageClient({ tribeId }: MediaPageClientProps) {
 
       {albums.length === 0 && media.length === 0 && (
         <div className="text-center py-12">
-          <p className="text-gray-500">No albums or media yet. Upload your first photo to get started!</p>
+          <p className="text-gray-500">
+            No albums or media yet. Upload your first photo to get started!
+          </p>
         </div>
       )}
     </>
