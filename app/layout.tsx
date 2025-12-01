@@ -46,9 +46,9 @@ export default async function RootLayout({
   // Create a QueryClient instance for server-side prefetching
   const queryClient = getQueryClient();
 
-  // Prefetch user data in TanStack Query cache with initialData
+  // Prefetch user data in TanStack Query cache
   if (initialUser) {
-    prefetchQuery({
+    await prefetchQuery({
       queryClient,
       queryKey: queryKeys.auth.user(),
       initialData: initialUser,
