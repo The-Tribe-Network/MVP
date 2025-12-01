@@ -1,4 +1,4 @@
-import { QueryClient, type QueryKey, type QueryFunction } from "@tanstack/react-query";
+import { QueryClient, type QueryKey } from "@tanstack/react-query";
 import { dehydrate, type DehydratedState } from "@tanstack/react-query";
 
 /**
@@ -23,36 +23,25 @@ export function getQueryClient(): QueryClient {
 
 /**
  * Prefetches a query on the server with initial data.
- * This will populate the query cache with the provided data.
+ * This uses `setQueryData` to store the initial data in the cache,
+ * which is the recommended way to pass initial data to TanStack Query.
  *
  * @param queryClient - The QueryClient instance
  * @param queryKey - The query key
- * @param queryFn - The query function (optional if using initialData)
  * @param initialData - The initial data to set in the cache
  */
-export async function prefetchQuery<TData = unknown>({
+export function prefetchQuery<TData = unknown>({
   queryClient,
   queryKey,
-  queryFn,
   initialData,
 }: {
   queryClient: QueryClient;
   queryKey: QueryKey;
-  queryFn?: QueryFunction<TData>;
-  initialData?: TData;
-}): Promise<void> {
-  if (initialData !== undefined) {
-    // Set the query data directly in the cache
-    queryClient.setQueryData(queryKey, initialData);
-  } else if (queryFn) {
-    // Prefetch the query using the query function
-    await queryClient.prefetchQuery({
-      queryKey,
-      queryFn,
-    });
-  } else {
-    throw new Error("Either initialData or queryFn must be provided");
-  }
+  initialData: TData;
+}): void {
+  // Use setQueryData to store initial data in the cache
+  // This is the recommended way to pass initial data to queries
+  queryClient.setQueryData(queryKey, initialData);
 }
 
 /**
@@ -67,4 +56,6 @@ export function dehydrateQueryClient(
 ): DehydratedState {
   return dehydrate(queryClient);
 }
+
+
 

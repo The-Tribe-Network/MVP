@@ -1,5 +1,5 @@
 import { Suspense } from "react"
-import { ResetPasswordForm } from "@/components/auth/forms/reset-password-form"
+import { ResetPasswordForm } from "@/app-pages/auth/forms/reset-password-form"
 
 interface PageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>

@@ -1,7 +1,8 @@
-import AppSidebar from "@/components/app-sidebar";
+import AppSidebar from "@/components/sidebar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { requireAuth } from "@/lib/services/auth";
 import { ToastProvider } from "@/lib/providers/toast-provider";
+import { TribeDashboardToolbar } from "@/components/tribe-dashboard-toolbar";
 
 export default async function ProtectedLayout({
   children,
@@ -22,7 +23,10 @@ export default async function ProtectedLayout({
       <AppSidebar />
       <SidebarInset>
         <ToastProvider>
-          {children}
+          <TribeDashboardToolbar />
+          <div className="container mx-auto px-4 pt-6 min-h-[calc(100vh-64px)] h-full">
+            {children}
+          </div>
         </ToastProvider>
       </SidebarInset>
     </SidebarProvider>

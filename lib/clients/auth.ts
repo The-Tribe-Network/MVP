@@ -15,7 +15,7 @@ if (!LOCAL_ORIGIN || LOCAL_ORIGIN === undefined || LOCAL_ORIGIN === '' && NODE_E
 };
 
 export const auth = betterAuth({
-  trustedOrigins: [LOCAL_ORIGIN],
+  trustedOrigins: [LOCAL_ORIGIN, "http://localhost:3000"],
   database: drizzleAdapter(db, {
     provider: "pg",
     schema: {
@@ -25,6 +25,11 @@ export const auth = betterAuth({
       verification,
     }
   }),
+  advanced: {
+    database: {
+      generateId: false, // Let database generate UUIDs automatically
+    },
+  },
   socialProviders: {
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID as string,
@@ -64,7 +69,7 @@ export const auth = betterAuth({
   // Email configuration
   emailAndPassword: {
     enabled: true,
-    requireEmailVerification: isProduction,
+    requireEmailVerification: /*isProduction*/ false,
     sendEmailVerification: async ({ user, verificationUrl }: { user: any; verificationUrl: string }) => {
       try {
         await sendVerificationEmail({

@@ -1,6 +1,6 @@
 'use client'
 
-import { Bell, MessageSquare, Megaphone, User, Search } from 'lucide-react'
+import { Bell, MessageSquare, Megaphone, User, Search, PlusIcon, Mail, Badge } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -13,8 +13,14 @@ import { Input } from '@/components/ui/input'
 import { usePathname, useParams } from 'next/navigation'
 import { SidebarTrigger } from './ui/sidebar'
 import { Separator } from './ui/separator'
+import { ViewInvitesDropdown } from './dropdowns/view-invites'
+import { TooltipButton } from './ui/tooltip-button'
+import { useState } from 'react'
+import { NotificationsDrawer } from '@/app-pages/tribe-dashboard/info/notifications-drawer'
 
 export function TribeDashboardToolbar() {
+  const [isNotificationsDrawerOpen, setIsNotificationsDrawerOpen] = useState(false)
+
   const pathname = usePathname()
   const { tribe_id, post_id } = useParams<{ tribe_id: string, post_id?: string }>();
 
@@ -30,6 +36,18 @@ export function TribeDashboardToolbar() {
         return 'Post';
       case `/tribe/${tribe_id}/events`:
         return 'Events';
+      case `/tribe/new`:
+        return 'Create New Tribe';
+      case `/discover`:
+        return 'Discover';
+      case `/dashboard`:
+        return 'Dashboard';
+      case `/profile`:
+        return 'Profile';
+      case `/settings`:
+        return 'Settings';
+      case `/help`:
+        return 'Help';
       default:
         return 'Dashboard';
     }
@@ -37,16 +55,17 @@ export function TribeDashboardToolbar() {
 
   return (
     <div className="sticky top-0 z-50 border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
+      <NotificationsDrawer open={isNotificationsDrawerOpen} onOpenChange={setIsNotificationsDrawerOpen} />
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between gap-4">
           {/* Left side - Toggle and Title */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <SidebarTrigger />
             <Separator
               orientation="vertical"
-              className="mr-2 data-[orientation=vertical]:h-4"
+              className="data-[orientation=vertical]:h-4"
             />
-            <h1 className="text-xl font-semibold">{getTitle()}</h1>
+            <h1 className="text-xl font-semibold">Tribe</h1>
           </div>
 
           <div className="hidden md:flex flex-1 max-w-md">
@@ -62,39 +81,21 @@ export function TribeDashboardToolbar() {
 
           {/* Right side - Icons and User Menu */}
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="h-5 w-5" />
-              <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-primary" />
-            </Button>
+            <ViewInvitesDropdown />
 
-            <Button variant="ghost" size="icon" className="relative">
+            <TooltipButton message="Announcements" variant="ghost" size="icon">
+              <Megaphone className="h-5 w-5" />
+            </TooltipButton>
+
+            <TooltipButton message="Messages" variant="ghost" size="icon" className="relative">
               <MessageSquare className="h-5 w-5" />
               <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-primary" />
-            </Button>
+            </TooltipButton>
 
-            <Button variant="ghost" size="icon">
-              <Megaphone className="h-5 w-5" />
-            </Button>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  <User className="h-5 w-5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuItem>
-                  <User className="mr-2 h-4 w-4" />
-                  Profile
-                </DropdownMenuItem>
-                <DropdownMenuItem>Settings</DropdownMenuItem>
-                <DropdownMenuItem>Help & Support</DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-destructive">
-                  Log out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <TooltipButton message="Notifications" variant="ghost" size="icon" className="relative" onClick={() => setIsNotificationsDrawerOpen(true)}>
+              <Bell className="h-5 w-5" />
+              <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-primary" />
+            </TooltipButton>
           </div>
         </div>
       </div>

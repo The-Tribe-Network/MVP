@@ -24,6 +24,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { useParams, usePathname } from "next/navigation"
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
@@ -163,6 +164,9 @@ function Sidebar({
   variant?: "sidebar" | "floating" | "inset"
   collapsible?: "offcanvas" | "icon" | "none"
 }) {
+  const pathname = usePathname();
+  const { tribe_id: tribeId } = useParams<{ tribe_id: string }>();
+
   const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
 
   if (collapsible === "none") {
@@ -181,6 +185,7 @@ function Sidebar({
   }
 
   if (isMobile) {
+    const isTribeDashboard = pathname.startsWith(`/tribe/${tribeId}`);
     return (
       <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
         <SheetContent
@@ -190,7 +195,8 @@ function Sidebar({
           className="bg-sidebar text-sidebar-foreground w-(--sidebar-width) p-0 [&>button]:hidden"
           style={
             {
-              "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
+              "--sidebar-width": isTribeDashboard ? SIDEBAR_WIDTH_MOBILE : SIDEBAR_WIDTH_ICON,
+              "width": isTribeDashboard ? SIDEBAR_WIDTH_MOBILE : "4rem",
             } as React.CSSProperties
           }
           side={side}

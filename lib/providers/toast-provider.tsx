@@ -49,9 +49,19 @@ const TOAST_CODES = {
     description: "You don't have permission to access this resource.",
     variant: "destructive" as const,
   },
+  UNAUTHORIZED_TRIBE_ACCESS: {
+    title: "Unauthorized",
+    description: "You don't have permission to access this tribe.",
+    variant: "destructive" as const,
+  },
   SESSION_EXPIRED: {
     title: "Session Expired",
     description: "Your session has expired. Please sign in again.",
+    variant: "destructive" as const,
+  },
+  TRIBE_NOT_FOUND: {
+    title: "Tribe Not Found",
+    description: "The tribe you are looking for does not exist.",
     variant: "destructive" as const,
   },
 } as const

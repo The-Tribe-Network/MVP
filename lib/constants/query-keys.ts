@@ -22,5 +22,30 @@ export const queryKeys = {
     // Legacy support - keep for backward compatibility
     tribe: (id: string | null | undefined) => ["tribe", id] as const,
   },
+
+  // Post queries
+  posts: {
+    all: ["posts"] as const,
+    tribes: () => ["posts", "tribes"] as const,
+    tribe: (tribeId: string) => ["posts", "tribes", tribeId] as const,
+    detail: (postId: string) => ["posts", "detail", postId] as const,
+  },
+
+  // Activity queries
+  activities: {
+    all: ["activities"] as const,
+    tribes: () => ["activities", "tribes"] as const,
+    tribe: (tribeId: string) => ["activities", "tribes", tribeId] as const,
+    users: () => ["activities", "users"] as const,
+    user: (userId: string) => ["activities", "users", userId] as const,
+  },
+
+  // Comment queries
+  comments: {
+    all: ["comments"] as const,
+    post: (postId: string) => ["comments", "post", postId] as const,
+  },
 } as const;
+
+
 
