@@ -3,7 +3,7 @@ import { auth } from "../clients/auth"
 import { headers } from "next/headers"
 import { redirect } from "next/navigation"
 import { isProfileComplete } from "./user"
-import type { BetterAuthUser } from "../@types/auth"
+import type { User } from "@/lib/database/types"
 
 /**
  * Get the current session on the server side
@@ -19,9 +19,9 @@ export async function getServerSession() {
 /**
  * Get the current user on the server side
  */
-export async function getServerUser(): Promise<BetterAuthUser | null> {
+export async function getServerUser(): Promise<User | null> {
   const session = await getServerSession()
-  return (session?.user as BetterAuthUser | undefined) || null
+  return (session?.user as User | undefined) || null
 }
 
 /**

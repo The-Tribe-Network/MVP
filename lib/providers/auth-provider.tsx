@@ -1,13 +1,13 @@
 "use client"
 
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react"
-import { BetterAuthUser } from "../@types/auth"
+import { User } from "@/lib/database/types"
 
 interface AuthContextType {
-  user: BetterAuthUser | null
+  user: User | null
   isLoading: boolean
   error: string | null
-  setUser: (user: BetterAuthUser | null) => void
+  setUser: (user: User | null) => void
   setLoading: (loading: boolean) => void
   setError: (error: string | null) => void
   clearError: () => void
@@ -22,12 +22,12 @@ interface AuthProviderProps {
 }
 
 export function AuthProvider({ children, initialUser }: AuthProviderProps) {
-  const [user, setUserState] = useState<BetterAuthUser | null>(null)
+  const [user, setUserState] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [error, setErrorState] = useState<string | null>(null)
 
   // Memoized action functions
-  const setUser = useCallback((user: BetterAuthUser | null) => {
+  const setUser = useCallback((user: User | null) => {
     setUserState(user)
   }, [])
 

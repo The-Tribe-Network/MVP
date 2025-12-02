@@ -46,7 +46,6 @@ export const auth = betterAuth({
       profileCompleted: {
         type: "boolean",
         required: false,
-        defaultValue: false,
       },
     },
   },
@@ -60,10 +59,30 @@ export const auth = betterAuth({
       prompt: "select_account",
       clientId: process.env.GOOGLE_CLIENT_ID as string,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+      mapProfileToUser: (profile) => {
+        return {
+          email: profile.email,
+          name: profile.name,
+          displayName: profile.name,
+          profileCompleted: true,
+          emailVerified: true,
+          image: profile.picture,
+        };
+      },
     },
     discord: {
       clientId: process.env.DISCORD_CLIENT_ID as string,
       clientSecret: process.env.DISCORD_CLIENT_SECRET as string,
+      mapProfileToUser: (profile) => {
+        return {
+          email: profile.email,
+          name: profile.global_name || profile.username,
+          displayName: profile.display_name || profile.username,
+          profileCompleted: true,
+          emailVerified: profile.verified,
+          image: profile.image_url || undefined,
+        };
+      },
     },
   },
   plugins: [

@@ -7,6 +7,7 @@ const API_BASE = "/api/tribes";
 
 export interface MediaItem {
   id: string;
+  mediaId: string;
   fileUrl: string;
   fileType: "image" | "video" | "document";
   fileSize: number | null;

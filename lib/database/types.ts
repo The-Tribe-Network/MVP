@@ -1,5 +1,4 @@
 import { InferSelectModel, InferInsertModel } from "drizzle-orm";
-import { SelectUser, SelectSession } from "@/lib/@types/auth";
 import {
   tribe,
   tribeMember,
@@ -33,20 +32,21 @@ import {
   message,
   messageRead,
 } from "./schemas/message";
-
-// Note: Auth types (User, Session, Account, Verification) are provided by Better Auth
-// Using SelectUser from @/lib/@types/auth for extended types
-type User = SelectUser;
+import { auth } from "@/lib/clients/auth";
+import { session, user } from "./schemas/auth";
 
 // ============================================
 // User types
 // ============================================
-export type UserWithProfile = User & {
-  displayName: string;
-  bio: string | null;
-  location: string;
-  profileCompleted: boolean;
-};
+export type User = typeof auth.$Infer.Session.user;
+export type Session = typeof auth.$Infer.Session;
+
+// Drizzle schema types (includes all database fields)
+export type InsertUser = typeof user.$inferInsert
+export type SelectUser = typeof user.$inferSelect
+
+export type SessionInsert = typeof session.$inferInsert
+export type SelectSession = typeof session.$inferSelect
 
 // ============================================
 // Tribe types

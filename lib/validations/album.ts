@@ -6,6 +6,7 @@ export const createAlbumSchema = z.object({
   privacy: z.enum(["public", "private", "admin_only"]).optional(),
   coverId: z.string().uuid("Invalid cover media ID").optional(),
   mediaIds: z.array(z.string().uuid("Invalid media ID")).max(100).optional(),
+  isNewCover: z.boolean().optional(),
 });
 
 export const updateAlbumSchema = z.object({

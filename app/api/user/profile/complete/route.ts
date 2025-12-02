@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
 import { markProfileAsComplete } from "@/lib/services/user";
-import type { BetterAuthUser } from "@/lib/@types/auth";
+import type { User } from "@/lib/database/types";
 
 /**
  * POST /api/user/profile/complete
@@ -9,7 +9,7 @@ import type { BetterAuthUser } from "@/lib/@types/auth";
  */
 export async function POST(request: NextRequest) {
   try {
-    const user: BetterAuthUser | null = await getServerUser();
+    const user: User | null = await getServerUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

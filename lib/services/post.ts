@@ -156,9 +156,6 @@ export async function getTribePosts(
         username: user.username,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
-        displayName: user.displayName,
-        bio: user.bio,
-        location: user.location,
         profileCompleted: user.profileCompleted,
       },
     })
@@ -246,9 +243,6 @@ export async function getTribePosts(
     updatedAt: p.updatedAt,
     author: {
       ...p.author,
-      displayName: p.author.displayName || '',
-      bio: p.author.bio || null,
-      location: p.author.location || null,
       profileCompleted: p.author.profileCompleted || false,
     },
     likeCount: likeCountMap.get(p.id) || 0,

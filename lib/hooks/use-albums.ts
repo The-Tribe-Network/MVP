@@ -60,6 +60,7 @@ interface CreateAlbumInput {
   privacy?: "public" | "private" | "admin_only";
   coverId?: string;
   mediaIds?: string[];
+  isNewCover?: boolean; // If true, the cover is a new upload and we query the normal media table instead of the album media table
 }
 
 /**

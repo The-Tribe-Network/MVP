@@ -1,13 +1,13 @@
 import * as AvatarPrimitive from "@radix-ui/react-avatar";
 
 import { cn, getInitials } from "@/lib/utils";
-import { BetterAuthUser } from "@/lib/@types/auth";
 import { DEFAULT_USER_IMAGE } from "@/lib/constants/auth";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { User } from "@/lib/database/types";
 
 interface UserAvatarProps
-  extends Pick<BetterAuthUser, "image" | "name" | "email">,
+  extends Pick<User, "image" | "name" | "email">,
   React.ComponentProps<typeof AvatarPrimitive.Root> { }
 
 export function UserAvatar({

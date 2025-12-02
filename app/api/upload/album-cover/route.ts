@@ -3,9 +3,6 @@ import { getServerUser } from '@/lib/services/auth';
 import { uploadPostImage } from '@/lib/services/media';
 import { validateImageFile } from '@/lib/utils/image';
 import { canUserUploadMedia } from '@/lib/services/permissions';
-import { db } from '@/lib/database/client';
-import { media } from '@/lib/database/schemas/media';
-import { eq } from 'drizzle-orm';
 
 /**
  * POST /api/upload/album-cover

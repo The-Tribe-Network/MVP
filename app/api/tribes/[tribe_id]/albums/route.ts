@@ -75,7 +75,7 @@ export async function POST(
       );
     }
 
-    const { name, description, privacy, coverId, mediaIds } = validation.data;
+    const { name, description, privacy, coverId, mediaIds, isNewCover } = validation.data;
 
     const album = await createAlbumWithMedia(user.id, {
       tribeId: tribe_id,
@@ -84,6 +84,7 @@ export async function POST(
       privacy,
       coverId,
       mediaIds,
+      isNewCover,
     });
 
     return NextResponse.json({ album }, { status: 201 });

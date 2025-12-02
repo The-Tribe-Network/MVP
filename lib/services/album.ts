@@ -4,7 +4,7 @@ import { user } from "@/lib/database/schemas/auth";
 import { tribe } from "@/lib/database/schemas/tribe";
 import { eq, and, desc, sql, count, inArray, asc } from "drizzle-orm";
 import { canUserCreateAlbums } from "./permissions";
-import type { AlbumMedia, AlbumWithMedia } from "@/lib/database/types";
+import type { AlbumMedia, AlbumWithMedia, Media } from "@/lib/database/types";
 
 export interface CreateAlbumData {
   tribeId: string;
@@ -344,6 +344,7 @@ export interface CreateAlbumWithMediaData {
   privacy?: "public" | "private" | "admin_only";
   coverId?: string; // Media ID for cover (existing or newly uploaded)
   mediaIds?: string[]; // Media IDs to include
+  isNewCover?: boolean; // If true, the cover is a new upload and we query the normal media table instead of the album media table
 }
 
 /**
@@ -387,6 +388,7 @@ export async function addMultipleMediaToAlbum(
     ));
 
   if (mediaRecords.length !== mediaIds.length) {
+    console.error(`Media records length mismatch: ${mediaRecords.length} !== ${mediaIds.length}`);
     throw new Error("Some media items not found or not accessible");
   }
 
@@ -426,7 +428,7 @@ export async function createAlbumWithMedia(
 
   // Validate cover media if provided
   if (albumData.coverId) {
-    const coverMedia = await db
+    const coverMediaRecord = await db
       .select()
       .from(media)
       .where(and(
@@ -435,7 +437,7 @@ export async function createAlbumWithMedia(
       ))
       .limit(1);
 
-    if (!coverMedia[0]) {
+    if (!coverMediaRecord[0]) {
       throw new Error("Cover image not found or not accessible");
     }
   }

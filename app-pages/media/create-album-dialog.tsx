@@ -83,7 +83,7 @@ export function CreateAlbumDialog({ tribeId }: CreateAlbumDialogProps) {
   }
 
   const handleSelectAllMedia = () => {
-    setSelectedMediaIds(new Set(publicMedia.map((m: MediaItem) => m.id)))
+    setSelectedMediaIds(new Set(publicMedia.map((m: MediaItem) => m.mediaId)))
   }
 
   const handleClearAllMedia = () => {
@@ -120,6 +120,7 @@ export function CreateAlbumDialog({ tribeId }: CreateAlbumDialogProps) {
         description: description || undefined,
         coverId: selectedCoverId || undefined,
         mediaIds: Array.from(selectedMediaIds),
+        isNewCover: uploadedCoverId !== null,
       })
 
       // Reset state (but don't delete uploaded cover - it's part of the album now)
@@ -279,11 +280,11 @@ export function CreateAlbumDialog({ tribeId }: CreateAlbumDialogProps) {
                           <button
                             key={media.id}
                             type="button"
-                            onClick={() => handleCoverSelect(media.id)}
+                            onClick={() => handleCoverSelect(media.mediaId)}
                             disabled={isSubmitting}
                             className={`relative aspect-square rounded-md overflow-hidden border-2 transition-all ${selectedCoverId === media.id
-                                ? 'border-primary ring-2 ring-primary ring-offset-2'
-                                : 'border-transparent hover:border-muted-foreground/30'
+                              ? 'border-primary ring-2 ring-primary ring-offset-2'
+                              : 'border-transparent hover:border-muted-foreground/30'
                               }`}
                           >
                             <Image
@@ -292,7 +293,7 @@ export function CreateAlbumDialog({ tribeId }: CreateAlbumDialogProps) {
                               fill
                               className="object-cover"
                             />
-                            {selectedCoverId === media.id && (
+                            {selectedCoverId === media.mediaId && (
                               <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
                                 <Check className="h-6 w-6 text-primary bg-background rounded-full p-1" />
                               </div>
@@ -351,11 +352,11 @@ export function CreateAlbumDialog({ tribeId }: CreateAlbumDialogProps) {
                         <button
                           key={media.id}
                           type="button"
-                          onClick={() => handleMediaToggle(media.id)}
+                          onClick={() => handleMediaToggle(media.mediaId)}
                           disabled={isSubmitting}
                           className={`relative aspect-square rounded-md overflow-hidden border-2 transition-all ${selectedMediaIds.has(media.id)
-                              ? 'border-primary ring-2 ring-primary ring-offset-2'
-                              : 'border-transparent hover:border-muted-foreground/30'
+                            ? 'border-primary ring-2 ring-primary ring-offset-2'
+                            : 'border-transparent hover:border-muted-foreground/30'
                             }`}
                         >
                           <Image
@@ -364,7 +365,7 @@ export function CreateAlbumDialog({ tribeId }: CreateAlbumDialogProps) {
                             fill
                             className="object-cover"
                           />
-                          {selectedMediaIds.has(media.id) && (
+                          {selectedMediaIds.has(media.mediaId) && (
                             <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
                               <Check className="h-6 w-6 text-primary bg-background rounded-full p-1" />
                             </div>
