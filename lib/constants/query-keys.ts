@@ -77,6 +77,15 @@ export const queryKeys = {
     all: ["security"] as const,
     sessions: () => ["security", "sessions"] as const,
   },
+
+  // Event queries
+  events: {
+    all: ["events"] as const,
+    tribes: () => ["events", "tribes"] as const,
+    tribe: (tribeId: string) => ["events", "tribes", tribeId] as const,
+    detail: (eventId: string) => ["events", "detail", eventId] as const,
+    attendees: (eventId: string) => ["events", "attendees", eventId] as const,
+  },
 } as const;
 
 

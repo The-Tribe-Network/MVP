@@ -4,9 +4,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { CalendarIcon, Clock, MapPin, Users, BarChart3, CheckCircle2 } from 'lucide-react'
+import { CalendarIcon, Clock, MapPin, Users, BarChart3, CheckCircle2, ArrowRight } from 'lucide-react'
 import { Event } from './types'
 import { EventVotingSection } from './event-voting-section'
+import Link from 'next/link'
+import { useParams } from 'next/navigation'
 
 interface EventCardProps {
   event: Event
@@ -16,8 +18,11 @@ interface EventCardProps {
 }
 
 export function EventCard({ event, hasUserVoted, userVotedOption, onVote }: EventCardProps) {
+  const params = useParams()
+  const tribeId = params?.tribe_id as string
+
   return (
-    <Card className="hover:border-primary/50 transition-colors">
+    <Card className="hover:border-primary/50 transition-colors group relative">
       <CardHeader>
         <div className="flex items-start justify-between">
           <div className="space-y-2">
@@ -93,6 +98,20 @@ export function EventCard({ event, hasUserVoted, userVotedOption, onVote }: Even
             onVote={(optionId) => onVote(event.id, optionId)}
           />
         )}
+
+        {/* View Details Link */}
+        <div className="pt-2 border-t">
+          <Link href={`/tribe/${tribeId}/events/${event.id}`}>
+            <Button
+              variant="ghost"
+              className="w-full justify-between group-hover:bg-muted"
+              size="sm"
+            >
+              <span>View Event Details</span>
+              <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+            </Button>
+          </Link>
+        </div>
       </CardContent>
     </Card>
   )

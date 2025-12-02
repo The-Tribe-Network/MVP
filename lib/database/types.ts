@@ -159,6 +159,14 @@ export type EventWithAttendees = Event & {
   attendees: (EventAttendee & { user: User })[];
 };
 
+export type EventWithDetails = Event & {
+  creator: User;
+  tribe: Tribe;
+  attendees: (EventAttendee & { user: User })[];
+  attendeeCount: number;
+  isUserAttending?: boolean;
+};
+
 export type MediaWithUploader = Media & {
   uploader: User;
   tribe: Tribe;
