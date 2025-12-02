@@ -16,11 +16,11 @@ import {
   CheckCircle2,
   X
 } from "lucide-react"
-import { EventCalendarView } from "./event-calendar-view"
 import { EventAttendeesSection } from "./event-attendees-section"
 import { EventLocationMap } from "./event-location-map"
 import { EventCommentsSection } from "./event-comments-section"
 import { EventAttachmentsSection } from "./event-attachments-section"
+import { EventPollsSection } from "./event-polls-section"
 
 interface EventDetailContentProps {
   tribeId: string
@@ -222,18 +222,15 @@ export function EventDetailContent({
               </Tabs>
             </div>
 
-            {/* Right Column - Calendar, Map, Attendees */}
+            {/* Right Column - Location, Polls, Attendees */}
             <div className="lg:col-span-1 space-y-6">
-              {/* Calendar View */}
-              <EventCalendarView
-                startDate={event.startDate}
-                endDate={event.endDate}
-              />
-
               {/* Location Map */}
               {event.location && (
                 <EventLocationMap location={event.location} />
               )}
+
+              {/* Polls Section */}
+              <EventPollsSection eventId={eventId} />
 
               {/* Attendees */}
               <EventAttendeesSection
