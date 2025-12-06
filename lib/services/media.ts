@@ -587,9 +587,9 @@ export async function uploadTribeMedia(
     .values(mediaData as any)
     .returning();
 
-  if (addToAlbum) {
+  if (addToAlbum === true) {
     await db.insert(albumMedia).values({
-      albumId: albumId || null,
+      albumId: albumId || null, // If albumId is null, the media will be added to the general album
       mediaId: createdMedia.id,
       addedBy: userId,
       addedAt: new Date(),
