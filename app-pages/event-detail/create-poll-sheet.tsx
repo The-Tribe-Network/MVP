@@ -15,9 +15,9 @@ import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { 
-  Plus, 
-  Trash2, 
+import {
+  Plus,
+  Trash2,
   GripVertical,
   Vote,
   Calendar
@@ -30,10 +30,10 @@ interface CreatePollSheetProps {
   onCreatePoll: (poll: Omit<Poll, 'id' | 'createdAt' | 'createdBy'>) => void
 }
 
-export function CreatePollSheet({ 
-  open, 
-  onOpenChange, 
-  onCreatePoll 
+export function CreatePollSheet({
+  open,
+  onOpenChange,
+  onCreatePoll
 }: CreatePollSheetProps) {
   const [question, setQuestion] = useState("")
   const [options, setOptions] = useState<string[]>(["", ""])
@@ -148,7 +148,7 @@ export function CreatePollSheet({
                   Add Option
                 </Button>
               </div>
-              
+
               <div className="space-y-2">
                 {options.map((option, index) => (
                   <div key={index} className="flex items-center gap-2 group">
@@ -182,7 +182,7 @@ export function CreatePollSheet({
             {/* Settings */}
             <div className="space-y-4">
               <Label className="text-sm font-medium">Settings</Label>
-              
+
               <div className="space-y-4">
                 {/* Allow Multiple */}
                 <div className="flex items-center justify-between">
@@ -235,7 +235,7 @@ export function CreatePollSheet({
                       onCheckedChange={setHasDeadline}
                     />
                   </div>
-                  
+
                   {hasDeadline && (
                     <div className="relative">
                       <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -256,14 +256,14 @@ export function CreatePollSheet({
 
         <SheetFooter className="pt-4 border-t mt-auto">
           <div className="flex gap-2 w-full">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => handleClose(false)}
               className="flex-1"
             >
               Cancel
             </Button>
-            <Button 
+            <Button
               onClick={handleCreate}
               disabled={!isValid}
               className="flex-1"

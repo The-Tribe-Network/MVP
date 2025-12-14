@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { user, account, event, tribe, activity, media, post, comment, commentLike, eventAttendee, message, messageRead, notification, hashtag, postHashtag, postLike, session, tribeInvitation, tribeMember, tribeMemberPermission, album, mediaLike, tribeMemberPreference, albumMedia } from "@/lib/database/schemas";
+import { user, account, event, tribe, activity, media, post, comment, commentLike, eventAttendee, message, messageRead, notification, hashtag, postHashtag, postLike, session, tribeInvitation, tribeMember, tribeMemberPermission, album, mediaLike, tribeMemberPreference, albumMedia, poll, pollOption, pollVote } from "@/lib/database/schemas";
 
 export const accountRelations = relations(account, ({ one }) => ({
 	user: one(user, {
@@ -45,6 +45,8 @@ export const userRelations = relations(user, ({ many }) => ({
 	mediaLikes: many(mediaLike),
 	tribeMemberPreferences: many(tribeMemberPreference),
 	albumMedias: many(albumMedia),
+	polls: many(poll),
+	pollVotes: many(pollVote),
 }));
 
 export const eventRelations = relations(event, ({ one, many }) => ({
@@ -58,6 +60,7 @@ export const eventRelations = relations(event, ({ one, many }) => ({
 	}),
 	activities: many(activity),
 	eventAttendees: many(eventAttendee),
+	polls: many(poll),
 }));
 
 export const tribeRelations = relations(tribe, ({ one, many }) => ({
@@ -356,6 +359,42 @@ export const albumMediaRelations = relations(albumMedia, ({ one }) => ({
 	}),
 	user: one(user, {
 		fields: [albumMedia.addedBy],
+		references: [user.id]
+	}),
+}));
+
+export const pollRelations = relations(poll, ({ one, many }) => ({
+	event: one(event, {
+		fields: [poll.eventId],
+		references: [event.id]
+	}),
+	creator: one(user, {
+		fields: [poll.createdBy],
+		references: [user.id]
+	}),
+	options: many(pollOption),
+	votes: many(pollVote),
+}));
+
+export const pollOptionRelations = relations(pollOption, ({ one, many }) => ({
+	poll: one(poll, {
+		fields: [pollOption.pollId],
+		references: [poll.id]
+	}),
+	votes: many(pollVote),
+}));
+
+export const pollVoteRelations = relations(pollVote, ({ one }) => ({
+	poll: one(poll, {
+		fields: [pollVote.pollId],
+		references: [poll.id]
+	}),
+	option: one(pollOption, {
+		fields: [pollVote.optionId],
+		references: [pollOption.id]
+	}),
+	user: one(user, {
+		fields: [pollVote.userId],
 		references: [user.id]
 	}),
 }));

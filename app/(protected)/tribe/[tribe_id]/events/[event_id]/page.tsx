@@ -1,4 +1,3 @@
-import type { PageProps } from '@/.next/types/app/page'
 import { notFound, redirect } from 'next/navigation'
 import { getServerUser } from '@/lib/services/auth'
 import { checkTribeMembership } from '@/lib/services/permissions'

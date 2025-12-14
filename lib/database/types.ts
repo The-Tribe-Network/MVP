@@ -21,6 +21,11 @@ import {
   eventAttendee,
 } from "./schemas/event";
 import {
+  poll,
+  pollOption,
+  pollVote,
+} from "./schemas/poll";
+import {
   activity,
   notification,
 } from "./schemas/activity";
@@ -89,6 +94,16 @@ export type Event = InferSelectModel<typeof event>;
 export type EventInsert = InferInsertModel<typeof event>;
 export type EventAttendee = InferSelectModel<typeof eventAttendee>;
 export type EventAttendeeInsert = InferInsertModel<typeof eventAttendee>;
+
+// ============================================
+// Poll types
+// ============================================
+export type Poll = InferSelectModel<typeof poll>;
+export type PollInsert = InferInsertModel<typeof poll>;
+export type PollOption = InferSelectModel<typeof pollOption>;
+export type PollOptionInsert = InferInsertModel<typeof pollOption>;
+export type PollVote = InferSelectModel<typeof pollVote>;
+export type PollVoteInsert = InferInsertModel<typeof pollVote>;
 
 // ============================================
 // Activity types
@@ -165,6 +180,22 @@ export type EventWithDetails = Event & {
   attendees: (EventAttendee & { user: User })[];
   attendeeCount: number;
   isUserAttending?: boolean;
+};
+
+export type PollOptionWithVotes = PollOption & {
+  votes: number;
+  voters: User[];
+};
+
+export type PollWithDetails = Poll & {
+  creator: User;
+  options: PollOptionWithVotes[];
+  userVotes: string[];
+  totalVotes: number;
+};
+
+export type EventWithPolls = EventWithCreator & {
+  polls: PollWithDetails[];
 };
 
 export type MediaWithUploader = Media & {

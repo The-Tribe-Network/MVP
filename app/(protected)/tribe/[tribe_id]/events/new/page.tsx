@@ -1,11 +1,10 @@
-import type { PageProps } from '@/.next/types/app/page'
 import { redirect } from 'next/navigation'
 import { getServerUser } from '@/lib/services/auth'
 import { getTribeById } from '@/lib/services/tribe'
 import { getMemberWithPermissions } from '@/lib/services/permissions'
 import { CreateEventPage } from '@/app-pages/create-event'
 
-export default async function NewEventPage({ params }: PageProps) {
+export default async function NewEventPage({ params }: PageProps<'/tribe/[tribe_id]/events/new'>) {
   const { tribe_id } = await params
 
   // 1. Check authentication

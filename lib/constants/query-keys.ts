@@ -86,6 +86,14 @@ export const queryKeys = {
     detail: (eventId: string) => ["events", "detail", eventId] as const,
     attendees: (eventId: string) => ["events", "attendees", eventId] as const,
   },
+
+  // Poll queries
+  polls: {
+    all: ["polls"] as const,
+    events: () => ["polls", "events"] as const,
+    event: (eventId: string) => ["polls", "events", eventId] as const,
+    detail: (pollId: string) => ["polls", "detail", pollId] as const,
+  },
 } as const;
 
 

@@ -50,6 +50,13 @@ export {
   eventAttendee,
 } from "@/lib/database/schemas/event";
 
+// Poll tables
+export {
+  poll,
+  pollOption,
+  pollVote,
+} from "@/lib/database/schemas/poll";
+
 // Activity & Notification tables
 export {
   activity,
@@ -94,5 +101,8 @@ export {
   mediaLikeRelations,
   tribeMemberPreferenceRelations,
   albumMediaRelations,
+  pollRelations,
+  pollOptionRelations,
+  pollVoteRelations,
 } from "@/lib/database/schemas/relations";
 

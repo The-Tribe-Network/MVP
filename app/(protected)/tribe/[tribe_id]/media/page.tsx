@@ -1,4 +1,4 @@
-import type { PageProps } from '@/.next/types/app/page'
+
 import { redirect } from 'next/navigation'
 import { getServerUser } from '@/lib/services/auth'
 import { checkTribeMembership } from '@/lib/services/permissions'
@@ -13,7 +13,7 @@ import {
 import { queryKeys } from '@/lib/constants/query-keys'
 import { MediaPageClient } from '@/app-pages/media'
 
-export default async function AlbumsPage({ params }: PageProps) {
+export default async function AlbumsPage({ params }: PageProps<'/tribe/[tribe_id]/media'>) {
   const { tribe_id } = await params
 
   // 1. Check authentication

@@ -6,11 +6,11 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { 
-  Vote, 
-  Plus, 
-  CheckCircle2, 
-  Clock, 
+import {
+  Vote,
+  Plus,
+  CheckCircle2,
+  Clock,
   Users,
   ChevronDown,
   ChevronUp
@@ -51,9 +51,9 @@ const mockPolls: Poll[] = [
     id: "poll-1",
     question: "What food should we order?",
     options: [
-      { 
-        id: "opt-1", 
-        text: "Pizza 🍕", 
+      {
+        id: "opt-1",
+        text: "Pizza 🍕",
         votes: 12,
         voters: [
           { id: "u1", name: "Alex" },
@@ -61,18 +61,18 @@ const mockPolls: Poll[] = [
           { id: "u3", name: "Jordan" },
         ]
       },
-      { 
-        id: "opt-2", 
-        text: "Tacos 🌮", 
+      {
+        id: "opt-2",
+        text: "Tacos 🌮",
         votes: 8,
         voters: [
           { id: "u4", name: "Taylor" },
           { id: "u5", name: "Morgan" },
         ]
       },
-      { 
-        id: "opt-3", 
-        text: "Burgers 🍔", 
+      {
+        id: "opt-3",
+        text: "Burgers 🍔",
         votes: 5,
         voters: [
           { id: "u6", name: "Casey" },
@@ -90,21 +90,21 @@ const mockPolls: Poll[] = [
     id: "poll-2",
     question: "Best time to start the event?",
     options: [
-      { 
-        id: "opt-4", 
-        text: "5:00 PM", 
+      {
+        id: "opt-4",
+        text: "5:00 PM",
         votes: 4,
         voters: []
       },
-      { 
-        id: "opt-5", 
-        text: "6:00 PM", 
+      {
+        id: "opt-5",
+        text: "6:00 PM",
         votes: 15,
         voters: []
       },
-      { 
-        id: "opt-6", 
-        text: "7:00 PM", 
+      {
+        id: "opt-6",
+        text: "7:00 PM",
         votes: 6,
         voters: []
       },
@@ -166,8 +166,8 @@ function PollCard({ poll, onVote }: { poll: Poll; onVote: (pollId: string, optio
               disabled={!canVote && !isSelected}
               className={`
                 w-full text-left transition-all rounded-md p-2.5 border
-                ${isSelected 
-                  ? 'border-primary bg-primary/5 ring-1 ring-primary/20' 
+                ${isSelected
+                  ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
                   : 'border-border hover:border-muted-foreground/30 hover:bg-muted/30'
                 }
                 ${!canVote && !isSelected ? 'cursor-default' : 'cursor-pointer'}
@@ -189,8 +189,8 @@ function PollCard({ poll, onVote }: { poll: Poll; onVote: (pollId: string, optio
                 )}
               </div>
               {hasVoted && (
-                <Progress 
-                  value={percentage} 
+                <Progress
+                  value={percentage}
                   className={`h-1.5 ${isSelected ? '[&>div]:bg-primary' : '[&>div]:bg-muted-foreground/40'}`}
                 />
               )}
@@ -206,19 +206,19 @@ function PollCard({ poll, onVote }: { poll: Poll; onVote: (pollId: string, optio
             <div className={`flex items-center gap-1 text-xs ${isExpired ? 'text-destructive' : 'text-muted-foreground'}`}>
               <Clock className="h-3.5 w-3.5" />
               <span>
-                {isExpired 
-                  ? 'Ended' 
+                {isExpired
+                  ? 'Ended'
                   : `Ends ${poll.endsAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
                 }
               </span>
             </div>
           )}
         </div>
-        
+
         {!poll.isAnonymous && totalVotes > 0 && (
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="sm"
             className="h-7 text-xs"
             onClick={() => setExpanded(!expanded)}
           >
@@ -261,22 +261,22 @@ export function EventPollsSection({ eventId, polls = mockPolls }: EventPollsSect
   const [localPolls, setLocalPolls] = useState(polls)
 
   const handleVote = (pollId: string, optionId: string) => {
-    setLocalPolls(prev => 
+    setLocalPolls(prev =>
       prev.map(poll => {
         if (poll.id !== pollId) return poll
-        
+
         // Toggle vote
         const hasVoted = poll.userVotes.includes(optionId)
-        const newUserVotes = hasVoted 
+        const newUserVotes = hasVoted
           ? poll.userVotes.filter(id => id !== optionId)
-          : poll.allowMultiple 
+          : poll.allowMultiple
             ? [...poll.userVotes, optionId]
             : [optionId]
 
         // Update vote counts
         const newOptions = poll.options.map(opt => ({
           ...opt,
-          votes: opt.id === optionId 
+          votes: opt.id === optionId
             ? (hasVoted ? opt.votes - 1 : opt.votes + 1)
             : (!poll.allowMultiple && poll.userVotes.length > 0 && !hasVoted && poll.userVotes[0] === opt.id)
               ? opt.votes - 1
@@ -312,8 +312,8 @@ export function EventPollsSection({ eventId, polls = mockPolls }: EventPollsSect
               <Vote className="h-5 w-5" />
               Polls ({localPolls.length})
             </CardTitle>
-            <Button 
-              size="sm" 
+            <Button
+              size="sm"
               onClick={() => setIsCreateOpen(true)}
               className="h-8"
             >
@@ -335,9 +335,9 @@ export function EventPollsSection({ eventId, polls = mockPolls }: EventPollsSect
             <ScrollArea className="h-[400px] pr-2">
               <div className="space-y-3">
                 {localPolls.map((poll) => (
-                  <PollCard 
-                    key={poll.id} 
-                    poll={poll} 
+                  <PollCard
+                    key={poll.id}
+                    poll={poll}
                     onVote={handleVote}
                   />
                 ))}
@@ -347,8 +347,8 @@ export function EventPollsSection({ eventId, polls = mockPolls }: EventPollsSect
         </CardContent>
       </Card>
 
-      <CreatePollSheet 
-        open={isCreateOpen} 
+      <CreatePollSheet
+        open={isCreateOpen}
         onOpenChange={setIsCreateOpen}
         onCreatePoll={handleCreatePoll}
       />
