@@ -2,36 +2,19 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/constants/query-keys";
+import type { AlbumWithMedia } from "@/lib/database/types";
 
 const API_BASE = "/api/tribes";
 
-export interface Album {
-  id: string;
-  tribeId: string;
-  name: string;
-  description: string | null;
-  coverImageUrl: string | null;
-  privacy: "public" | "private" | "admin_only";
-  createdAt: Date;
-  updatedAt: Date;
-  creator: {
-    id: string;
-    name: string | null;
-    email: string;
-    image: string | null;
-  };
-  mediaCount: number;
-}
-
 export interface AlbumsResponse {
-  albums: Album[];
+  albums: AlbumWithMedia[];
 }
 
 /**
  * Fetch albums for a tribe
  */
 export function useTribeAlbums(tribeId: string, options?: { limit?: number; offset?: number }) {
-  return useQuery<Album[]>({
+  return useQuery<AlbumWithMedia[]>({
     queryKey: queryKeys.albums.tribe(tribeId),
     queryFn: async () => {
       const params = new URLSearchParams();

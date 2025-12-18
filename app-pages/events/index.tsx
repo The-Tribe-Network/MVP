@@ -5,7 +5,45 @@ import { EventsHeader } from './events-header'
 import { EventsList } from './events-list'
 import { EventsCalendar } from './events-calendar'
 import { PastEventsSection } from './past-events-section'
-import { Event, PastEvent } from './types'
+
+// Local UI types for events page
+interface Host {
+  name: string
+  avatar: string
+}
+
+interface VoteOption {
+  id: number
+  title: string
+  votes: number
+}
+
+interface Event {
+  id: number
+  title: string
+  date: string
+  time: string
+  location: string
+  attendees: number
+  description: string
+  host: Host
+  status: 'confirmed' | 'voting'
+  hasVote?: boolean
+  isAttending?: boolean
+  voteDeadline?: string
+  voteOptions?: VoteOption[]
+}
+
+interface PastEvent {
+  id: number
+  title: string
+  date: string
+  time: string
+  location: string
+  attendees: number
+  description: string
+  host: Host
+}
 
 interface EventsPageProps {
   tribeId: string;

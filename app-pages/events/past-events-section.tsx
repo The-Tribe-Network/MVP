@@ -4,7 +4,23 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { CalendarIcon, MapPin, Users } from 'lucide-react'
-import { PastEvent } from './types'
+
+// Local UI type for past events section
+interface Host {
+  name: string
+  avatar: string
+}
+
+interface PastEvent {
+  id: number
+  title: string
+  date: string
+  time: string
+  location: string
+  attendees: number
+  description: string
+  host: Host
+}
 
 interface PastEventsSectionProps {
   events: PastEvent[]

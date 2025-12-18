@@ -6,14 +6,14 @@ import { MediaHeader } from './media-header'
 import { AllAlbumsSection } from './all-albums-section'
 import { useTribeAlbums } from '@/lib/hooks/use-albums'
 import { useTribeMedia } from '@/lib/hooks/use-media'
-import type { Album } from '@/lib/hooks/use-albums'
+import type { AlbumWithMedia } from '@/lib/database/types'
 import type { MediaItem } from '@/lib/hooks/use-media'
 import Image from 'next/image'
 
 interface MediaPageClientProps {
   tribeId: string
   dehydratedState?: DehydratedState
-  initialAlbums?: Album[]
+  initialAlbums?: AlbumWithMedia[]
   initialMedia?: MediaItem[]
 }
 
@@ -40,7 +40,7 @@ function MediaPageContent({
   initialMedia,
 }: {
   tribeId: string
-  initialAlbums: Album[]
+  initialAlbums: AlbumWithMedia[]
   initialMedia: MediaItem[]
 }) {
   // Use TanStack Query hooks (will use prefetched data)
@@ -64,8 +64,8 @@ function MediaPageContent({
         albums={albums.map((album) => ({
           id: album.id,
           name: album.name,
-          cover: album.coverImageUrl || '/placeholder.svg',
-          photoCount: album.mediaCount || 0,
+          cover: album.coverUrl || '/placeholder.svg',
+          photoCount: album.photoCount || 0,
           date: new Date(album.createdAt).toLocaleDateString('en-US', {
             month: 'short',
             year: 'numeric',

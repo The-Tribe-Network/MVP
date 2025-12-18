@@ -1,17 +1,10 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { PostWithAuthor } from "@/lib/database/types";
+import type { PostWithAuthor, PostWithStats } from "@/lib/database/types";
 import { queryKeys } from "@/lib/constants/query-keys";
 
 const API_BASE = "/api/tribes";
-
-type PostWithStats = PostWithAuthor & {
-  likeCount: number;
-  commentCount: number;
-  isLiked: boolean;
-  image: { id: string; url: string; width?: number; height?: number } | null;
-};
 
 type CreatePostInput = {
   content: string;

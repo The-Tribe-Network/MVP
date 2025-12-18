@@ -5,6 +5,7 @@ import { AlbumHeader } from "./album-header"
 import { PhotoGrid } from "./photo-grid"
 import { PhotoCarouselModal } from "./photo-carousel-modal"
 import { Loader2 } from "lucide-react"
+import type { AlbumWithMedia } from "@/lib/database/types"
 
 interface AlbumDetailClientProps {
   tribeId: string
@@ -14,7 +15,7 @@ interface AlbumDetailClientProps {
 export function AlbumDetailClient({ tribeId, albumId }: AlbumDetailClientProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0)
-  const [album, setAlbum] = useState<any>(null)
+  const [album, setAlbum] = useState<AlbumWithMedia | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
@@ -56,12 +57,12 @@ export function AlbumDetailClient({ tribeId, albumId }: AlbumDetailClientProps) 
     )
   }
 
-  const photos = album.media?.map((media: any) => ({
+  const photos = album.media?.map((media) => ({
     id: media.id,
     url: media.fileUrl,
     caption: media.altText || '',
-    likes: media.likeCount || 0,
-    comments: media.commentCount || 0,
+    likes: 0, // TODO: Add likeCount to media query in getAlbumById
+    comments: 0, // TODO: Add commentCount to media
     date: new Date(media.createdAt).toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
@@ -69,28 +70,9 @@ export function AlbumDetailClient({ tribeId, albumId }: AlbumDetailClientProps) 
     }),
   })) || []
 
-  const albumData = {
-    id: album.id,
-    name: album.name,
-    description: album.description || '',
-    date: new Date(album.createdAt).toLocaleDateString('en-US', {
-      month: 'long',
-      year: 'numeric',
-    }),
-    creator: {
-      name: album.creator?.name || 'Unknown',
-      avatar: album.creator?.image || '',
-    },
-    stats: {
-      photos: album.photoCount || 0,
-      views: 0, // TODO: Implement views tracking
-      likes: 0, // TODO: Implement album likes
-    },
-  }
-
   return (
     <>
-      <AlbumHeader album={albumData} />
+      <AlbumHeader album={album} />
       <PhotoGrid photos={photos} onPhotoClick={openPhoto} />
 
       <PhotoCarouselModal

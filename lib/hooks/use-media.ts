@@ -2,35 +2,11 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/constants/query-keys";
+import type { MediaWithAlbumInfo } from "@/lib/database/types";
 
 const API_BASE = "/api/tribes";
 
-export interface MediaItem {
-  id: string;
-  mediaId: string;
-  fileUrl: string;
-  fileType: "image" | "video" | "document";
-  fileSize: number | null;
-  mimeType: string | null;
-  width: number | null;
-  height: number | null;
-  duration: number | null;
-  thumbnailUrl: string | null;
-  altText: string | null;
-  createdAt: Date;
-  uploadedBy: string;
-  postId: string | null;
-  albumId: string | null;
-  tribeId: string;
-  addToAlbum: boolean;
-  uploader: {
-    id: string;
-    name: string | null;
-    image: string | null;
-  };
-  likeCount: number;
-  commentCount: number;
-}
+export type MediaItem = MediaWithAlbumInfo;
 
 export interface MediaResponse {
   media: MediaItem[];

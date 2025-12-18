@@ -1,5 +1,11 @@
 import { Card } from '@/components/ui/card'
-import { Metric } from './types'
+
+// Local UI type for metrics display
+interface Metric {
+  label: string
+  value: string
+  change: string
+}
 
 interface MetricsGridProps {
   metrics: Metric[]

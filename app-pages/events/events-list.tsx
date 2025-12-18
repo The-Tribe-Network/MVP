@@ -1,7 +1,34 @@
 'use client'
 
-import { Event } from './types'
 import { EventCard } from './event-card'
+
+// Local UI types for event page - see event-card.tsx for full Event interface
+interface Host {
+  name: string
+  avatar: string
+}
+
+interface VoteOption {
+  id: number
+  title: string
+  votes: number
+}
+
+interface Event {
+  id: number
+  title: string
+  date: string
+  time: string
+  location: string
+  attendees: number
+  description: string
+  host: Host
+  status: 'confirmed' | 'voting'
+  hasVote?: boolean
+  isAttending?: boolean
+  voteDeadline?: string
+  voteOptions?: VoteOption[]
+}
 
 interface EventsListProps {
   events: Event[]

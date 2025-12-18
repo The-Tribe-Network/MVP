@@ -4,7 +4,20 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Tribe } from './types'
+
+// Local UI type for discover page tribe cards
+interface Tribe {
+  id: string
+  name: string
+  description: string
+  avatar: string
+  memberCount: number
+  location: string
+  isPublic: boolean
+  category: string
+  trending?: boolean
+  featured?: boolean
+}
 
 interface TribeCardProps {
   tribe: Tribe

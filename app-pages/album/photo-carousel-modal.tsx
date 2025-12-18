@@ -11,7 +11,16 @@ import {
 } from "@/components/ui/carousel"
 import { Heart, MessageCircle } from "lucide-react"
 import { useEffect, useState } from "react"
-import type { Photo } from "./types"
+
+// Local type for transformed photo data displayed in UI
+interface Photo {
+  id: string
+  url: string
+  caption: string
+  likes: number
+  comments: number
+  date?: string
+}
 
 interface PhotoCarouselModalProps {
   isOpen: boolean

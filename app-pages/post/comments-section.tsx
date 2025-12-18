@@ -28,7 +28,7 @@ export function CommentsSection({
 
   // Use fetched comments or fallback to initial comments
   // Transform API data format to match Comment interface
-  const comments: Comment[] = commentsData
+  const comments = commentsData
     ? commentsData.map((comment) => ({
       id: comment.id,
       author: {

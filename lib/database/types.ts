@@ -3,6 +3,7 @@ import {
   tribe,
   tribeMember,
   tribeMemberPermission,
+  tribeMemberPreference,
   tribeInvitation,
 } from "./schemas/tribe";
 import {
@@ -62,6 +63,8 @@ export type TribeMember = InferSelectModel<typeof tribeMember>;
 export type TribeMemberInsert = InferInsertModel<typeof tribeMember>;
 export type TribeMemberPermission = InferSelectModel<typeof tribeMemberPermission>;
 export type TribeMemberPermissionInsert = InferInsertModel<typeof tribeMemberPermission>;
+export type TribeMemberPreference = InferSelectModel<typeof tribeMemberPreference>;
+export type TribeMemberPreferenceInsert = InferInsertModel<typeof tribeMemberPreference>;
 export type TribeInvitation = InferSelectModel<typeof tribeInvitation>;
 export type TribeInvitationInsert = InferInsertModel<typeof tribeInvitation>;
 
@@ -130,58 +133,75 @@ export type MessageRead = InferSelectModel<typeof messageRead>;
 export type MessageReadInsert = InferInsertModel<typeof messageRead>;
 
 // ============================================
+// Utility types for composing extended types
+// ============================================
+
+// Utility type to pick specific user fields (for partial user objects)
+export type UserPreview = Pick<User, 'id' | 'name' | 'image'>;
+export type UserWithUsername = Pick<User, 'id' | 'name' | 'username' | 'image'>;
+export type UserBasic = Pick<User, 'id' | 'name' | 'email' | 'image' | 'username'>;
+
+// ============================================
 // Extended types for API responses
 // ============================================
+
+// Tribe extended types
 export type TribeWithCreator = Tribe & {
   creator: User;
 };
 
-export type TribeWithMembers = Tribe & {
-  creator: User;
+export type TribeWithMembers = TribeWithCreator & {
   memberCount: number;
 };
 
+// Tribe member extended types
 export type TribeMemberWithUser = TribeMember & {
   user: User;
 };
 
+// Post extended types
 export type PostWithAuthor = Post & {
   author: User;
 };
 
-export type PostWithAuthorAndTribe = Post & {
-  author: User;
+export type PostWithAuthorAndTribe = PostWithAuthor & {
   tribe: Tribe;
 };
 
+// Comment extended types
 export type CommentWithAuthor = Comment & {
   author: User;
 };
 
-export type CommentWithAuthorAndReplies = Comment & {
-  author: User;
+export type CommentWithStats = CommentWithAuthor & {
+  likeCount: number;
+  isLiked: boolean;
+};
+
+export type CommentWithAuthorAndReplies = CommentWithAuthor & {
   replies?: CommentWithAuthor[];
 };
 
+// Event extended types - build up progressively
 export type EventWithCreator = Event & {
   creator: User;
   tribe: Tribe;
 };
 
-export type EventWithAttendees = Event & {
-  creator: User;
-  tribe: Tribe;
-  attendees: (EventAttendee & { user: User })[];
+export type EventAttendeeWithUser = EventAttendee & {
+  user: User;
 };
 
-export type EventWithDetails = Event & {
-  creator: User;
-  tribe: Tribe;
-  attendees: (EventAttendee & { user: User })[];
+export type EventWithAttendees = EventWithCreator & {
+  attendees: EventAttendeeWithUser[];
+};
+
+export type EventWithDetails = EventWithAttendees & {
   attendeeCount: number;
   isUserAttending?: boolean;
 };
 
+// Poll extended types
 export type PollOptionWithVotes = PollOption & {
   votes: number;
   voters: User[];
@@ -198,11 +218,13 @@ export type EventWithPolls = EventWithCreator & {
   polls: PollWithDetails[];
 };
 
+// Media extended types
 export type MediaWithUploader = Media & {
   uploader: User;
   tribe: Tribe;
 };
 
+// Album extended types - build up progressively
 export type AlbumWithCreator = Album & {
   creator: User;
   tribe: Tribe;
@@ -210,20 +232,19 @@ export type AlbumWithCreator = Album & {
   photoCount?: number;
 };
 
-export type AlbumWithMedia = Album & {
-  creator: User;
-  tribe: Tribe;
-  coverUrl?: string | null;
+export type AlbumWithMedia = AlbumWithCreator & {
   media: Media[];
-  photoCount: number;
+  photoCount: number; // Override optional to required
 };
 
+// Message extended types
 export type MessageWithSender = Message & {
   sender: User;
   recipient?: User;
   tribe?: Tribe;
 };
 
+// Activity extended types
 export type ActivityWithUser = Activity & {
   user: User;
   tribe?: Tribe;
@@ -232,6 +253,81 @@ export type ActivityWithUser = Activity & {
   media?: Media;
   targetUser?: User;
 };
+
+// ============================================
+// Extended types with engagement stats
+// ============================================
+
+// Post with engagement stats
+export type PostWithStats = PostWithAuthor & {
+  likeCount: number;
+  commentCount: number;
+  isLiked: boolean;
+  image: { id: string; url: string; width?: number; height?: number } | null;
+};
+
+// Media with engagement stats (uses partial User type)
+export type MediaWithStats = Media & {
+  likeCount: number;
+  commentCount: number;
+  isLiked: boolean;
+  uploader?: UserPreview; // Uses the Pick utility type defined above
+};
+
+// Media with album relationship (includes junction table data)
+export type MediaWithAlbumInfo = Media & {
+  mediaId: string; // Junction table ID
+  albumId: string | null;
+  addToAlbum: boolean;
+  uploader: UserPreview; // Now properly typed
+  likeCount: number;
+  commentCount: number;
+};
+
+// Album with full details
+export type AlbumWithStats = AlbumWithMedia & {
+  stats: {
+    mediaCount: number;
+    likeCount: number;
+  };
+};
+
+// Event with full attendance details
+export type EventWithAttendance = EventWithDetails & {
+  isAttending: boolean;
+};
+
+// ============================================
+// API Response wrappers
+// ============================================
+
+// Paginated response wrapper
+export type PaginatedResponse<T> = {
+  data: T[];
+  pagination: {
+    total: number;
+    limit: number;
+    offset: number;
+    hasMore: boolean;
+  };
+};
+
+// Specific paginated responses
+export type PostsResponse = PaginatedResponse<PostWithStats>;
+export type MediaResponse = PaginatedResponse<MediaWithStats>;
+export type AlbumsResponse = PaginatedResponse<AlbumWithStats>;
+export type EventsResponse = PaginatedResponse<EventWithAttendance>;
+
+// ============================================
+// Component prop utility types
+// ============================================
+
+// Helper types for component props - when components need subset of fields
+export type PostCardProps = PostWithStats;
+export type CommentItemProps = CommentWithAuthor;
+export type AlbumCardProps = AlbumWithStats;
+export type EventCardProps = EventWithAttendance;
+export type MediaItemProps = MediaWithStats;
 
 // ============================================
 // Security types

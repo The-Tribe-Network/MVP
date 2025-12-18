@@ -2,12 +2,12 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/constants/query-keys";
+import type { TribeMemberPreference } from "@/lib/database/types";
 
 const API_BASE = "/api/tribes";
 
-export interface TribeMemberPreferences {
-  autoAddPostMediaToTribe: boolean;
-}
+// Use Pick to extract only the preference field we need
+export type TribeMemberPreferences = Pick<TribeMemberPreference, 'autoAddPostMediaToTribe'>;
 
 export interface PreferencesResponse {
   preferences: TribeMemberPreferences;

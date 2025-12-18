@@ -4,7 +4,6 @@ import { useDeletePost, useLikePost, useTribePosts } from "@/lib/hooks/use-posts
 import { formatRelativeTime } from "@/lib/utils"
 import { useState } from "react"
 import { toast } from "sonner"
-import type { PostCard as PostCardType } from "@/components/post-card"
 import EmptyView from "./empty"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
@@ -58,23 +57,8 @@ export default function PostsView({ tribeId, onViewChange }: PostsViewProps) {
     }
   }
 
-  // Transform API data to PostCard format
-  const transformedPosts: PostCardType[] =
-    posts?.map((post) => ({
-      id: post.id,
-      author: {
-        id: post.author.id,
-        name: post.author.name || 'Unknown',
-        username: post.author.username ? `@${post.author.username}` : '@user',
-        avatar: post.author.image || '/placeholder.svg',
-      },
-      content: post.content,
-      timestamp: formatRelativeTime(post.createdAt),
-      likes: post.likeCount,
-      comments: post.commentCount,
-      isLiked: post.isLiked,
-      image: post.image || null,
-    })) || []
+  // posts is already in PostWithStats format from the API
+  const transformedPosts = posts || []
 
   if (isError) {
     return (

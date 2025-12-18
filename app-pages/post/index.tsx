@@ -4,22 +4,15 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { HydrationBoundary, type DehydratedState } from '@tanstack/react-query'
 import { PostHeader } from './post-header'
-import PostCard, { type PostCard as PostCardType } from '@/components/post-card'
+import PostCard from '@/components/post-card'
 import { CommentsSection } from './comments-section'
 import { Comment } from './comment-item'
 import { usePost, useLikePost, useDeletePost } from '@/lib/hooks/use-posts'
 import { usePostComments } from '@/lib/hooks/use-comments'
 import { formatRelativeTime } from '@/lib/utils'
 import { toast } from 'sonner'
-import type { PostWithAuthor } from '@/lib/database/types'
+import type { PostWithStats } from '@/lib/database/types'
 import { Separator } from '@/components/ui/separator'
-
-type PostWithStats = PostWithAuthor & {
-  likeCount: number
-  commentCount: number
-  isLiked: boolean
-  image: { id: string; url: string; width?: number; height?: number } | null
-}
 
 interface PostDetailContentProps {
   tribeId: string
@@ -58,7 +51,7 @@ export function PostDetailContent({
         avatar: comment.author.image || '/placeholder.svg',
       },
       content: comment.content,
-      timestamp: formatRelativeTime(comment.createdAt),
+      timestamp: comment.createdAt,
       likes: comment.likeCount,
       isLiked: comment.isLiked,
     })) || []
@@ -125,22 +118,7 @@ export function PostDetailContent({
     )
   }
 
-  // Transform API data format to match PostCard interface
-  const postCard: PostCardType = {
-    id: post.id,
-    author: {
-      id: post.author.id,
-      name: post.author.name || 'Unknown',
-      username: post.author.username ? `@${post.author.username}` : '@user',
-      avatar: post.author.image || '/placeholder.svg',
-    },
-    content: post.content,
-    timestamp: formatRelativeTime(post.createdAt),
-    likes: post.likeCount,
-    comments: post.commentCount,
-    isLiked: post.isLiked,
-    image: post.image || null,
-  }
+  // post is already in PostWithStats format from the API
 
   return (
     <HydrationBoundary state={dehydratedState}>
@@ -150,7 +128,7 @@ export function PostDetailContent({
             <PostHeader />
 
             <PostCard
-              post={postCard}
+              post={post}
               tribeId={tribeId}
               onLike={handleLike}
               isLiking={likingPostId === post.id}

@@ -2,7 +2,19 @@ import { Calendar } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Event } from './types'
+
+// Local UI type for mock events display
+interface Event {
+  id: string
+  title: string
+  tribe: {
+    name: string
+    avatar: string
+  }
+  date: string
+  time: string
+  attendees: number
+}
 
 interface UpcomingEventsProps {
   events: Event[]

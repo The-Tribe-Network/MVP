@@ -2,7 +2,21 @@ import { Card } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Message } from './types'
+
+// Local UI type for mock messages display
+interface Message {
+  id: string
+  user: {
+    name: string
+    avatar: string
+  }
+  tribe: {
+    name: string
+  }
+  message: string
+  timestamp: string
+  unread: boolean
+}
 
 interface RecentMessagesProps {
   messages: Message[]

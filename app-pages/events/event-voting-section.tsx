@@ -1,7 +1,13 @@
 'use client'
 
 import { CheckCircle2, ThumbsUp } from 'lucide-react'
-import { VoteOption } from './types'
+
+// Local UI type for vote options
+interface VoteOption {
+  id: number
+  title: string
+  votes: number
+}
 
 interface EventVotingSectionProps {
   voteOptions: VoteOption[]

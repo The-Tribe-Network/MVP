@@ -168,27 +168,53 @@ export async function getAlbumsByTribe(
     .groupBy(albumMedia.albumId)
     .as('media_counts');
 
-  // Get albums with media counts and cover URLs
+  // Get albums with media counts and cover URLs (matches AlbumWithMedia type)
   const albums = await db
     .select({
       id: album.id,
       tribeId: album.tribeId,
       name: album.name,
       description: album.description,
-      coverImageUrl: media.fileUrl,
+      coverId: album.coverId,
+      coverUrl: media.fileUrl,
       privacy: album.privacy,
       createdAt: album.createdAt,
       updatedAt: album.updatedAt,
+      createdBy: album.createdBy,
       creator: {
         id: user.id,
         name: user.name,
         email: user.email,
+        emailVerified: user.emailVerified,
         image: user.image,
+        username: user.username,
+        displayName: user.displayName,
+        bio: user.bio,
+        location: user.location,
+        profileCompleted: user.profileCompleted,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
       },
-      mediaCount: sql<number>`COALESCE(${mediaCountSubquery.count}, 0)`,
+      tribe: {
+        id: tribe.id,
+        name: tribe.name,
+        description: tribe.description,
+        avatar: tribe.avatar,
+        location: tribe.location,
+        privacy: tribe.privacy,
+        category: tribe.category,
+        isFeatured: tribe.isFeatured,
+        isTrending: tribe.isTrending,
+        createdBy: tribe.createdBy,
+        createdAt: tribe.createdAt,
+        updatedAt: tribe.updatedAt,
+      },
+      photoCount: sql<number>`COALESCE(${mediaCountSubquery.count}, 0)`,
+      media: sql<any>`'[]'::json`, // Empty array for list view
     })
     .from(album)
     .leftJoin(user, eq(album.createdBy, user.id))
+    .innerJoin(tribe, eq(album.tribeId, tribe.id))
     .leftJoin(media, eq(album.coverId, media.id))
     .leftJoin(mediaCountSubquery, eq(album.id, mediaCountSubquery.albumId))
     .where(eq(album.tribeId, tribeId))

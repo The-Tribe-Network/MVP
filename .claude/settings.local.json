@@ -5,9 +5,16 @@
       "Bash(ls:*)",
       "Bash(cat:*)",
       "Bash(xargs basename:*)",
-      "Bash(md5sum:*)"
+      "Bash(md5sum:*)",
+      "Bash(pnpm exec tsc:*)"
     ],
     "deny": [],
     "ask": []
-  }
+  },
+  "enabledMcpjsonServers": [
+    "postgres",
+    "github",
+    "filesystem"
+  ],
+  "enableAllProjectMcpServers": true
 }

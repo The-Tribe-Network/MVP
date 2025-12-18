@@ -1,7 +1,7 @@
 import { Label } from "@/components/ui/label";
 import { Select, SelectItem, SelectContent, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Album } from "@/lib/hooks/use-albums";
+import type { AlbumWithMedia } from "@/lib/database/types";
 import { capitalize } from "@/lib/utils";
 
 interface NewPostAlbumToggleProps {
@@ -11,7 +11,7 @@ interface NewPostAlbumToggleProps {
   isDisabled: boolean;
   selectedAlbumId: string | null;
   setSelectedAlbumId: (selectedAlbumId: string | null) => void;
-  albums: Album[];
+  albums: AlbumWithMedia[];
   isLoadingAlbums: boolean;
 }
 export default function NewPostAlbumToggle({ imagePreview, addToAlbum, setAddToAlbum, isDisabled, selectedAlbumId, setSelectedAlbumId, albums, isLoadingAlbums }: NewPostAlbumToggleProps) {

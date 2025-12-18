@@ -21,6 +21,7 @@ import { EventLocationMap } from "./event-location-map"
 import { EventCommentsSection } from "./event-comments-section"
 import { EventAttachmentsSection } from "./event-attachments-section"
 import { EventPollsSection } from "./event-polls-section"
+import type { EventWithDetails } from "@/lib/database/types"
 
 interface EventDetailContentProps {
   tribeId: string
@@ -29,7 +30,7 @@ interface EventDetailContentProps {
 }
 
 // Mock data - will be replaced with real data from query
-const mockEvent = {
+const mockEvent: EventWithDetails = {
   id: "1",
   title: "Summer BBQ Party",
   description: "Join us for a fun summer BBQ with great food, games, and amazing company! We'll have burgers, hot dogs, vegetarian options, and plenty of drinks. Bring your friends and family for a day of celebration.",
@@ -53,6 +54,16 @@ const mockEvent = {
   tribe: {
     id: "tribe-1",
     name: "Summer Fun Tribe",
+    location: "New York, NY",
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    description: "A tribe for summer fun activities",
+    avatar: null,
+    privacy: "public" as const,
+    category: "social" as const,
+    isFeatured: false,
+    isTrending: false,
+    createdBy: "user-1"
   },
   attendees: [
     {

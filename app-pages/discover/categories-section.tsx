@@ -1,5 +1,11 @@
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Category } from './types'
+
+// Local UI type for category navigation
+interface Category {
+  id: string
+  label: string
+  icon: React.ComponentType<{ className?: string }>
+}
 
 interface CategoriesSectionProps {
   categories: Category[]

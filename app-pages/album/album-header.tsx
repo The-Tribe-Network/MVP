@@ -2,11 +2,11 @@ import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ArrowLeft, Calendar, Share2, Download } from "lucide-react"
 import Link from "next/link"
-import type { Album } from "./types"
+import type { AlbumWithMedia } from "@/lib/database/types"
 import { useParams, useRouter } from "next/navigation"
 
 interface AlbumHeaderProps {
-  album: Album
+  album: AlbumWithMedia
 }
 
 export function AlbumHeader({ album }: AlbumHeaderProps) {
@@ -33,8 +33,8 @@ export function AlbumHeader({ album }: AlbumHeaderProps) {
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <div className="flex items-center gap-2">
               <Avatar className="h-6 w-6">
-                <AvatarImage src={album.creator.avatar || "/placeholder.svg"} />
-                <AvatarFallback>{album.creator.name[0]}</AvatarFallback>
+                <AvatarImage src={album.creator.image || "/placeholder.svg"} />
+                <AvatarFallback>{album.creator.name?.[0] || 'U'}</AvatarFallback>
               </Avatar>
               <span>
                 Created by <span className="font-medium text-foreground">{album.creator.name}</span>
@@ -42,9 +42,9 @@ export function AlbumHeader({ album }: AlbumHeaderProps) {
             </div>
             <span className="flex items-center gap-1">
               <Calendar className="h-4 w-4" />
-              {album.date}
+              {new Date(album.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
             </span>
-            <span>{album.stats.photos} photos</span>
+            <span>{album.photoCount} photos</span>
           </div>
         </div>
 

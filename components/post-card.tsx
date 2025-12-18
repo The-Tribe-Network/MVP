@@ -20,26 +20,10 @@ import Link from 'next/link'
 import { useAuth } from '@/lib/providers/auth-provider'
 import PhotoMediaDialog from './dialogs/photo-media'
 import { usePathname } from 'next/navigation'
-
-export interface PostCard {
-  id: string
-  author: {
-    name: string
-    username: string
-    avatar: string
-    id?: string // Optional author ID for ownership comparison
-  }
-  content: string
-  timestamp: string
-  likes: number
-  comments: number
-  isLiked: boolean
-  // Support both image formats: object with metadata or simple string URL
-  image?: { id: string; url: string; width?: number; height?: number } | string | null
-}
+import type { PostWithStats } from '@/lib/database/types'
 
 export interface PostCardProps {
-  post: PostCard
+  post: PostWithStats
   tribeId: string
   onLike?: (postId: string) => void | Promise<void>
   isLiking?: boolean
@@ -81,16 +65,10 @@ export default function PostCard({
   // Check if current user is the author (by ID comparison)
   const isAuthor = user && post.author.id && user.id === post.author.id
 
-  // Normalize image format
-  const imageUrl = typeof post.image === 'string'
-    ? post.image
-    : post.image?.url
-  const imageWidth = typeof post.image === 'object' && post.image !== null && 'width' in post.image
-    ? post.image.width
-    : undefined
-  const imageHeight = typeof post.image === 'object' && post.image !== null && 'height' in post.image
-    ? post.image.height
-    : undefined
+  // Get image data from PostWithStats
+  const imageUrl = post.image?.url
+  const imageWidth = post.image?.width
+  const imageHeight = post.image?.height
 
   const avatarClassName = avatarSize === 'large' ? 'h-12 w-12' : ''
   const contentClassName = contentSize === 'base' ? 'text-base' : 'text-sm'
@@ -98,28 +76,36 @@ export default function PostCard({
   const usernameClassName = contentSize === 'base' ? 'text-sm text-muted-foreground' : 'text-xs text-muted-foreground'
   const timestampClassName = contentSize === 'base' ? 'text-sm text-muted-foreground' : 'text-xs text-muted-foreground'
 
+  // Format timestamp - PostWithStats has createdAt as Date
+  const timestamp = new Date(post.createdAt).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit'
+  })
+
   const cardContent = (
     <CardContent className="pt-0 px-3">
       <div className="space-y-4">
         {/* Post Header */}
         <div className="flex items-start gap-3">
           <Avatar className={avatarClassName}>
-            <AvatarImage src={post.author.avatar || "/placeholder.svg"} />
-            <AvatarFallback>{post.author.name[0]}</AvatarFallback>
+            <AvatarImage src={post.author.image || "/placeholder.svg"} />
+            <AvatarFallback>{post.author.name?.[0] || 'U'}</AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <span className={authorNameClassName}>{post.author.name}</span>
-              <span className={usernameClassName}>{post.author.username}</span>
+              <span className={usernameClassName}>@{post.author.name?.toLowerCase().replace(/\s+/g, '')}</span>
               {contentSize === 'sm' && (
                 <>
                   <span className="text-xs text-muted-foreground">·</span>
-                  <span className={timestampClassName}>{post.timestamp}</span>
+                  <span className={timestampClassName}>{timestamp}</span>
                 </>
               )}
             </div>
             {contentSize === 'base' && (
-              <span className={timestampClassName}>{post.timestamp}</span>
+              <span className={timestampClassName}>{timestamp}</span>
             )}
             <p className={cn("mt-2 leading-relaxed text-pretty", contentClassName)}>
               {post.content}
@@ -223,7 +209,7 @@ export default function PostCard({
                 ) : (
                   <Heart className={cn("h-4 w-4 transition-all", post.isLiked && "fill-current")} />
                 )}
-                <span className="text-xs">{post.likes}</span>
+                <span className="text-xs">{post.likeCount}</span>
               </Button>
             ) : (
               <Button
@@ -236,7 +222,7 @@ export default function PostCard({
                 disabled
               >
                 <Heart className={cn("h-4 w-4 transition-all", post.isLiked && "fill-current")} />
-                <span className="text-xs">{post.likes}</span>
+                <span className="text-xs">{post.likeCount}</span>
               </Button>
             )}
             <Button
@@ -249,7 +235,7 @@ export default function PostCard({
               }}
             >
               <MessageCircle className="h-4 w-4" />
-              <span className="text-xs">{post.comments}</span>
+              <span className="text-xs">{post.commentCount}</span>
             </Button>
             <Button
               variant="ghost"
@@ -298,18 +284,4 @@ export default function PostCard({
       )}
     </>
   )
-}
-
-export const mockPostCardData: PostCard = {
-  id: '1',
-  author: {
-    name: 'Sarah Mitchell',
-    username: '@sarah',
-    avatar: '/diverse-woman-avatar.png'
-  },
-  content: 'Just finished an amazing hike with the crew! The views were absolutely breathtaking. Can\'t wait for our next adventure 🏔️',
-  timestamp: '2h ago',
-  likes: 12,
-  comments: 3,
-  isLiked: false
 }

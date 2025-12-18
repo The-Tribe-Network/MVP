@@ -1,5 +1,14 @@
 import { PhotoCard } from "./photo-card"
-import type { Photo } from "./types"
+
+// Local type for transformed photo data displayed in UI
+interface Photo {
+  id: string
+  url: string
+  caption: string
+  likes: number
+  comments: number
+  date?: string
+}
 
 interface PhotoGridProps {
   photos: Photo[]

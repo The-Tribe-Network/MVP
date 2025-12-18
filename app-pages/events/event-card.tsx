@@ -5,10 +5,37 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { CalendarIcon, Clock, MapPin, Users, BarChart3, CheckCircle2, ArrowRight } from 'lucide-react'
-import { Event } from './types'
 import { EventVotingSection } from './event-voting-section'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
+
+// Local UI types for event page with polls/voting
+interface Host {
+  name: string
+  avatar: string
+}
+
+interface VoteOption {
+  id: number
+  title: string
+  votes: number
+}
+
+interface Event {
+  id: number
+  title: string
+  date: string
+  time: string
+  location: string
+  attendees: number
+  description: string
+  host: Host
+  status: 'confirmed' | 'voting'
+  hasVote?: boolean
+  isAttending?: boolean
+  voteDeadline?: string
+  voteOptions?: VoteOption[]
+}
 
 interface EventCardProps {
   event: Event

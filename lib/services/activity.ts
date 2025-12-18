@@ -137,16 +137,14 @@ export async function checkAndCreateLikeMilestone(
 
 /**
  * Get activities for a tribe
- * OPTIMIZED: Reduced user fields from 8 to 4 (50% reduction)
- * OPTIMIZED: Reduced tribe fields from 11 to 3 (73% reduction)
- * Security: Removed email field exposure
+ * OPTIMIZED: Only selects essential fields, minimal transformation (only null to undefined conversion)
+ * Security: Email fields included for type compatibility but should not be exposed to frontend
  */
 export async function getTribeActivities(
   tribeId: string,
   limit: number = 20,
   offset: number = 0
 ): Promise<ActivityWithUser[]> {
-  // Fetch activities with user info - only essential fields
   const activities = await db
     .select({
       id: activity.id,
@@ -197,20 +195,9 @@ export async function getTribeActivities(
     .limit(limit)
     .offset(offset);
 
-  // Transform to ActivityWithUser format
+  // Minimal transformation: only convert null to undefined for tribe (required by type)
   return activities.map((a) => ({
-    id: a.id,
-    type: a.type,
-    userId: a.userId,
-    tribeId: a.tribeId,
-    postId: a.postId,
-    eventId: a.eventId,
-    mediaId: a.mediaId,
-    targetUserId: a.targetUserId,
-    action: a.action,
-    preview: a.preview,
-    createdAt: a.createdAt,
-    user: a.user,
+    ...a,
     tribe: a.tribe || undefined,
   }));
 }

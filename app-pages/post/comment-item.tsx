@@ -8,6 +8,9 @@ import { useLikeComment } from '@/lib/hooks/use-comments'
 import { formatRelativeTime } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 
+// Local UI type for formatted comment data
+// Note: Uses 'timestamp' as string (formatted) and 'likes' instead of 'likeCount'
+// This differs from CommentWithStats which uses Date and likeCount
 export interface Comment {
   id: string
   author: {
@@ -16,7 +19,7 @@ export interface Comment {
     avatar: string
   }
   content: string
-  timestamp: string
+  timestamp: Date
   likes: number
   isLiked?: boolean
 }

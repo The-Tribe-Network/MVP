@@ -1,6 +1,19 @@
 import { Sparkles } from 'lucide-react'
-import { Tribe } from './types'
 import { TribeCard } from './tribe-card'
+
+// Local UI type for discover page tribe cards
+interface Tribe {
+  id: string
+  name: string
+  description: string
+  avatar: string
+  memberCount: number
+  location: string
+  isPublic: boolean
+  category: string
+  trending?: boolean
+  featured?: boolean
+}
 
 interface FeaturedTribesSectionProps {
   featuredTribes: Tribe[]

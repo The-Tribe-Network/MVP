@@ -1,4 +1,51 @@
-import { Activity, Message, Event, Metric } from './types'
+// Local UI types for mock data
+interface Activity {
+  id: string
+  type: 'post' | 'photo' | 'event' | 'member'
+  user: {
+    name: string
+    avatar: string
+  }
+  tribe: {
+    name: string
+    avatar: string
+  }
+  action: string
+  timestamp: string
+  preview?: string
+}
+
+interface Message {
+  id: string
+  user: {
+    name: string
+    avatar: string
+  }
+  tribe: {
+    name: string
+  }
+  message: string
+  timestamp: string
+  unread: boolean
+}
+
+interface Event {
+  id: string
+  title: string
+  tribe: {
+    name: string
+    avatar: string
+  }
+  date: string
+  time: string
+  attendees: number
+}
+
+interface Metric {
+  label: string
+  value: string
+  change: string
+}
 
 export const mockActivities: Activity[] = [
   {

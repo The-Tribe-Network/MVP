@@ -1,5 +1,24 @@
 import { Sparkles, Users, TrendingUp } from 'lucide-react'
-import { Tribe, Category } from './types'
+
+// Local UI types for discover page
+interface Tribe {
+  id: string
+  name: string
+  description: string
+  avatar: string
+  memberCount: number
+  location: string
+  isPublic: boolean
+  category: string
+  trending?: boolean
+  featured?: boolean
+}
+
+interface Category {
+  id: string
+  label: string
+  icon: React.ComponentType<{ className?: string }>
+}
 
 export const categories: Category[] = [
   { id: 'all', label: 'All', icon: Sparkles },
