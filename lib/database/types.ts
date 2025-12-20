@@ -278,7 +278,6 @@ export type MediaWithStats = Media & {
 export type MediaWithAlbumInfo = Media & {
   mediaId: string; // Junction table ID
   albumId: string | null;
-  addToAlbum: boolean;
   uploader: UserPreview; // Now properly typed
   likeCount: number;
   commentCount: number;
