@@ -7,7 +7,6 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import Link from "next/link"
 import { useSignUpMutation } from "@/lib/hooks/use-auth-mutations"
-import { useAuth } from "@/lib/providers/auth-provider"
 import { signUpSchema, type SignUpFormData } from "@/lib/validations/auth"
 import { useFormValidation } from "@/lib/hooks/use-form-validation"
 import { FormField } from "./form-field"
@@ -17,8 +16,7 @@ import { Muted } from "@/components/ui/typography"
 import { PasswordRequirementsIndicator } from "./password-requirements-indicator"
 
 export function SignUpForm() {
-  const signUpMutation = useSignUpMutation()
-  const { error, clearError } = useAuth()
+  const { mutate: signUp, isPending, error } = useSignUpMutation()
 
   const [formData, setFormData] = useState<SignUpFormData>({
     name: "",
@@ -32,7 +30,7 @@ export function SignUpForm() {
   const { errors, validate, clearErrors, clearFieldError } = useFormValidation({
     schema: signUpSchema,
     onValidationSuccess: (data) => {
-      signUpMutation.mutate({
+      signUp({
         name: data.name,
         email: data.email,
         password: data.password,
@@ -56,13 +54,12 @@ export function SignUpForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     clearErrors()
-    clearError()
     validate(formData)
   }
 
   return (
     <div className="space-y-4">
-      <OAuthSection disabled={signUpMutation.isPending} />
+      <OAuthSection disabled={isPending} />
 
       {/* Sign Up Form */}
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -151,10 +148,10 @@ export function SignUpForm() {
         </div>
         {errors.agreeToTerms && <p className="text-sm text-destructive">{errors.agreeToTerms}</p>}
 
-        {error && <div className="text-sm text-destructive bg-destructive/10 p-3 rounded-md">{error}</div>}
+        {error && <div className="text-sm text-destructive bg-destructive/10 p-3 rounded-md">{error.message}</div>}
 
-        <Button type="submit" className="w-full" disabled={signUpMutation.isPending}>
-          {signUpMutation.isPending ? "Creating account..." : "Create account"}
+        <Button type="submit" className="w-full" disabled={isPending}>
+          {isPending ? "Creating account..." : "Create account"}
         </Button>
       </form>
     </div>

@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { TribeWithCreator, TribeWithMembers } from "@/lib/database/types";
 import { queryKeys } from "@/lib/constants/query-keys";
+import { useAuthUser } from "./use-auth";
 
 const API_BASE = "/api/tribes";
 
@@ -11,8 +12,9 @@ const API_BASE = "/api/tribes";
  */
 export function useCreateTribe() {
   const queryClient = useQueryClient();
-
+  
   return useMutation({
+
     mutationFn: async (data: {
       name: string;
       description?: string;
@@ -50,6 +52,8 @@ export function useCreateTribe() {
  * Returns basic tribe information for sidebar display
  */
 export function useUserTribes() {
+  const { isAuthenticated } = useAuthUser();
+
   return useQuery<Array<{ id: string; name: string; avatar: string | null }>>({
     queryKey: queryKeys.tribes.lists(),
     queryFn: async (): Promise<Array<{ id: string; name: string; avatar: string | null }>> => {
@@ -65,6 +69,7 @@ export function useUserTribes() {
 
       return response.json();
     },
+    enabled: isAuthenticated,
   });
 }
 

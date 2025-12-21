@@ -17,7 +17,7 @@ import {
 } from "../ui/sidebar";
 import { NavUser } from "./nav-user";
 import { DEFAULT_USER_IMAGE } from "@/lib/constants/auth";
-import { useAuth } from "@/lib/providers/auth-provider";
+import { useAuthUser } from "@/lib/hooks/use-auth";
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -34,7 +34,7 @@ import { cn } from "@/lib/utils";
 import TribeSidebar from "./tribe-nav";
 
 export default function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const { user } = useAuth();
+  const { user } = useAuthUser();
   const pathname = usePathname();
   const { setOpen } = useSidebar();
 

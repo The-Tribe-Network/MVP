@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/constants/query-keys";
 import type { SessionWithDevice } from "@/lib/database/types";
 import type { ChangePasswordInput } from "@/lib/validations/security";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 
 const API_BASE = "/api/user/security";
 
@@ -51,18 +51,13 @@ export function useChangePassword() {
       return response.json();
     },
     onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "Password changed successfully",
-      });
+      toast.success("Password changed successfully");
       // Invalidate auth queries since password change might affect session
       queryClient.invalidateQueries({ queryKey: queryKeys.auth.all });
     },
     onError: (error: Error) => {
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: error.message,
-        variant: "destructive",
       });
     },
   });
@@ -92,17 +87,12 @@ export function useRevokeSession() {
       return response.json();
     },
     onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "Session revoked successfully",
-      });
+      toast.success("Session revoked successfully");
       queryClient.invalidateQueries({ queryKey: queryKeys.security.sessions() });
     },
     onError: (error: Error) => {
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: error.message,
-        variant: "destructive",
       });
     },
   });
@@ -132,17 +122,12 @@ export function useRevokeOtherSessions() {
       return response.json();
     },
     onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "All other sessions revoked successfully",
-      });
+      toast.success("All other sessions revoked successfully");
       queryClient.invalidateQueries({ queryKey: queryKeys.security.sessions() });
     },
     onError: (error: Error) => {
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: error.message,
-        variant: "destructive",
       });
     },
   });
