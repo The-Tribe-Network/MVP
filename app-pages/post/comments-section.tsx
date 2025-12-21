@@ -5,8 +5,8 @@ import { Card, CardContent } from '@/components/ui/card'
 import { CommentForm } from './comment-form'
 import { CommentItem, Comment } from './comment-item'
 import { usePostComments, useCreateComment } from '@/lib/hooks/use-comments'
-import { useAuth } from '@/lib/providers/auth-provider'
 import { Separator } from '@/components/ui/separator'
+import { useAuthUser } from '@/lib/hooks/use-auth'
 
 interface CommentsSectionProps {
   tribeId: string
@@ -21,7 +21,7 @@ export function CommentsSection({
   initialComments,
   isLoading: initialIsLoading,
 }: CommentsSectionProps) {
-  const { user } = useAuth()
+  const { user } = useAuthUser()
   const [newComment, setNewComment] = useState('')
   const { data: commentsData, isLoading: isLoadingComments } = usePostComments(tribeId, postId)
   const createCommentMutation = useCreateComment()

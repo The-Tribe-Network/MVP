@@ -2,12 +2,11 @@ import { notFound, redirect } from 'next/navigation'
 import { getServerUser } from '@/lib/services/auth'
 import { checkTribeMembership } from '@/lib/services/permissions'
 import {
-  getQueryClient,
-  prefetchQuery,
   dehydrateQueryClient,
 } from '@/lib/utils/query-server'
 import { queryKeys } from '@/lib/constants/query-keys'
 import { EventDetailContent } from '@/app-pages/event-detail'
+import { getQueryClient } from '@/lib/providers/query-provider'
 
 // Mock service - will need to create real service later
 async function getEventById(eventId: string, userId: string) {

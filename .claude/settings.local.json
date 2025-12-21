@@ -6,7 +6,8 @@
       "Bash(cat:*)",
       "Bash(xargs basename:*)",
       "Bash(md5sum:*)",
-      "Bash(pnpm exec tsc:*)"
+      "Bash(pnpm exec tsc:*)",
+      "WebFetch(domain:tanstack.com)"
     ],
     "deny": [],
     "ask": []

@@ -10,6 +10,7 @@ import {
 import { queryKeys } from '@/lib/constants/query-keys'
 import { TribeDashboardContent } from '@/app-pages/tribe-dashboard'
 import type { TribeWithMembers } from '@/lib/database/types'
+import { getQueryClient } from '@/lib/providers/query-provider'
 
 export default async function TribeDashboardPage({ params }: PageProps<'/tribe/[tribe_id]'>) {
   const { tribe_id } = await params

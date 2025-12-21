@@ -3,9 +3,9 @@
 import { useState, useEffect, useRef } from 'react'
 import { useProfile, useUpdateProfile, useCheckUsername } from '@/lib/hooks/use-profile'
 import { useDeleteMedia } from '@/lib/hooks/use-upload'
-import { useAuth } from '@/lib/providers/auth-provider'
 import { updateProfileSchema } from '@/lib/validations/profile'
 import { toast } from 'sonner'
+import { useAuthUser } from '@/lib/hooks/use-auth'
 
 export interface ProfileFormData {
   displayName: string
@@ -16,7 +16,7 @@ export interface ProfileFormData {
 }
 
 export function useProfileForm() {
-  const { user: authUser } = useAuth()
+  const { user: authUser } = useAuthUser()
   const { data: profileData, isLoading: isLoadingProfile } = useProfile()
   const updateProfile = useUpdateProfile()
   const deleteMedia = useDeleteMedia()

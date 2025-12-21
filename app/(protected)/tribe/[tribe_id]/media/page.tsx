@@ -6,12 +6,12 @@ import { getTribeById } from '@/lib/services/tribe'
 import { getAlbumsByTribe } from '@/lib/services/album'
 import { getMediaByTribe } from '@/lib/services/media'
 import {
-  getQueryClient,
   prefetchQuery,
   dehydrateQueryClient,
 } from '@/lib/utils/query-server'
 import { queryKeys } from '@/lib/constants/query-keys'
 import { MediaPageClient } from '@/app-pages/media'
+import { getQueryClient } from '@/lib/providers/query-provider'
 
 export default async function AlbumsPage({ params }: PageProps<'/tribe/[tribe_id]/media'>) {
   const { tribe_id } = await params

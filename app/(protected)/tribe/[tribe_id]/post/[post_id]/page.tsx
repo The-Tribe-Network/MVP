@@ -4,12 +4,12 @@ import { getPostByIdWithMetadata } from '@/lib/services/post'
 import { getPostComments } from '@/lib/services/comment'
 import { checkTribeMembership } from '@/lib/services/permissions'
 import {
-  getQueryClient,
   prefetchQuery,
   dehydrateQueryClient,
 } from '@/lib/utils/query-server'
 import { queryKeys } from '@/lib/constants/query-keys'
 import { PostDetailContent } from '@/app-pages/post/index'
+import { getQueryClient } from '@/lib/providers/query-provider'
 
 interface PostDetailPageProps {
   params: Promise<{ post_id: string; tribe_id: string }>

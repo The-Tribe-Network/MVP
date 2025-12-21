@@ -19,8 +19,8 @@ import { useTribeMemberPreferences } from "@/lib/hooks/use-tribe-preferences";
 import { toast } from "sonner";
 import { validateImageFile } from "@/lib/utils/image";
 import { User } from "better-auth";
-import { useAuth } from "@/lib/providers/auth-provider";
 import NewPostAlbumToggle from "../components/new-post-album-toggle";
+import { useAuthUser } from "@/lib/hooks/use-auth";
 
 interface NewPostProps {
   tribeId: string;
@@ -37,7 +37,7 @@ export function NewPost({ tribeId, onViewChange }: NewPostProps) {
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const { user } = useAuth();
+  const { user } = useAuthUser();
 
   const createPostMutation = useCreatePost()
   const deleteMediaMutation = useDeleteMedia()
