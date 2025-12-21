@@ -1,25 +1,6 @@
-import { QueryClient, type QueryKey } from "@tanstack/react-query";
+import { QueryClient, type QueryKey, isServer } from "@tanstack/react-query";
 import { dehydrate, type DehydratedState } from "@tanstack/react-query";
 
-/**
- * Creates a new QueryClient instance for server-side use.
- * This should be called per request, not shared across requests.
- */
-export function getQueryClient(): QueryClient {
-  return new QueryClient({
-    defaultOptions: {
-      queries: {
-        // With SSR, we usually want to set some default staleTime
-        // to avoid refetching immediately on the client
-        staleTime: 60 * 1000, // 1 minute
-        retry: 1,
-      },
-      mutations: {
-        retry: 1,
-      },
-    },
-  });
-}
 
 /**
  * Prefetches a query on the server with initial data.

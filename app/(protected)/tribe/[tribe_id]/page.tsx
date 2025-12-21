@@ -4,7 +4,6 @@ import { getTribeById } from '@/lib/services/tribe'
 import { getServerUser } from '@/lib/services/auth'
 import { checkTribeMembership } from '@/lib/services/permissions'
 import {
-  getQueryClient,
   prefetchQuery,
   dehydrateQueryClient,
 } from '@/lib/utils/query-server'
