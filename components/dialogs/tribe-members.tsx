@@ -1,10 +1,8 @@
 "use client"
 
-import type React from "react"
-
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -35,18 +33,18 @@ interface Member {
   joinedDate: string
 }
 
-interface TribeMembersModalProps {
-  children: React.ReactNode
-  tribeId?: string
+interface TribeMembersDialogProps {
+  isOpen: boolean
+  onOpenChange: (open: boolean) => void
+  tribeId: string
 }
 
-export function TribeMembersModal({ children, tribeId }: TribeMembersModalProps) {
+export default function TribeMembersDialog({ isOpen, onOpenChange, tribeId }: TribeMembersDialogProps) {
   const [searchQuery, setSearchQuery] = useState("")
-  const [open, setOpen] = useState(false)
   const [showLeaveDialog, setShowLeaveDialog] = useState(false)
   const router = useRouter()
   const { data: session } = useSession()
-  const { data: tribe } = useTribe(tribeId || null)
+  const { data: tribe } = useTribe(tribeId)
   const leaveTribe = useLeaveTribe()
 
   const currentUserId = session?.user?.id
@@ -141,7 +139,7 @@ export function TribeMembersModal({ children, tribeId }: TribeMembersModalProps)
     try {
       await leaveTribe.mutateAsync(tribeId)
       toast.success("Successfully left the tribe")
-      setOpen(false)
+      onOpenChange(false)
       setShowLeaveDialog(false)
       router.push("/dashboard")
     } catch (error) {
@@ -156,94 +154,95 @@ export function TribeMembersModal({ children, tribeId }: TribeMembersModalProps)
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <div className="flex items-center justify-between">
-            <DialogTitle>Tribe Members ({members.length})</DialogTitle>
-            {tribeId && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleLeaveClick}
-                className="text-destructive hover:text-destructive"
-                disabled={leaveTribe.isPending}
+    <>
+      <Dialog open={isOpen} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <div className="flex items-center justify-between">
+              <DialogTitle>Tribe Members ({members.length})</DialogTitle>
+              {tribeId && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleLeaveClick}
+                  className="text-destructive hover:text-destructive"
+                  disabled={leaveTribe.isPending}
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Leave Tribe
+                </Button>
+              )}
+            </div>
+          </DialogHeader>
+
+          <div className="relative mb-4">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search members..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 bg-white/5 border-white/10"
+            />
+          </div>
+
+          <div className="flex-1 overflow-y-auto pr-2 space-y-2">
+            {filteredMembers.map((member) => (
+              <div
+                key={member.id}
+                className="flex items-center gap-3 p-3 rounded-lg hover:bg-accent transition-colors group"
               >
-                <LogOut className="h-4 w-4 mr-2" />
-                Leave Tribe
-              </Button>
+                <div className="relative">
+                  <Avatar className="h-12 w-12">
+                    <AvatarImage src={member.avatar || "/placeholder.svg"} />
+                    <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
+                  </Avatar>
+                  <div
+                    className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-card ${getStatusColor(
+                      member.status,
+                    )}`}
+                  />
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium truncate">{member.name}</p>
+                    {member.role !== "member" && (
+                      <Badge variant="outline" className={`text-xs gap-1 ${getRoleColor(member.role)}`}>
+                        {getRoleIcon(member.role)}
+                        {member.role.charAt(0).toUpperCase() + member.role.slice(1)}
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-sm text-muted-foreground">{member.username}</p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground hidden sm:block">Joined {member.joinedDate}</span>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem>View Profile</DropdownMenuItem>
+                      <DropdownMenuItem>Send Message</DropdownMenuItem>
+                      <DropdownMenuItem>Change Role</DropdownMenuItem>
+                      <DropdownMenuItem className="text-destructive">Remove Member</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
+            ))}
+
+            {filteredMembers.length === 0 && (
+              <div className="text-center py-8 text-muted-foreground">
+                <p>No members found matching "{searchQuery}"</p>
+              </div>
             )}
           </div>
-        </DialogHeader>
-
-        <div className="relative mb-4">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search members..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 bg-white/5 border-white/10"
-          />
-        </div>
-
-        <div className="flex-1 overflow-y-auto pr-2 space-y-2">
-          {filteredMembers.map((member) => (
-            <div
-              key={member.id}
-              className="flex items-center gap-3 p-3 rounded-lg hover:bg-accent transition-colors group"
-            >
-              <div className="relative">
-                <Avatar className="h-12 w-12">
-                  <AvatarImage src={member.avatar || "/placeholder.svg"} />
-                  <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
-                </Avatar>
-                <div
-                  className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-card ${getStatusColor(
-                    member.status,
-                  )}`}
-                />
-              </div>
-
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="font-medium truncate">{member.name}</p>
-                  {member.role !== "member" && (
-                    <Badge variant="outline" className={`text-xs gap-1 ${getRoleColor(member.role)}`}>
-                      {getRoleIcon(member.role)}
-                      {member.role.charAt(0).toUpperCase() + member.role.slice(1)}
-                    </Badge>
-                  )}
-                </div>
-                <p className="text-sm text-muted-foreground">{member.username}</p>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground hidden sm:block">Joined {member.joinedDate}</span>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100">
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem>View Profile</DropdownMenuItem>
-                    <DropdownMenuItem>Send Message</DropdownMenuItem>
-                    <DropdownMenuItem>Change Role</DropdownMenuItem>
-                    <DropdownMenuItem className="text-destructive">Remove Member</DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </div>
-          ))}
-
-          {filteredMembers.length === 0 && (
-            <div className="text-center py-8 text-muted-foreground">
-              <p>No members found matching "{searchQuery}"</p>
-            </div>
-          )}
-        </div>
-      </DialogContent>
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={showLeaveDialog} onOpenChange={setShowLeaveDialog}>
         <AlertDialogContent>
@@ -276,6 +275,7 @@ export function TribeMembersModal({ children, tribeId }: TribeMembersModalProps)
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </Dialog>
+    </>
   )
 }
+

@@ -1,27 +1,19 @@
 import { apiFetch } from './client';
+import type { SessionWithDevice } from '@/lib/database/types';
 
-const API_BASE = '/api/security';
+const API_BASE = '/api/user/security';
 
 // ============================================================================
 // Types
 // ============================================================================
 
-export interface SecuritySettings {
-  twoFactorEnabled: boolean;
-  sessions: ActiveSession[];
-}
-
-export interface ActiveSession {
-  id: string;
-  device: string;
-  location: string;
-  lastActive: Date;
-  current: boolean;
-}
-
 export interface ChangePasswordParams {
   currentPassword: string;
   newPassword: string;
+}
+
+export interface RevokeSessionParams {
+  sessionToken: string;
 }
 
 // ============================================================================
@@ -29,10 +21,10 @@ export interface ChangePasswordParams {
 // ============================================================================
 
 /**
- * Fetch security settings for the current user
+ * Fetch all active sessions for the current user
  */
-export async function fetchSecuritySettings(): Promise<SecuritySettings> {
-  return apiFetch<SecuritySettings>(API_BASE);
+export async function fetchSessions(): Promise<SessionWithDevice[]> {
+  return apiFetch<SessionWithDevice[]>(`${API_BASE}/sessions`);
 }
 
 // ============================================================================
@@ -56,13 +48,31 @@ export async function changePassword(
 }
 
 /**
- * Revoke a session
+ * Revoke a specific session
  */
 export async function revokeSession(
-  sessionId: string
-): Promise<{ success: boolean }> {
-  return apiFetch<{ success: boolean }>(
-    `${API_BASE}/sessions/${sessionId}`,
-    { method: 'DELETE' }
+  sessionToken: string
+): Promise<{ success: boolean; message: string }> {
+  return apiFetch<{ success: boolean; message: string }>(
+    `${API_BASE}/sessions`,
+    {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionToken }),
+    }
+  );
+}
+
+/**
+ * Revoke all other sessions except the current one
+ */
+export async function revokeOtherSessions(): Promise<{ success: boolean; message: string }> {
+  return apiFetch<{ success: boolean; message: string }>(
+    `${API_BASE}/sessions`,
+    {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    }
   );
 }

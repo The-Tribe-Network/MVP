@@ -1,4 +1,5 @@
-import { apiFetch } from './client';
+import { apiFetch, buildQueryString } from './client';
+import type { EventWithCreator, EventWithDetails } from '@/lib/database/types';
 
 const API_BASE = '/api/tribes';
 
@@ -6,43 +7,45 @@ const API_BASE = '/api/tribes';
 // Types
 // ============================================================================
 
-export interface Event {
-  id: string;
-  tribeId: string;
+export interface CreateEventInput {
   title: string;
-  description: string | null;
-  location: string | null;
+  description?: string;
   startDate: Date;
-  endDate: Date | null;
-  createdBy: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface EventAttendee {
-  userId: string;
-  eventId: string;
-  status: 'going' | 'maybe' | 'not_going';
-  createdAt: Date;
+  endDate?: Date;
+  location?: string;
+  poll?: {
+    question: string;
+    options: string[];
+    allowMultiple: boolean;
+    isAnonymous: boolean;
+  } | null;
 }
 
 export interface CreateEventParams {
   tribeId: string;
-  title: string;
-  description?: string;
-  location?: string;
-  startDate: Date | string;
-  endDate?: Date | string;
+  data: CreateEventInput;
 }
 
 export interface UpdateEventParams {
   tribeId: string;
   eventId: string;
-  title?: string;
-  description?: string;
-  location?: string;
-  startDate?: Date | string;
-  endDate?: Date | string;
+  data: Partial<CreateEventInput>;
+}
+
+export interface DeleteEventParams {
+  tribeId: string;
+  eventId: string;
+}
+
+export interface AddEventAttendeeParams {
+  tribeId: string;
+  eventId: string;
+  status?: 'going' | 'maybe' | 'not_going';
+}
+
+export interface RemoveEventAttendeeParams {
+  tribeId: string;
+  eventId: string;
 }
 
 // ============================================================================
@@ -52,8 +55,14 @@ export interface UpdateEventParams {
 /**
  * Fetch events for a tribe
  */
-export async function fetchTribeEvents(tribeId: string): Promise<Event[]> {
-  return apiFetch<Event[]>(`${API_BASE}/${tribeId}/events`);
+export async function fetchTribeEvents(
+  tribeId: string,
+  options?: { status?: 'upcoming' | 'ongoing' | 'completed' | 'cancelled' }
+): Promise<EventWithCreator[]> {
+  const queryString = buildQueryString(options || {});
+  return apiFetch<EventWithCreator[]>(
+    `${API_BASE}/${tribeId}/events${queryString}`
+  );
 }
 
 /**
@@ -62,19 +71,9 @@ export async function fetchTribeEvents(tribeId: string): Promise<Event[]> {
 export async function fetchEvent(
   tribeId: string,
   eventId: string
-): Promise<Event> {
-  return apiFetch<Event>(`${API_BASE}/${tribeId}/events/${eventId}`);
-}
-
-/**
- * Fetch attendees for an event
- */
-export async function fetchEventAttendees(
-  tribeId: string,
-  eventId: string
-): Promise<EventAttendee[]> {
-  return apiFetch<EventAttendee[]>(
-    `${API_BASE}/${tribeId}/events/${eventId}/attendees`
+): Promise<EventWithDetails> {
+  return apiFetch<EventWithDetails>(
+    `${API_BASE}/${tribeId}/events/${eventId}`
   );
 }
 
@@ -87,14 +86,14 @@ export async function fetchEventAttendees(
  */
 export async function createEvent(
   params: CreateEventParams
-): Promise<Event> {
-  const { tribeId, ...body } = params;
-  return apiFetch<Event>(
+): Promise<EventWithCreator> {
+  const { tribeId, data } = params;
+  return apiFetch<EventWithCreator>(
     `${API_BASE}/${tribeId}/events`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+      body: JSON.stringify(data),
     }
   );
 }
@@ -104,14 +103,14 @@ export async function createEvent(
  */
 export async function updateEvent(
   params: UpdateEventParams
-): Promise<Event> {
-  const { tribeId, eventId, ...body } = params;
-  return apiFetch<Event>(
+): Promise<EventWithCreator> {
+  const { tribeId, eventId, data } = params;
+  return apiFetch<EventWithCreator>(
     `${API_BASE}/${tribeId}/events/${eventId}`,
     {
-      method: 'PATCH',
+      method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+      body: JSON.stringify(data),
     }
   );
 }
@@ -120,29 +119,41 @@ export async function updateEvent(
  * Delete an event
  */
 export async function deleteEvent(
-  tribeId: string,
-  eventId: string
-): Promise<void> {
-  return apiFetch<void>(
+  params: DeleteEventParams
+): Promise<{ success: boolean }> {
+  const { tribeId, eventId } = params;
+  return apiFetch<{ success: boolean }>(
     `${API_BASE}/${tribeId}/events/${eventId}`,
     { method: 'DELETE' }
   );
 }
 
 /**
- * RSVP to an event
+ * Add event attendee (RSVP)
  */
-export async function rsvpToEvent(
-  tribeId: string,
-  eventId: string,
-  status: 'going' | 'maybe' | 'not_going'
+export async function addEventAttendee(
+  params: AddEventAttendeeParams
 ): Promise<{ success: boolean }> {
+  const { tribeId, eventId, status } = params;
   return apiFetch<{ success: boolean }>(
-    `${API_BASE}/${tribeId}/events/${eventId}/rsvp`,
+    `${API_BASE}/${tribeId}/events/${eventId}/attendees`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status }),
+      body: JSON.stringify({ status: status || 'going' }),
     }
+  );
+}
+
+/**
+ * Remove event attendee (remove RSVP)
+ */
+export async function removeEventAttendee(
+  params: RemoveEventAttendeeParams
+): Promise<{ success: boolean }> {
+  const { tribeId, eventId } = params;
+  return apiFetch<{ success: boolean }>(
+    `${API_BASE}/${tribeId}/events/${eventId}/attendees`,
+    { method: 'DELETE' }
   );
 }

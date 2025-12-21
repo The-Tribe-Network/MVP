@@ -1,35 +1,24 @@
-"use client";
+import {
+  TribeInfoWidget,
+  MediaWidget,
+  EventsWidget,
+  TrendingWidget,
+  TimelineWidget,
+  trendingWidgetMockData
+} from "@/app-pages/tribe-dashboard/components/widgets";
+import { TribeDashboardStoreProvider } from "@/app-pages/tribe-dashboard/components/providers/store";
+import { TribeDashboardDialogContainer } from "@/app-pages/tribe-dashboard/components/dialog-container";
 
-import { HydrationBoundary, type DehydratedState } from "@tanstack/react-query";
-import TribeInfoWidget from "@/app-pages/tribe-dashboard/info";
-import MediaWidget from "@/app-pages/tribe-dashboard/media";
-import EventsWidget from "@/app-pages/tribe-dashboard/events";
-import TrendingWidget, { trendingWidgetMockData } from "@/app-pages/tribe-dashboard/trending";
-import TimelineWidget from "@/app-pages/tribe-dashboard/timeline";
-import { useTribe } from "@/lib/hooks/use-tribes";
-import type { TribeWithMembers } from "@/lib/database/types";
-import { capitalize } from "@/lib/utils";
-
-interface TribeDashboardContentProps {
+interface TribeDashboardPageProps {
   tribeId: string;
-  dehydratedState?: DehydratedState;
-  initialTribeData?: TribeWithMembers;
 }
 
-export function TribeDashboardContent({
+export function TribeDashboardPage({
   tribeId,
-  dehydratedState,
-  initialTribeData,
-}: TribeDashboardContentProps) {
-  // This hook will use the prefetched data from the server if available
-  const { data: tribeData, isLoading } = useTribe(tribeId);
-
-  // Use prefetched data or fallback to fetched data
-  const tribeInfo = tribeData || initialTribeData;
-  const capitalizedTribeName = capitalize(tribeInfo?.name || '');
+}: TribeDashboardPageProps) {
 
   return (
-    <HydrationBoundary state={dehydratedState}>
+    <TribeDashboardStoreProvider>
       <div className="h-full bg-background">
         <div className="mb-8 pt-6 hidden lg:block">
           <h1 className="text-4xl font-bold mb-2">Dashboard</h1>
@@ -37,19 +26,8 @@ export function TribeDashboardContent({
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Left Column - Tribe Info */}
           <div className="lg:col-span-3 hidden lg:block">
-            <div className="space-y-6 sticky top-6">
-              {isLoading && !tribeInfo ? (
-                <div>Loading tribe info...</div>
-              ) : tribeInfo ? (
-                <TribeInfoWidget
-                  tribeId={tribeId}
-                  tribeName={tribeInfo.name}
-                  tribeDescription={tribeInfo.description || ""}
-                  tribeMembers={tribeInfo.memberCount}
-                  {...(tribeInfo.avatar && { tribeAvatar: tribeInfo.avatar })}
-                  tribeLocation={tribeInfo.location}
-                />
-              ) : null}
+            <div className="space-y-6 sticky top-[72px]">
+              <TribeInfoWidget tribeId={tribeId} />
               <MediaWidget tribeId={tribeId} />
             </div>
           </div>
@@ -60,15 +38,15 @@ export function TribeDashboardContent({
           </div>
 
           {/* Right Column - Trends & Events */}
-          <div className="lg:col-span-3 space-y-6 sticky top-6 lg:block hidden">
-            <TrendingWidget trends={trendingWidgetMockData} />
-            <EventsWidget events={[]} tribeId={tribeData?.id || ''} />
+          <div className="lg:col-span-3 lg:block hidden">
+            <div className="space-y-6 sticky top-[72px]">
+              <TrendingWidget trends={trendingWidgetMockData} />
+              <EventsWidget events={[]} tribeId={tribeId} />
+            </div>
           </div>
         </div>
       </div>
-    </HydrationBoundary>
+      <TribeDashboardDialogContainer />
+    </TribeDashboardStoreProvider>
   );
 }
-
-
-

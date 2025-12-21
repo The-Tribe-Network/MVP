@@ -1,42 +1,37 @@
-import { QueryClient, type QueryKey, isServer } from "@tanstack/react-query";
-import { dehydrate, type DehydratedState } from "@tanstack/react-query";
+import { QueryClient, isServer } from "@tanstack/react-query";
 
-
-/**
- * Prefetches a query on the server with initial data.
- * This uses `setQueryData` to store the initial data in the cache,
- * which is the recommended way to pass initial data to TanStack Query.
- *
- * @param queryClient - The QueryClient instance
- * @param queryKey - The query key
- * @param initialData - The initial data to set in the cache
- */
-export function prefetchQuery<TData = unknown>({
-  queryClient,
-  queryKey,
-  initialData,
-}: {
-  queryClient: QueryClient;
-  queryKey: QueryKey;
-  initialData: TData;
-}): void {
-  // Use setQueryData to store initial data in the cache
-  // This is the recommended way to pass initial data to queries
-  queryClient.setQueryData(queryKey, initialData);
-}
+let browserQueryClient: QueryClient | undefined = undefined
 
 /**
- * Dehydrates the QueryClient state for client-side hydration.
- * This serializes the query cache so it can be passed to the client.
- *
- * @param queryClient - The QueryClient instance to dehydrate
- * @returns The dehydrated state that can be passed to HydrationBoundary
+ * Creates a new QueryClient instance for server-side use.
+ * This should be called per request, not shared across requests.
  */
-export function dehydrateQueryClient(
-  queryClient: QueryClient
-): DehydratedState {
-  return dehydrate(queryClient);
+export function getQueryClient(): QueryClient {
+  if (isServer) {
+    // Server: always make a new query client
+    return makeQueryClient()
+  } else {
+    // Browser: make a new query client if we don't already have one
+    // This is very important, so we don't re-make a new client if React
+    // suspends during the initial render. This may not be needed if we
+    // have a suspense boundary BELOW the creation of the query client
+    if (!browserQueryClient) browserQueryClient = makeQueryClient()
+    return browserQueryClient
+  }
 }
 
-
-
+function makeQueryClient(): QueryClient {
+  return new QueryClient({
+    defaultOptions: {
+      queries: {
+        // With SSR, we usually want to set some default staleTime
+        // to avoid refetching immediately on the client
+        staleTime: 60 * 1000, // 1 minute
+        retry: 1,
+      },
+      mutations: {
+        retry: 1,
+      },
+    },
+  });
+}

@@ -1,17 +1,17 @@
 import { queryOptions } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/constants/query-keys';
-import { fetchSessions } from '@/lib/api/security';
+import { fetchEventPolls } from '@/lib/api/polls';
 
 // ============================================================================
 // Query Options
 // ============================================================================
 
 /**
- * Query options for fetching active sessions
+ * Query options for fetching event polls
  */
-export function sessionsOptions() {
+export function eventPollsOptions(tribeId: string, eventId: string) {
   return queryOptions({
-    queryKey: queryKeys.security.sessions(),
-    queryFn: fetchSessions,
+    queryKey: queryKeys.polls.event(eventId),
+    queryFn: () => fetchEventPolls(tribeId, eventId),
   });
 }

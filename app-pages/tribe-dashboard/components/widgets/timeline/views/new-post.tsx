@@ -154,12 +154,10 @@ export function NewPost({ tribeId, onViewChange }: NewPostProps) {
     try {
       await createPostMutation.mutateAsync({
         tribeId,
-        data: {
-          addToAlbum,
-          content: newPost.trim(),
-          mediaId: uploadedImageId || null,
-          albumId: addToAlbum ? selectedAlbumId || null : null,
-        },
+        content: newPost.trim(),
+        addToAlbum,
+        mediaId: uploadedImageId || null,
+        albumId: addToAlbum ? selectedAlbumId || null : null,
       })
       setNewPost('')
       setUploadedImageId(null)

@@ -38,14 +38,6 @@ export default function AppSidebar({ ...props }: React.ComponentProps<typeof Sid
   const pathname = usePathname();
   const { setOpen } = useSidebar();
 
-  if (!user) return null;
-
-  const { name, email, image } = user;
-
-  const userName = name || email || "User";
-  const userAvatar = image || DEFAULT_USER_IMAGE;
-  const userEmail = email || "Not Applicable";
-
   const isTribeDashboard = pathname.startsWith("/tribe/");
 
   // Collapse the outer sidebar when the second sidebar is not visible
@@ -57,6 +49,15 @@ export default function AppSidebar({ ...props }: React.ComponentProps<typeof Sid
 
   // Fetch user's tribes
   const { data: userTribes = [], isLoading: isLoadingTribes } = useUserTribes();
+
+  // Early return AFTER all hooks have been called
+  if (!user) return null;
+
+  const { name, email, image } = user;
+
+  const userName = name || email || "User";
+  const userAvatar = image || DEFAULT_USER_IMAGE;
+  const userEmail = email || "Not Applicable";
 
   // Skeleton component for tribe list loading state
   function TribeListSkeleton() {

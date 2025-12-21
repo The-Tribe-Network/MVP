@@ -63,3 +63,17 @@ export function formatRelativeTime(date: Date | string): string {
   const diffInYears = Math.floor(diffInDays / 365);
   return `${diffInYears}y ago`;
 }
+
+export function parsePaginationParams(limitParam: string | string[] | undefined, offsetParam: string | string[] | undefined) {
+  let limit = limitParam && typeof limitParam === 'string' ? parseInt(limitParam) : undefined;
+  let offset = offsetParam && typeof offsetParam === 'string' ? parseInt(offsetParam) : undefined;
+
+  if (limit && isNaN(limit)) {
+    limit = undefined;
+  }
+  if (offset && isNaN(offset)) {
+    offset = undefined;
+  }
+
+  return { limit, offset };
+}

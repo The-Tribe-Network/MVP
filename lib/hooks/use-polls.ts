@@ -1,66 +1,38 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { PollWithDetails } from "@/lib/database/types";
 import { queryKeys } from "@/lib/constants/query-keys";
+import { eventPollsOptions } from "@/lib/query-options/polls";
+import {
+  createPoll,
+  deletePoll,
+  votePoll,
+  removeVote,
+  type CreatePollInput,
+  type CreatePollParams,
+  type DeletePollParams,
+  type VotePollParams,
+  type RemoveVoteParams,
+} from "@/lib/api/polls";
 
-const API_BASE = "/api/tribes";
+// Re-export types for backwards compatibility
+export type { CreatePollInput };
 
-type CreatePollInput = {
-  question: string;
-  options: string[];
-  allowMultiple: boolean;
-  isAnonymous: boolean;
-  endsAt?: string;
-};
-
+/**
+ * Fetch polls for an event
+ */
 export function useEventPolls(tribeId: string, eventId: string) {
-  return useQuery<PollWithDetails[]>({
-    queryKey: queryKeys.polls.event(eventId),
-    queryFn: async () => {
-      const response = await fetch(
-        `${API_BASE}/${tribeId}/events/${eventId}/polls`
-      );
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to fetch polls");
-      }
-
-      return response.json();
-    },
-  });
+  return useQuery(eventPollsOptions(tribeId, eventId));
 }
 
+/**
+ * Create a new poll
+ */
 export function useCreatePoll() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
-      tribeId,
-      eventId,
-      data,
-    }: {
-      tribeId: string;
-      eventId: string;
-      data: CreatePollInput;
-    }): Promise<PollWithDetails> => {
-      const response = await fetch(
-        `${API_BASE}/${tribeId}/events/${eventId}/polls`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data),
-        }
-      );
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to create poll");
-      }
-
-      return response.json();
-    },
+    mutationFn: (params: CreatePollParams) => createPoll(params),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.polls.event(variables.eventId),
@@ -69,31 +41,14 @@ export function useCreatePoll() {
   });
 }
 
+/**
+ * Delete a poll
+ */
 export function useDeletePoll() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
-      tribeId,
-      eventId,
-      pollId,
-    }: {
-      tribeId: string;
-      eventId: string;
-      pollId: string;
-    }): Promise<{ success: boolean }> => {
-      const response = await fetch(
-        `${API_BASE}/${tribeId}/events/${eventId}/polls/${pollId}`,
-        { method: "DELETE" }
-      );
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to delete poll");
-      }
-
-      return response.json();
-    },
+    mutationFn: (params: DeletePollParams) => deletePoll(params),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.polls.event(variables.eventId),
@@ -102,37 +57,14 @@ export function useDeletePoll() {
   });
 }
 
+/**
+ * Vote on a poll
+ */
 export function useVotePoll() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
-      tribeId,
-      eventId,
-      pollId,
-      optionIds,
-    }: {
-      tribeId: string;
-      eventId: string;
-      pollId: string;
-      optionIds: string[];
-    }): Promise<{ success: boolean }> => {
-      const response = await fetch(
-        `${API_BASE}/${tribeId}/events/${eventId}/polls/${pollId}/votes`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ optionIds }),
-        }
-      );
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to vote");
-      }
-
-      return response.json();
-    },
+    mutationFn: (params: VotePollParams) => votePoll(params),
     onSuccess: (_, variables) => {
       // Optimistically invalidate to refetch with new vote counts
       queryClient.invalidateQueries({
@@ -142,36 +74,14 @@ export function useVotePoll() {
   });
 }
 
+/**
+ * Remove vote from a poll
+ */
 export function useRemoveVote() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
-      tribeId,
-      eventId,
-      pollId,
-      optionId,
-    }: {
-      tribeId: string;
-      eventId: string;
-      pollId: string;
-      optionId?: string;
-    }): Promise<{ success: boolean }> => {
-      const url = new URL(
-        `${API_BASE}/${tribeId}/events/${eventId}/polls/${pollId}/votes`,
-        window.location.origin
-      );
-      if (optionId) url.searchParams.set("optionId", optionId);
-
-      const response = await fetch(url.toString(), { method: "DELETE" });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to remove vote");
-      }
-
-      return response.json();
-    },
+    mutationFn: (params: RemoveVoteParams) => removeVote(params),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.polls.event(variables.eventId),

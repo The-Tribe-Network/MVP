@@ -16,7 +16,7 @@ import { Separator } from './ui/separator'
 import { ViewInvitesDropdown } from './dropdowns/view-invites'
 import { TooltipButton } from './ui/tooltip-button'
 import { useState } from 'react'
-import { NotificationsDrawer } from '@/app-pages/tribe-dashboard/info/notifications-drawer'
+import { NotificationsDrawer } from '@/components/notifications-drawer'
 
 export function TribeDashboardToolbar() {
   const [isNotificationsDrawerOpen, setIsNotificationsDrawerOpen] = useState(false)

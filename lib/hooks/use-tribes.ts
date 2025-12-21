@@ -55,7 +55,6 @@ export function useUserTribes() {
 export function useTribe(id: string | null | undefined) {
   return useQuery({
     ...tribeDetailOptions(id),
-    enabled: !!id, // Add enabled condition at hook level
   });
 }
 

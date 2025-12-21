@@ -56,6 +56,7 @@ export const queryKeys = {
   media: {
     all: ["media"] as const,
     tribes: () => ["media", "tribes"] as const,
+    detail: (mediaId: string) => ["media", "detail", mediaId] as const,
     tribe: (tribeId: string, filters?: Record<string, unknown>) =>
       ["media", "tribes", tribeId, filters] as const,
   },

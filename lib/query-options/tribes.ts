@@ -33,6 +33,7 @@ export function tribeDetailOptions(id: string | null | undefined) {
       }
       return fetchTribeById(id);
     },
+    enabled: !!id,
   });
 }
 

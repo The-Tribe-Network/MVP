@@ -1,4 +1,5 @@
-import { apiFetch } from './client';
+// NOTE: Cannot use apiFetch for uploads since FormData should not have Content-Type header
+// The browser sets it automatically with the correct boundary
 
 // ============================================================================
 // Types
@@ -20,10 +21,9 @@ export interface UploadPostImageParams {
   albumId?: string | null;
 }
 
-export interface UploadAlbumImageParams {
+export interface UploadAlbumCoverParams {
   file: File;
   tribeId: string;
-  albumId: string;
 }
 
 export interface UploadTribeMediaParams {
@@ -44,10 +44,17 @@ export async function uploadAvatar(file: File): Promise<UploadResponse> {
   const formData = new FormData();
   formData.append('file', file);
 
-  return apiFetch<UploadResponse>('/api/upload/avatar', {
+  const response = await fetch('/api/upload/avatar', {
     method: 'POST',
     body: formData,
   });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to upload avatar');
+  }
+
+  return response.json();
 }
 
 /**
@@ -63,28 +70,41 @@ export async function uploadPostImage(
   if (postId) formData.append('postId', postId);
   if (albumId) formData.append('albumId', albumId);
 
-  return apiFetch<UploadResponse>('/api/upload/post-image', {
+  const response = await fetch('/api/upload/post-image', {
     method: 'POST',
     body: formData,
   });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to upload post image');
+  }
+
+  return response.json();
 }
 
 /**
- * Upload an image to an album
+ * Upload an album cover image
  */
-export async function uploadAlbumImage(
-  params: UploadAlbumImageParams
+export async function uploadAlbumCover(
+  params: UploadAlbumCoverParams
 ): Promise<UploadResponse> {
-  const { file, tribeId, albumId } = params;
+  const { file, tribeId } = params;
   const formData = new FormData();
   formData.append('file', file);
   formData.append('tribeId', tribeId);
-  formData.append('albumId', albumId);
 
-  return apiFetch<UploadResponse>('/api/upload/album-image', {
+  const response = await fetch('/api/upload/album-cover', {
     method: 'POST',
     body: formData,
   });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to upload album cover');
+  }
+
+  return response.json();
 }
 
 /**
@@ -104,11 +124,29 @@ export async function uploadTribeMedia(
     formData.append('albumId', albumId);
   }
 
-  return apiFetch<UploadResponse>(
-    `/api/tribes/${tribeId}/media`,
-    {
-      method: 'POST',
-      body: formData,
-    }
-  );
+  const response = await fetch(`/api/tribes/${tribeId}/media`, {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to upload media');
+  }
+
+  return response.json();
+}
+
+/**
+ * Delete media
+ */
+export async function deleteMedia(mediaId: string): Promise<void> {
+  const response = await fetch(`/api/media/${mediaId}`, {
+    method: 'DELETE',
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to delete media');
+  }
 }

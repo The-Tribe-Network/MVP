@@ -1,91 +1,50 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { EventWithCreator, EventWithDetails } from "@/lib/database/types";
 import { queryKeys } from "@/lib/constants/query-keys";
+import { tribeEventsOptions, eventDetailOptions } from "@/lib/query-options/events";
+import {
+  createEvent,
+  updateEvent,
+  deleteEvent,
+  addEventAttendee,
+  removeEventAttendee,
+  type CreateEventInput,
+  type CreateEventParams,
+  type UpdateEventParams,
+  type DeleteEventParams,
+  type AddEventAttendeeParams,
+  type RemoveEventAttendeeParams,
+} from "@/lib/api/events";
 
-const API_BASE = "/api/tribes";
+// Re-export types for backwards compatibility
+export type { CreateEventInput };
 
-type CreateEventInput = {
-  title: string;
-  description?: string;
-  startDate: Date;
-  endDate?: Date;
-  location?: string;
-  poll?: {
-    question: string;
-    options: string[];
-    allowMultiple: boolean;
-    isAnonymous: boolean;
-  } | null;
-};
-
+/**
+ * Fetch events for a tribe
+ */
 export function useTribeEvents(
   tribeId: string,
   options?: { status?: "upcoming" | "ongoing" | "completed" | "cancelled" }
 ) {
-  return useQuery<EventWithCreator[]>({
-    queryKey: queryKeys.events.tribe(tribeId),
-    queryFn: async () => {
-      const params = new URLSearchParams();
-      if (options?.status) params.set("status", options.status);
-
-      const response = await fetch(
-        `${API_BASE}/${tribeId}/events${
-          params.toString() ? `?${params.toString()}` : ""
-        }`
-      );
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to fetch events");
-      }
-
-      return response.json();
-    },
-  });
+  return useQuery(tribeEventsOptions(tribeId, options));
 }
 
+/**
+ * Fetch a single event by ID
+ */
 export function useEventDetail(tribeId: string, eventId: string) {
-  return useQuery<EventWithDetails>({
-    queryKey: queryKeys.events.detail(eventId),
-    queryFn: async () => {
-      const response = await fetch(`${API_BASE}/${tribeId}/events/${eventId}`);
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to fetch event");
-      }
-
-      return response.json();
-    },
-  });
+  return useQuery(eventDetailOptions(tribeId, eventId));
 }
 
+/**
+ * Create a new event
+ */
 export function useCreateEvent() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
-      tribeId,
-      data,
-    }: {
-      tribeId: string;
-      data: CreateEventInput;
-    }): Promise<EventWithCreator> => {
-      const response = await fetch(`${API_BASE}/${tribeId}/events`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to create event");
-      }
-
-      return response.json();
-    },
+    mutationFn: (params: CreateEventParams) => createEvent(params),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.events.tribe(variables.tribeId),
@@ -97,35 +56,14 @@ export function useCreateEvent() {
   });
 }
 
+/**
+ * Update an event
+ */
 export function useUpdateEvent() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
-      tribeId,
-      eventId,
-      data,
-    }: {
-      tribeId: string;
-      eventId: string;
-      data: Partial<CreateEventInput>;
-    }): Promise<EventWithCreator> => {
-      const response = await fetch(
-        `${API_BASE}/${tribeId}/events/${eventId}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data),
-        }
-      );
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to update event");
-      }
-
-      return response.json();
-    },
+    mutationFn: (params: UpdateEventParams) => updateEvent(params),
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.events.tribe(variables.tribeId),
@@ -137,29 +75,14 @@ export function useUpdateEvent() {
   });
 }
 
+/**
+ * Delete an event
+ */
 export function useDeleteEvent() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
-      tribeId,
-      eventId,
-    }: {
-      tribeId: string;
-      eventId: string;
-    }): Promise<{ success: boolean }> => {
-      const response = await fetch(
-        `${API_BASE}/${tribeId}/events/${eventId}`,
-        { method: "DELETE" }
-      );
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to delete event");
-      }
-
-      return response.json();
-    },
+    mutationFn: (params: DeleteEventParams) => deleteEvent(params),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.events.tribe(variables.tribeId),
@@ -168,35 +91,14 @@ export function useDeleteEvent() {
   });
 }
 
+/**
+ * Add event attendee (RSVP)
+ */
 export function useAddEventAttendee() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
-      tribeId,
-      eventId,
-      status,
-    }: {
-      tribeId: string;
-      eventId: string;
-      status?: "going" | "maybe" | "not_going";
-    }): Promise<{ success: boolean }> => {
-      const response = await fetch(
-        `${API_BASE}/${tribeId}/events/${eventId}/attendees`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status: status || "going" }),
-        }
-      );
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to RSVP");
-      }
-
-      return response.json();
-    },
+    mutationFn: (params: AddEventAttendeeParams) => addEventAttendee(params),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.events.detail(variables.eventId),
@@ -208,29 +110,14 @@ export function useAddEventAttendee() {
   });
 }
 
+/**
+ * Remove event attendee (remove RSVP)
+ */
 export function useRemoveEventAttendee() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
-      tribeId,
-      eventId,
-    }: {
-      tribeId: string;
-      eventId: string;
-    }): Promise<{ success: boolean }> => {
-      const response = await fetch(
-        `${API_BASE}/${tribeId}/events/${eventId}/attendees`,
-        { method: "DELETE" }
-      );
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to remove RSVP");
-      }
-
-      return response.json();
-    },
+    mutationFn: (params: RemoveEventAttendeeParams) => removeEventAttendee(params),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.events.detail(variables.eventId),

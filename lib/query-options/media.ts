@@ -16,8 +16,8 @@ export function tribeMediaOptions(
   // Normalize filters for query key (remove undefined values)
   const filtersObject = filters
     ? Object.fromEntries(
-        Object.entries(filters).filter(([_, value]) => value !== undefined)
-      )
+      Object.entries(filters).filter(([_, value]) => value !== undefined)
+    )
     : undefined;
 
   return queryOptions({
@@ -31,7 +31,7 @@ export function tribeMediaOptions(
  */
 export function mediaDetailOptions(tribeId: string, mediaId: string) {
   return queryOptions({
-    queryKey: ['media', 'detail', mediaId],
+    queryKey: queryKeys.media.detail(mediaId),
     queryFn: () => fetchMediaById(tribeId, mediaId),
   });
 }

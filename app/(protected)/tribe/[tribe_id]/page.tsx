@@ -1,57 +1,40 @@
-import { redirect } from 'next/navigation'
-import { getTribeById } from '@/lib/services/tribe'
-import { getServerUser } from '@/lib/services/auth'
-import { checkTribeMembership } from '@/lib/services/permissions'
 import {
-  prefetchQuery,
-  dehydrateQueryClient,
-} from '@/lib/utils/query-server'
-import { queryKeys } from '@/lib/constants/query-keys'
-import { TribeDashboardContent } from '@/app-pages/tribe-dashboard'
-import type { TribeWithMembers } from '@/lib/database/types'
-import { getQueryClient } from '@/lib/providers/query-provider'
+  HydrationBoundary,
+  QueryClient,
+  dehydrate
+} from '@tanstack/react-query'
 
-export default async function TribeDashboardPage({ params }: PageProps<'/tribe/[tribe_id]'>) {
-  const { tribe_id } = await params
+import {
+  tribePostsOptions,
+  tribeMediaOptions,
+  tribeDetailOptions
+} from '@/lib/query-options';
+import { parsePaginationParams } from '@/lib/utils'
 
-  // Check authentication
-  const user = await getServerUser()
-  if (!user) {
-    redirect(`/sign-in?toast_code=SESSION_EXPIRED`)
-  }
+import { TribeDashboardPage } from '@/app-pages/tribe-dashboard'
 
-  // Fetch tribe data server-side
-  const tribeData = await getTribeById(tribe_id)
+export default async function Page({
+  params,
+  searchParams
+}: PageProps<'/tribe/[tribe_id]'>) {
+  const { tribe_id } = await params;
+  const { limit: limitParam = '20', offset: offsetParam = '0' } = await searchParams;
 
-  if (!tribeData) {
-    redirect(`/dashboard?toast_code=TRIBE_NOT_FOUND`)
-  }
+  const queryClient = new QueryClient();
 
-  // Check if user is a member of the tribe
-  const isMember = await checkTribeMembership(tribe_id, user.id)
-  if (!isMember) {
-    redirect(`/dashboard?toast_code=UNAUTHORIZED_TRIBE_ACCESS`)
-  }
-
-  // Create a QueryClient instance for server-side prefetching
-  const queryClient = getQueryClient()
-
-  // Prefetch tribe data in TanStack Query cache with initialData
-  // Uses TribeWithMembers type from lib/database/types.ts
-  prefetchQuery<TribeWithMembers>({
-    queryClient,
-    queryKey: queryKeys.tribes.tribe(tribe_id),
-    initialData: tribeData,
-  })
-
-  // Dehydrate the query client state to pass to the client
-  const dehydratedState = dehydrateQueryClient(queryClient)
+  await Promise.all([
+    queryClient.prefetchQuery(tribeDetailOptions(tribe_id)),
+    queryClient.prefetchQuery(tribePostsOptions(tribe_id, parsePaginationParams(limitParam, offsetParam))),
+    queryClient.prefetchQuery(tribeMediaOptions(tribe_id, {
+      type: 'image',
+      limit: 4,
+      offset: 0,
+    }))
+  ]);
 
   return (
-    <TribeDashboardContent
-      tribeId={tribe_id}
-      dehydratedState={dehydratedState}
-      initialTribeData={tribeData}
-    />
-  )
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <TribeDashboardPage tribeId={tribe_id} />
+    </HydrationBoundary>
+  );
 }
