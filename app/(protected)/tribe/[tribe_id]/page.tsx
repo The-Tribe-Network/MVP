@@ -1,5 +1,4 @@
-
-import { notFound, redirect } from 'next/navigation'
+import { redirect } from 'next/navigation'
 import { getTribeById } from '@/lib/services/tribe'
 import { getServerUser } from '@/lib/services/auth'
 import { checkTribeMembership } from '@/lib/services/permissions'

@@ -1,5 +1,5 @@
 import { AlbumDetailClient } from '@/app-pages/album';
-import { notFound, redirect } from 'next/navigation';
+import { redirect } from 'next/navigation';
 
 export default async function AlbumPage({ params }: PageProps<'/tribe/[tribe_id]/media/album/[album_id]'>) {
   const { tribe_id, album_id } = await params
