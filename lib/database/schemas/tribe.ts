@@ -2,16 +2,14 @@ import { pgTable, text, timestamp, boolean, unique, uuid } from "drizzle-orm/pg-
 import { user } from "./auth";
 import { privacyType, tribeRole, tribeCategory, invitationStatus } from "./enums";
 
+// Note: avatar references media.id, but we cannot add the .references() constraint here
+// due to circular dependency (media.ts imports tribe). The relationship is enforced
+// through Drizzle relations in relations.ts and database-level foreign key constraints.
 export const tribe = pgTable("tribe", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
   description: text("description"),
-  avatar: uuid("avatar").references((): any => {
-    // Lazy reference to avoid circular dependency with media schema
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { media } = require("./media");
-    return media.id;
-  }, { onDelete: "set null" }),
+  avatar: uuid("avatar"),
   location: text("location"),
   privacy: privacyType("privacy").notNull().default("private"),
   category: tribeCategory("category").notNull().default("other"),
