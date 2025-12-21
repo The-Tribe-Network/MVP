@@ -11,10 +11,10 @@
     "deny": [],
     "ask": []
   },
+  "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
     "postgres",
     "github",
     "filesystem"
-  ],
-  "enableAllProjectMcpServers": true
+  ]
 }

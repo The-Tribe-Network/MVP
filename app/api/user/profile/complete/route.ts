@@ -1,7 +1,37 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
-import { markProfileAsComplete } from "@/lib/services/user";
+import { markProfileAsComplete, isProfileComplete } from "@/lib/services/user";
 import type { User } from "@/lib/database/types";
+
+/**
+ * GET /api/user/profile/complete
+ * Check if user profile is complete
+ */
+export async function GET() {
+  try {
+    const user: User | null = await getServerUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const profileComplete = await isProfileComplete(user.id);
+
+    return NextResponse.json({
+      isComplete: profileComplete,
+      user: {
+        displayName: user.displayName,
+        username: user.username,
+        location: user.location,
+      },
+    });
+  } catch (error) {
+    console.error("Error checking profile completion:", error);
+    return NextResponse.json(
+      { error: "Failed to check profile completion" },
+      { status: 500 }
+    );
+  }
+}
 
 /**
  * POST /api/user/profile/complete

@@ -8,12 +8,12 @@ import EmptyView from "./empty"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 
-interface PostsViewProps {
+interface TimelineContentProps {
   tribeId: string
   onViewChange: (view: "posts" | "new post") => void
 }
 
-export default function PostsView({ tribeId, onViewChange }: PostsViewProps) {
+export default function TimelineContent({ tribeId, onViewChange }: TimelineContentProps) {
   const { data: posts, isError, isLoading } = useTribePosts(tribeId)
 
   const [likeError, setLikeError] = useState<string | null>(null)

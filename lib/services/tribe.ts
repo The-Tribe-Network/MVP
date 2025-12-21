@@ -1,4 +1,4 @@
-import { db } from "@/lib/database/client";
+import { db, getDbTransaction } from "@/lib/database/client";
 import { tribe, tribeMember } from "@/lib/database/schemas/tribe";
 import { user } from "@/lib/database/schemas/auth";
 import { media } from "@/lib/database/schemas/media";
@@ -21,8 +21,10 @@ export async function createTribe(
   },
   userId: string
 ): Promise<TribeWithCreator> {
+  const dbTx = getDbTransaction();
+
   // Create tribe and add creator as owner in a transaction
-  const createdTribe = await db.transaction(async (tx) => {
+  const createdTribe = await dbTx.transaction(async (tx) => {
     // Insert tribe
     const [newTribe] = await tx
       .insert(tribe)
