@@ -1,6 +1,7 @@
 'use client'
 
 import { EventCard } from './event-card'
+import { allEvents as events } from './lib/mock-data'
 
 // Local UI types for event page - see event-card.tsx for full Event interface
 interface Host {
@@ -31,12 +32,11 @@ interface Event {
 }
 
 interface EventsListProps {
-  events: Event[]
   userVotes: Record<number, number>
   onVote: (eventId: number, optionId: number) => void
 }
 
-export function EventsList({ events, userVotes, onVote }: EventsListProps) {
+export function EventsList({ userVotes, onVote }: EventsListProps) {
   return (
     <div className="space-y-4">
       <h2 className="text-2xl font-semibold">All Events & Votes</h2>
