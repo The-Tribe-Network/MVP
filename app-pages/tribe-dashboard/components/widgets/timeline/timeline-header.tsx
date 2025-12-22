@@ -1,9 +1,10 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { useTribePosts } from "@/lib/hooks/use-posts";
 import { ArrowLeft, RefreshCw } from "lucide-react";
 import { useState } from "react";
+import { tribePostsOptions } from "@/lib/query-options/posts";
+import { useQuery } from "@tanstack/react-query";
 
 interface TimelineHeaderProps {
   tribeId: string;
@@ -14,7 +15,7 @@ interface TimelineHeaderProps {
 export default function TimelineHeader({ tribeId, view, onViewChange }: TimelineHeaderProps) {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const { refetch, data } = useTribePosts(tribeId);
+  const { refetch, data } = useQuery(tribePostsOptions(tribeId));
 
   const handleRefresh = async () => {
     setIsRefreshing(true)

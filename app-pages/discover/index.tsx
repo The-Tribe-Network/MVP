@@ -2,20 +2,6 @@
 
 import { useState } from 'react'
 import { categories, allTribes, featuredTribes } from './mock-data'
-
-// Local UI type for discover page tribe cards
-interface Tribe {
-  id: string
-  name: string
-  description: string
-  avatar: string
-  memberCount: number
-  location: string
-  isPublic: boolean
-  category: string
-  trending?: boolean
-  featured?: boolean
-}
 import { DiscoverHeader } from './discover-header'
 import { SearchFilterSection } from './search-filter-section'
 import { CategoriesSection } from './categories-section'

@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { UserPlus, Users } from "lucide-react";
-import { useTribe } from "@/lib/hooks/use-tribes";
 import TribeLocation from "./tribe-location";
 import { TribeInfoWidgetSkeleton } from "./tribe-info-widget-skeleton";
 import { TribeInfoWidgetError } from "./tribe-info-widget-error";
@@ -19,27 +18,23 @@ interface TribeInfoWidgetProps {
 export default function TribeInfoWidget({
   tribeId,
 }: TribeInfoWidgetProps) {
-  const { data: tribeData, isLoading, error, isError, refetch } = useQuery({
-    ...tribeDetailOptions(tribeId),
-  });
+  const {
+    data: tribe,
+    isLoading, error,
+    isError,
+    refetch
+  } = useQuery(tribeDetailOptions(tribeId));
   const openDialog = useTribeDashboardStore((s) => s.openDialog);
 
-  if (isLoading && !tribeData) {
+  if (isLoading && !tribe) {
     return <TribeInfoWidgetSkeleton />
   }
 
-  if (isError || !tribeData) {
+  if (isError || !tribe) {
     return <TribeInfoWidgetError error={error} onRetry={() => refetch()} />
   }
 
-  const {
-    name: tribeName,
-    description: tribeDescription,
-    memberCount: tribeMembers,
-    avatar: tribeAvatar,
-    location: tribeLocation,
-  } = tribeData
-  const avatarFallback = tribeName.substring(0, 2).toUpperCase();
+  const avatarFallback = tribe.name.substring(0, 2).toUpperCase();
 
   return (
     <Card>
@@ -47,21 +42,21 @@ export default function TribeInfoWidget({
         <div className="flex justify-center mb-4">
           <button
             onClick={() => {
-              if (tribeAvatar && tribeAvatar !== "/placeholder.svg") {
-                openDialog('image-preview', { imageUrl: tribeAvatar, altText: `${tribeName} avatar` })
+              if (tribe.avatar && tribe.avatar !== "/placeholder.svg") {
+                openDialog('image-preview', { imageUrl: tribe.avatar, altText: `${tribe.name} avatar` })
               }
             }}
             className="cursor-pointer hover:opacity-90 transition-opacity disabled:cursor-default disabled:opacity-100"
-            disabled={!tribeAvatar || tribeAvatar === "/placeholder.svg"}
+            disabled={!tribe.avatar || tribe.avatar === "/placeholder.svg"}
             aria-label="View tribe avatar"
           >
             <Avatar className="h-24 w-24 border-4 border-primary/20">
-              <AvatarImage src={tribeAvatar || "/placeholder.svg"} />
+              <AvatarImage src={tribe.avatar || "/placeholder.svg"} />
               <AvatarFallback className="text-2xl bg-primary text-primary-foreground">{avatarFallback}</AvatarFallback>
             </Avatar>
           </button>
         </div>
-        <CardTitle className="text-2xl">{tribeName}</CardTitle>
+        <CardTitle className="text-2xl">{tribe.name}</CardTitle>
         <Button
           variant="ghost"
           size="sm"
@@ -69,15 +64,15 @@ export default function TribeInfoWidget({
           className="text-muted-foreground hover:text-foreground"
         >
           <Users className="h-4 w-4" />
-          <span className="font-medium">{tribeMembers.toLocaleString()} member{tribeMembers === 1 ? '' : 's'}</span>
+          <span className="font-medium">{tribe.memberCount.toLocaleString()} member{tribe.memberCount === 1 ? '' : 's'}</span>
         </Button>
-        <TribeLocation tribeLocation={tribeLocation} />
+        <TribeLocation tribeLocation={tribe.location} />
         <CardDescription className="text-balance">
-          {tribeDescription}
+          {tribe.description}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Button className="w-full" size="sm" onClick={() => openDialog('invite', { tribeId, tribeName })}>
+        <Button className="w-full" size="sm" onClick={() => openDialog('invite', { tribeId, tribeName: tribe.name })}>
           <UserPlus className="h-4 w-4 mr-2" />
           Invite Members
         </Button>

@@ -1,5 +1,6 @@
-import { AlertCircle, RefreshCw } from "lucide-react"
+import { AlertCircle, Plus, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import Link from "next/link"
 import {
   Empty,
   EmptyHeader,
@@ -18,7 +19,7 @@ export function FeaturedMediaError({ message, onRetry }: FeaturedMediaErrorProps
   return (
     <section>
       <h2 className="text-2xl font-bold mb-6">All Albums</h2>
-      
+
       <Empty className="border border-destructive/20 bg-destructive/5 min-h-[300px]">
         <EmptyHeader>
           <EmptyMedia variant="icon" className="bg-destructive/10 text-destructive">
@@ -29,14 +30,12 @@ export function FeaturedMediaError({ message, onRetry }: FeaturedMediaErrorProps
             {message || "Something went wrong while loading the albums. Please try again."}
           </EmptyDescription>
         </EmptyHeader>
-        
+
         {onRetry && (
-          <EmptyContent>
-            <Button variant="outline" size="sm" onClick={onRetry}>
-              <RefreshCw className="size-4 mr-2" />
-              Try again
-            </Button>
-          </EmptyContent>
+          <Button variant="outline" size="sm" onClick={onRetry}>
+            <RefreshCw className="size-4 mr-2" />
+            Try again
+          </Button>
         )}
       </Empty>
     </section>

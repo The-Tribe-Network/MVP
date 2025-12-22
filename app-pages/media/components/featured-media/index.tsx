@@ -25,8 +25,21 @@ export default function FeaturedMediaSection({ tribeId }: FeaturedMediaSectionPr
   const { data: albums, isLoading, error, isError, refetch } = useQuery(tribeAlbumsOptions(tribeId))
 
   if (isLoading) return <FeaturedMediaSkeleton />
-  if (isError) return <FeaturedMediaError message={error.message} onRetry={() => refetch()} />
-  if (!albums || albums.length === 0) return <FeaturedMediaEmpty />
+
+  if (isError)
+    return (
+      <FeaturedMediaError
+        message={error.message}
+        onRetry={() => refetch()}
+      />
+    )
+
+  if (!albums || albums.length === 0)
+    return (
+      <FeaturedMediaEmpty
+        tribeId={tribeId}
+      />
+    )
 
   return (
     <section>
