@@ -1,10 +1,5 @@
-
-import {
-  dehydrateQueryClient,
-} from '@/lib/utils/query-server'
-import { queryKeys } from '@/lib/constants/query-keys'
 import { EventDetailContent } from '@/app-pages/event-detail'
-import { getQueryClient } from '@/lib/providers/query-provider'
+import { dehydrate, QueryClient } from '@tanstack/react-query'
 
 // Mock service - will need to create real service later
 async function getEventById(eventId: string, userId: string) {
@@ -17,8 +12,9 @@ export default async function EventDetailPage({
 }: PageProps<'/tribe/[tribe_id]/events/[event_id]'>) {
   const { tribe_id, event_id } = await params
 
-  const queryClient = getQueryClient()
-  const dehydratedState = dehydrateQueryClient(queryClient)
+  const queryClient = new QueryClient()
+  // await queryClient.prefetchQuery(eventDetailOptions(event_id))
+  const dehydratedState = dehydrate(queryClient)
 
   return (
     <EventDetailContent
