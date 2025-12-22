@@ -11,30 +11,21 @@ import {
 } from "@/components/ui/carousel"
 import { Heart, MessageCircle } from "lucide-react"
 import { useEffect, useState } from "react"
+import type { CarouselPhoto } from "@/lib/stores/dialog-store"
 
-// Local type for transformed photo data displayed in UI
-interface Photo {
-  id: string
-  url: string
-  caption: string
-  likes: number
-  comments: number
-  date?: string
-}
-
-interface PhotoCarouselModalProps {
+interface PhotoCarouselDialogProps {
   isOpen: boolean
   onOpenChange: (open: boolean) => void
-  photos: Photo[]
-  currentPhotoIndex: number
+  photos: CarouselPhoto[]
+  initialIndex: number
 }
 
-export function PhotoCarouselModal({
+export function PhotoCarouselDialog({
   isOpen,
   onOpenChange,
   photos,
-  currentPhotoIndex,
-}: PhotoCarouselModalProps) {
+  initialIndex,
+}: PhotoCarouselDialogProps) {
   const [api, setApi] = useState<CarouselApi>()
 
   useEffect(() => {
@@ -42,8 +33,8 @@ export function PhotoCarouselModal({
       return
     }
 
-    api.scrollTo(currentPhotoIndex)
-  }, [api, currentPhotoIndex])
+    api.scrollTo(initialIndex)
+  }, [api, initialIndex])
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>

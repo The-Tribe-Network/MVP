@@ -9,7 +9,18 @@ export type GlobalDialogType =
   | "event-preview"
   | "media-upload"
   | "delete-post"
-  | "delete-comment";
+  | "delete-comment"
+  | "photo-carousel";
+
+// Photo type for carousel dialog
+export interface CarouselPhoto {
+  id: string;
+  url: string;
+  caption: string;
+  likes: number;
+  comments: number;
+  date?: string;
+}
 
 // Type-safe payload mapping for each dialog type
 export type DialogPayloadMap = {
@@ -24,6 +35,10 @@ export type DialogPayloadMap = {
     postId: string;
     commentId: string;
     commentContent?: string;
+  };
+  "photo-carousel": {
+    photos: CarouselPhoto[];
+    initialIndex: number;
   };
 };
 

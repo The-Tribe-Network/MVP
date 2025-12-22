@@ -1,19 +1,20 @@
+"use client"
+
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ArrowLeft, Calendar, Share2, Download } from "lucide-react"
 import Link from "next/link"
 import type { AlbumWithMedia } from "@/lib/database/types"
-import { useParams, useRouter } from "next/navigation"
+import { useParams } from "next/navigation"
 
 interface AlbumHeaderProps {
   album: AlbumWithMedia
 }
 
 export function AlbumHeader({ album }: AlbumHeaderProps) {
-  const router = useRouter();
   const { tribe_id: tribeId } = useParams<{ tribe_id: string }>();
 
-  if (!tribeId) return;
+  if (!tribeId) return null;
 
   return (
     <div className="mb-8">

@@ -1,17 +1,10 @@
-import { Heart, MessageCircle } from "lucide-react"
+"use client"
 
-// Local type for transformed photo data displayed in UI
-interface Photo {
-  id: string
-  url: string
-  caption: string
-  likes: number
-  comments: number
-  date?: string
-}
+import { Heart, MessageCircle } from "lucide-react"
+import type { CarouselPhoto } from "@/lib/stores/dialog-store"
 
 interface PhotoCardProps {
-  photo: Photo
+  photo: CarouselPhoto
   index: number
   onPhotoClick: (index: number) => void
 }

@@ -1,6 +1,6 @@
 import { queryOptions } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/constants/query-keys';
-import { fetchTribeAlbums } from '@/lib/api/albums';
+import { fetchTribeAlbums, fetchAlbumById } from '@/lib/api/albums';
 
 // ============================================================================
 // Query Options
@@ -13,5 +13,15 @@ export function tribeAlbumsOptions(tribeId: string) {
   return queryOptions({
     queryKey: queryKeys.albums.tribe(tribeId),
     queryFn: () => fetchTribeAlbums(tribeId),
+  });
+}
+
+/**
+ * Query options for fetching a single album by ID
+ */
+export function albumDetailOptions(tribeId: string, albumId: string) {
+  return queryOptions({
+    queryKey: queryKeys.albums.detail(tribeId, albumId),
+    queryFn: () => fetchAlbumById(tribeId, albumId),
   });
 }

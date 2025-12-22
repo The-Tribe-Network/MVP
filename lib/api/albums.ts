@@ -41,6 +41,19 @@ export async function fetchTribeAlbums(tribeId: string): Promise<AlbumWithMedia[
   return response.albums;
 }
 
+/**
+ * Fetch a single album by ID
+ */
+export async function fetchAlbumById(
+  tribeId: string,
+  albumId: string
+): Promise<AlbumWithMedia> {
+  const response = await apiFetch<AlbumResponse>(
+    `${API_BASE}/${tribeId}/albums/${albumId}`
+  );
+  return response.album;
+}
+
 // ============================================================================
 // Mutation Functions
 // ============================================================================

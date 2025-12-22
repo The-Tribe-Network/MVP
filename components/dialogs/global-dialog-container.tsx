@@ -7,6 +7,7 @@ import TribeMembersDialog from "@/components/dialogs/tribe-members";
 import UploadMediaDialog from "@/components/dialogs/upload-media";
 import { DeletePostDialog } from "@/components/dialogs/delete-post";
 import { DeleteCommentDialog } from "@/components/dialogs/delete-comment";
+import { PhotoCarouselDialog } from "@/components/dialogs/photo-carousel";
 
 export function GlobalDialogContainer() {
   const isDialogOpen = useDialogStore((s) => s.isDialogOpen);
@@ -86,6 +87,17 @@ export function GlobalDialogContainer() {
     case "event-preview":
       // TODO: Implement event preview dialog when available
       return null;
+    case "photo-carousel": {
+      const payload = dialogPayload as DialogPayloadMap["photo-carousel"];
+      return (
+        <PhotoCarouselDialog
+          isOpen={isDialogOpen}
+          onOpenChange={(open) => !open && closeDialog()}
+          photos={payload.photos}
+          initialIndex={payload.initialIndex}
+        />
+      );
+    }
     default:
       return null;
   }

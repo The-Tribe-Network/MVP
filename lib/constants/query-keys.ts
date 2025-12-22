@@ -50,6 +50,7 @@ export const queryKeys = {
   albums: {
     all: ["albums"] as const,
     tribe: (tribeId: string) => ["albums", "tribe", tribeId] as const,
+    detail: (tribeId: string, albumId: string) => ["albums", "detail", tribeId, albumId] as const,
   },
 
   // Media queries
