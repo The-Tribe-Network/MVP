@@ -1,60 +1,54 @@
 "use client"
 
-import type React from "react"
-import { useState, useEffect } from "react"
+import { useForm, useWatch } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Label } from "@/components/ui/label"
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+  FormDescription,
+} from "@/components/ui/form"
 import Link from "next/link"
 import { useSignUpMutation } from "@/lib/hooks/use-auth-mutations"
 import { signUpSchema, type SignUpFormData } from "@/lib/validations/auth"
-import { useFormValidation } from "@/lib/hooks/use-form-validation"
-import { FormField } from "./form-field"
 import { OAuthSection } from "./oauth-section"
 import { AUTH_CONSTANTS } from "@/lib/constants/auth"
-import { Muted } from "@/components/ui/typography"
 import { PasswordRequirementsIndicator } from "./password-requirements-indicator"
 
 export function SignUpForm() {
   const { mutate: signUp, isPending, error } = useSignUpMutation()
 
-  const [formData, setFormData] = useState<SignUpFormData>({
-    name: "",
-    email: "",
-    birthday: "",
-    password: "",
-    confirmPassword: "",
-    agreeToTerms: false,
-  })
-
-  const { errors, validate, clearErrors, clearFieldError } = useFormValidation({
-    schema: signUpSchema,
-    onValidationSuccess: (data) => {
-      signUp({
-        name: data.name,
-        email: data.email,
-        password: data.password,
-        birthday: data.birthday,
-      })
+  const form = useForm<SignUpFormData>({
+    resolver: zodResolver(signUpSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      birthday: "",
+      password: "",
+      confirmPassword: "",
+      agreeToTerms: false,
     },
   })
 
-  // Clear confirmPassword error in real-time when passwords match
-  useEffect(() => {
-    if (
-      formData.password &&
-      formData.confirmPassword &&
-      formData.password === formData.confirmPassword &&
-      errors.confirmPassword
-    ) {
-      clearFieldError("confirmPassword")
-    }
-  }, [formData.password, formData.confirmPassword, errors.confirmPassword, clearFieldError])
+  // Watch password field for PasswordRequirementsIndicator
+  const password = useWatch({
+    control: form.control,
+    name: "password",
+  })
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    clearErrors()
-    validate(formData)
+  const onSubmit = (data: SignUpFormData) => {
+    signUp({
+      name: data.name,
+      email: data.email,
+      password: data.password,
+      birthday: data.birthday,
+    })
   }
 
   return (
@@ -62,98 +56,138 @@ export function SignUpForm() {
       <OAuthSection disabled={isPending} />
 
       {/* Sign Up Form */}
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <FormField
-          id="name"
-          label="Full Name"
-          type="text"
-          placeholder="Enter your full name"
-          value={formData.name}
-          onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
-          error={errors.name}
-          required
-        />
-
-        <FormField
-          id="email"
-          label="Email"
-          type="email"
-          placeholder="Enter your email address"
-          value={formData.email}
-          onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
-          error={errors.email}
-          required
-        />
-
-        <FormField
-          id="birthday"
-          label="Birthday"
-          type="date"
-          value={formData.birthday}
-          onChange={(e) => setFormData((prev) => ({ ...prev, birthday: e.target.value }))}
-          error={errors.birthday}
-          required
-        />
-
-        <div className="space-y-2">
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <FormField
-            id="password"
-            label="Password"
-            type="password"
-            placeholder="Create a password"
-            value={formData.password}
-            onChange={(e) => setFormData((prev) => ({ ...prev, password: e.target.value }))}
-            error={errors.password}
-            required
-            minLength={8}
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Full Name</FormLabel>
+                <FormControl>
+                  <Input
+                    type="text"
+                    placeholder="Enter your full name"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
           />
-          <PasswordRequirementsIndicator password={formData.password} />
-          {formData.password.length === 0 && (
-            <Muted className="text-xs">
-              {AUTH_CONSTANTS.PASSWORD_REQUIREMENTS}
-            </Muted>
-          )}
-        </div>
 
-        <FormField
-          id="confirmPassword"
-          label="Confirm Password"
-          type="password"
-          placeholder="Confirm your password"
-          value={formData.confirmPassword}
-          onChange={(e) => setFormData((prev) => ({ ...prev, confirmPassword: e.target.value }))}
-          error={errors.confirmPassword}
-          required
-        />
-
-        <div className="flex items-center space-x-2">
-          <Checkbox
-            id="terms"
-            checked={formData.agreeToTerms}
-            onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, agreeToTerms: checked as boolean }))}
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Email</FormLabel>
+                <FormControl>
+                  <Input
+                    type="email"
+                    placeholder="Enter your email address"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
           />
-          <Label
-            htmlFor="terms"
-            className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-          >
-            I agree to the{" "}
-            <Link href="/terms" className="text-primary hover:underline">
-              Terms of Service
-            </Link>{" "}
-            and{" "}
-            <Link href="/privacy" className="text-primary hover:underline">
-              Privacy Policy
-            </Link>
-          </Label>
-        </div>
-        {errors.agreeToTerms && <p className="text-sm text-destructive">{errors.agreeToTerms}</p>}
 
-        {error && <div className="text-sm text-destructive bg-destructive/10 p-3 rounded-md">{error.message}</div>}
+          <FormField
+            control={form.control}
+            name="birthday"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Birthday</FormLabel>
+                <FormControl>
+                  <Input
+                    type="date"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        <Button type="submit" className="w-full" disabled={isPending}>
-          {isPending ? "Creating account..." : "Create account"}
-        </Button>
-      </form>
+          <FormField
+            control={form.control}
+            name="password"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Password</FormLabel>
+                <FormControl>
+                  <Input
+                    type="password"
+                    placeholder="Create a password"
+                    {...field}
+                  />
+                </FormControl>
+                <PasswordRequirementsIndicator password={password || ""} />
+                {!password && (
+                  <FormDescription className="text-xs">
+                    {AUTH_CONSTANTS.PASSWORD_REQUIREMENTS}
+                  </FormDescription>
+                )}
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="confirmPassword"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Confirm Password</FormLabel>
+                <FormControl>
+                  <Input
+                    type="password"
+                    placeholder="Confirm your password"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="agreeToTerms"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-start space-x-2 space-y-0">
+                <FormControl>
+                  <Checkbox
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+                <div className="space-y-1 leading-none">
+                  <FormLabel className="text-sm font-normal cursor-pointer">
+                    I agree to the{" "}
+                    <Link href="/terms" className="text-primary hover:underline">
+                      Terms of Service
+                    </Link>{" "}
+                    and{" "}
+                    <Link href="/privacy" className="text-primary hover:underline">
+                      Privacy Policy
+                    </Link>
+                  </FormLabel>
+                  <FormMessage />
+                </div>
+              </FormItem>
+            )}
+          />
+
+          {error && <div className="text-sm text-destructive bg-destructive/10 p-3 rounded-md">{error.message}</div>}
+
+          <Button type="submit" className="w-full" disabled={isPending}>
+            {isPending ? "Creating account..." : "Create account"}
+          </Button>
+        </form>
+      </Form>
     </div>
   )
 }

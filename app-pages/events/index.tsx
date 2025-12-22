@@ -1,22 +1,27 @@
 'use client'
 
-import { useState } from 'react'
 import { EventsHeader } from './events-header'
-import { EventsList } from './events-list'
-import { EventsCalendar } from './events-calendar'
-import { PastEventsSection } from './past-events-section'
-import { pastEvents } from './lib/mock-data'
+import { UpcomingEvents } from './components/upcoming-events'
+import { EventsCalendar } from './components/events-calendar'
+import { PastEvents } from './components/past-events'
 
 interface EventsPageProps {
-  tribeId: string;
+  tribeId: string
 }
 
+/**
+ * Events Page - Root Component
+ *
+ * Thin wrapper that composes all event sections together.
+ * Each section handles its own data fetching, loading, error, and empty states.
+ *
+ * Architecture Pattern:
+ * - Root component: Layout and section composition only
+ * - Section components: Handle data fetching and state management
+ * - State components: Loading, error, empty states
+ */
 export default function EventsPage({ tribeId }: EventsPageProps) {
-  const [userVotes, setUserVotes] = useState<Record<number, number>>({
-    2: 1, // User voted for option 1 in event 2
-  })
-
-  // Dates with events for calendar highlighting
+  // Mock event dates for calendar (will be derived from real data later)
   const eventDates = [
     new Date(2024, 6, 15),
     new Date(2024, 6, 20),
@@ -24,31 +29,24 @@ export default function EventsPage({ tribeId }: EventsPageProps) {
     new Date(2024, 6, 28),
   ]
 
-  const handleVote = (eventId: number, optionId: number) => {
-    setUserVotes(prev => ({
-      ...prev,
-      [eventId]: optionId
-    }))
-    console.log(`Voted for option ${optionId} in event ${eventId}`)
-  }
-
   return (
     <div className="flex h-screen">
       <div className="flex-1">
         <div className="max-w-7xl mx-auto p-6 space-y-6">
+          {/* Header */}
           <EventsHeader tribeId={tribeId} />
 
+          {/* Main Content Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left Column - Upcoming Events */}
             <div className="lg:col-span-2">
-              <EventsList
-                userVotes={userVotes}
-                onVote={handleVote}
-              />
+              <UpcomingEvents tribeId={tribeId} />
             </div>
 
+            {/* Right Column - Calendar & Past Events */}
             <div className="lg:col-span-1 space-y-6">
-              <EventsCalendar eventDates={eventDates} />
-              <PastEventsSection tribeId={tribeId} />
+              <EventsCalendar tribeId={tribeId} eventDates={eventDates} />
+              <PastEvents tribeId={tribeId} />
             </div>
           </div>
         </div>
