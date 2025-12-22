@@ -21,6 +21,7 @@ import { validateImageFile } from "@/lib/utils/image";
 import { User } from "better-auth";
 import NewPostAlbumToggle from "../components/new-post-album-toggle";
 import { useAuthUser } from "@/lib/hooks/use-auth";
+import SelectPostMediaDialog from "@/components/dialogs/select-post-media";
 
 interface NewPostProps {
   tribeId: string;
@@ -34,6 +35,8 @@ export function NewPost({ tribeId, onViewChange }: NewPostProps) {
   const [uploadedImageId, setUploadedImageId] = useState<string | null>(null)
   const [addToAlbum, setAddToAlbum] = useState(true)
   const [selectedAlbumId, setSelectedAlbumId] = useState<string | null>(null)
+  const [isMediaPickerOpen, setIsMediaPickerOpen] = useState(false)
+  const [isMediaFromLibrary, setIsMediaFromLibrary] = useState(false)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -72,7 +75,7 @@ export function NewPost({ tribeId, onViewChange }: NewPostProps) {
 
     // Delete previous image if one exists
     const previousImageId = uploadedImageId
-    if (previousImageId) {
+    if (previousImageId && !isMediaFromLibrary) {
       try {
         await deleteMediaMutation.mutateAsync(previousImageId)
       } catch (error) {
@@ -94,6 +97,7 @@ export function NewPost({ tribeId, onViewChange }: NewPostProps) {
       })
       setUploadedImageId(result.id)
       setImagePreview(result.url)
+      setIsMediaFromLibrary(false)
       toast.success('Image uploaded successfully')
     } catch (error) {
       console.error('Failed to upload image:', error)
@@ -108,7 +112,8 @@ export function NewPost({ tribeId, onViewChange }: NewPostProps) {
   };
 
   const handleRemoveImage = async () => {
-    if (uploadedImageId) {
+    // Only delete from Cloudinary if it was uploaded for this post (not from library)
+    if (uploadedImageId && !isMediaFromLibrary) {
       try {
         await deleteMediaMutation.mutateAsync(uploadedImageId)
         toast.success('Image removed successfully')
@@ -120,6 +125,7 @@ export function NewPost({ tribeId, onViewChange }: NewPostProps) {
     }
     setUploadedImageId(null)
     setImagePreview(null)
+    setIsMediaFromLibrary(false)
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
@@ -130,8 +136,14 @@ export function NewPost({ tribeId, onViewChange }: NewPostProps) {
   }
 
   const handleAttachMedia = () => {
-    // TODO: Implement attach existing media functionality
-    toast.info('Attach media feature coming soon')
+    setIsMediaPickerOpen(true)
+  }
+
+  const handleMediaSelected = (media: { id: string; url: string }) => {
+    setUploadedImageId(media.id)
+    setImagePreview(media.url)
+    setIsMediaFromLibrary(true)
+    setAddToAlbum(false) // Media from library is already in the tribe's media
   }
 
   const handleUploadNewMedia = () => {
@@ -162,6 +174,7 @@ export function NewPost({ tribeId, onViewChange }: NewPostProps) {
       setNewPost('')
       setUploadedImageId(null)
       setImagePreview(null)
+      setIsMediaFromLibrary(false)
       if (fileInputRef.current) {
         fileInputRef.current.value = ''
       }
@@ -261,16 +274,18 @@ export function NewPost({ tribeId, onViewChange }: NewPostProps) {
               </Button>
             </div>
 
-            <NewPostAlbumToggle
-              imagePreview={imagePreview}
-              addToAlbum={addToAlbum}
-              setAddToAlbum={setAddToAlbum}
-              isDisabled={isUploadingImage || createPostMutation.isPending || isLoadingPreferences}
-              selectedAlbumId={selectedAlbumId}
-              setSelectedAlbumId={setSelectedAlbumId}
-              albums={albums || []}
-              isLoadingAlbums={isLoadingAlbums}
-            />
+            {!isMediaFromLibrary && (
+              <NewPostAlbumToggle
+                imagePreview={imagePreview}
+                addToAlbum={addToAlbum}
+                setAddToAlbum={setAddToAlbum}
+                isDisabled={isUploadingImage || createPostMutation.isPending || isLoadingPreferences}
+                selectedAlbumId={selectedAlbumId}
+                setSelectedAlbumId={setSelectedAlbumId}
+                albums={albums || []}
+                isLoadingAlbums={isLoadingAlbums}
+              />
+            )}
           </div>
 
           <Button
@@ -281,6 +296,13 @@ export function NewPost({ tribeId, onViewChange }: NewPostProps) {
           </Button>
         </div>
       </div>
+
+      <SelectPostMediaDialog
+        tribeId={tribeId}
+        isOpen={isMediaPickerOpen}
+        onOpenChange={setIsMediaPickerOpen}
+        onSelect={handleMediaSelected}
+      />
     </div>
   )
 }
