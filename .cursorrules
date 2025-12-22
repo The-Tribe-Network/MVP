@@ -85,6 +85,7 @@ queryKeys.activities.tribe(tribeId)
 **Layer 2 - Query Options** (`lib/query-options/`):
 - Reusable configuration using `queryOptions()` factory
 - Works in BOTH server (prefetch) and client (hooks)
+- Always normalize filters to prevent cache fragmentation
 
 ```typescript
 // lib/query-options/posts.ts
@@ -96,6 +97,19 @@ export function tribePostsOptions(tribeId: string, options?: { limit?: number })
   return queryOptions({
     queryKey: queryKeys.posts.tribe(tribeId),
     queryFn: () => fetchTribePosts({ tribeId, ...options }),
+  })
+}
+
+// With filters - ALWAYS normalize to prevent duplicate cache entries
+export function tribeMediaOptions(tribeId: string, filters?: MediaFilters) {
+  // Remove undefined values to normalize query key
+  const filtersObject = filters
+    ? Object.fromEntries(Object.entries(filters).filter(([_, v]) => v !== undefined))
+    : undefined
+
+  return queryOptions({
+    queryKey: queryKeys.media.tribe(tribeId, filtersObject),
+    queryFn: () => fetchTribeMedia(tribeId, filters),
   })
 }
 ```
@@ -199,7 +213,9 @@ const canCreate = memberData.permissions?.canCreateEvents !== false &&
 
 ### 5. Form Pattern (react-hook-form + Zod)
 
-**All forms use this pattern:**
+**All forms use this pattern. For comprehensive form guidance, see `.claude/form-architecture-guide.md` and `.claude/form-quick-reference.md`.**
+
+**Simple Form Pattern:**
 
 ```typescript
 'use client'
@@ -250,7 +266,7 @@ export function CreatePostForm({ tribeId }: Props) {
 ```typescript
 const form = useForm<CreateEventInput>({
   resolver: zodResolver(createEventSchema),
-  mode: 'onChange',
+  mode: 'onChange', // Important for multi-step validation
 })
 
 // Validate specific fields before step transition
@@ -259,9 +275,42 @@ const goToNextStep = async () => {
   if (isValid) setCurrentStep(prev => prev + 1)
 }
 
-// Pass control to step components
+// Pass control prop (NOT full form object) to step components
 <BasicInfoStep control={form.control} />
 ```
+
+**Form Section Pattern (for complex forms):**
+```typescript
+// Form sections receive control prop only
+interface ContentSectionProps {
+  control: Control<CreatePostInput>
+}
+
+export function ContentSection({ control }: ContentSectionProps) {
+  return (
+    <FormField
+      control={control}
+      name="content"
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>Content</FormLabel>
+          <FormControl>
+            <Textarea {...field} />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  )
+}
+```
+
+**Critical Form Rules:**
+- React Hook Form manages ALL form state - NO manual `useState` for form fields
+- Children receive `control` prop only - NOT the full `form` object
+- Always reset form on success: `form.reset()`
+- Use Zod schemas from `lib/validations/` for all validation
+- For dialog/sheet forms, reset form when dialog closes
 
 ### 6. Global Dialog Pattern
 
@@ -341,18 +390,46 @@ onSuccess: (_, variables) => {
 ### Optimistic Updates (toggles only):
 ```typescript
 onMutate: async (variables) => {
-  await queryClient.cancelQueries({ queryKey: queryKeys.posts.tribe(tribeId) })
-  const previousData = queryClient.getQueryData(queryKeys.posts.tribe(tribeId))
-  queryClient.setQueryData(queryKeys.posts.tribe(tribeId), (old) => /* optimistic update */)
+  // Cancel outgoing queries to prevent overwriting optimistic update
+  await queryClient.cancelQueries({ queryKey: queryKeys.posts.tribe(variables.tribeId) })
+  
+  // Snapshot previous values for rollback
+  const previousData = queryClient.getQueryData(queryKeys.posts.tribe(variables.tribeId))
+  
+  // Optimistically update cache
+  queryClient.setQueryData(queryKeys.posts.tribe(variables.tribeId), (old) => 
+    old?.map((post) =>
+      post.id === variables.postId
+        ? { ...post, isLiked: !post.isLiked, likeCount: post.isLiked ? post.likeCount - 1 : post.likeCount + 1 }
+        : post
+    )
+  )
+  
   return { previousData }
 },
-onError: (_, __, context) => {
-  queryClient.setQueryData(queryKeys.posts.tribe(tribeId), context.previousData)
+onError: (_, variables, context) => {
+  // Rollback on error
+  if (context?.previousData) {
+    queryClient.setQueryData(queryKeys.posts.tribe(variables.tribeId), context.previousData)
+  }
 },
-onSuccess: () => {
-  queryClient.invalidateQueries({ queryKey: queryKeys.posts.tribe(tribeId) })
+onSuccess: (_, variables) => {
+  // Invalidate to sync with server (includes any server-side updates like milestones)
+  queryClient.invalidateQueries({ queryKey: queryKeys.posts.tribe(variables.tribeId) })
+  queryClient.invalidateQueries({ queryKey: queryKeys.posts.detail(variables.postId) })
+  queryClient.invalidateQueries({ queryKey: queryKeys.activities.tribe(variables.tribeId) })
 }
 ```
+
+**Use optimistic updates ONLY for:**
+- Toggle operations (like/unlike, follow/unfollow)
+- Simple boolean updates
+- Operations that need instant feedback
+
+**Don't use for:**
+- Create/delete operations (too risky to revert)
+- Complex updates with validation
+- Operations where server state is source of truth
 
 ## Critical Rules
 
@@ -361,9 +438,13 @@ onSuccess: () => {
 - Check `components/ui/` for shadcn components before building custom UI
 - Use `getMemberWithPermissions()` for permission checks
 - Use `Promise.all()` for parallel server prefetching
-- Always normalize filters before query keys
+- Always normalize filters before query keys (remove undefined values)
 - Reset forms on success: `form.reset()`
 - Use Zod schemas from `lib/validations/` for all validation
+- Pass `control` prop (not full form object) to form sections/step components
+- Use ONE form instance for multi-step forms
+- Validate per-step with `form.trigger(fields)` before advancing
+- Reset form when dialog/sheet closes
 
 ### ❌ DON'T:
 - Add "use client" to `/app` pages
@@ -373,9 +454,12 @@ onSuccess: () => {
 - Modify files in `components/ui/` (auto-generated)
 - Use useState for dialog state - use global store
 - Use useState for form fields - use react-hook-form
+- Pass full `form` object to children - pass `control` prop only
+- Create separate form instances per step in multi-step forms
 - Call API routes from Server Components - use services directly
 - Fetch permissions separately - use `getMemberWithPermissions()`
 - Use optimistic updates for create/delete (only for toggles/likes)
+- Skip filter normalization (causes cache fragmentation)
 
 ## Development Commands
 
@@ -391,17 +475,21 @@ pnpm run migrate-auth     # Run Better-Auth migrations
 ## Reference Documentation
 
 For detailed guidance:
-- **TanStack Query patterns**: `.claude/tanstack-query-guide.md`
-- **Form patterns**: `.claude/form-architecture-guide.md`
-- **Quick form reference**: `.claude/form-quick-reference.md`
+- **TanStack Query patterns**: `.claude/tanstack-query-guide.md` - Comprehensive guide with all patterns, examples, and anti-patterns
+- **Form patterns**: `.claude/form-architecture-guide.md` - Complete form architecture and patterns
+- **Quick form reference**: `.claude/form-quick-reference.md` - Templates and cheatsheet
+- **Form guide index**: `.claude/FORM_GUIDE_INDEX.md` - Navigation hub for all form resources
 - **Product requirements**: `docs/MVP_PRD_2025.md`
+- **Full project documentation**: `CLAUDE.md` - Complete project context and patterns
 
 ## Adding New Features Checklist
 
-1. Add query key to `lib/constants/query-keys.ts`
-2. Create API functions in `lib/api/[feature].ts`
-3. Create query options in `lib/query-options/[feature].ts`
-4. Create hooks in `lib/hooks/use-[feature].ts`
-5. Create Zod schemas in `lib/validations/[feature].ts`
-6. Create service functions in `lib/services/[feature].ts`
-7. Plan invalidation strategy (simple, cascading, or optimistic)
+1. Add query key to `lib/constants/query-keys.ts` (use hierarchical structure: `domain.scope.detail`)
+2. Create API functions in `lib/api/[feature].ts` (use `apiFetch` base client)
+3. Create query options in `lib/query-options/[feature].ts` (normalize filters if applicable)
+4. Create hooks in `lib/hooks/use-[feature].ts` (export from `lib/hooks/index.ts`)
+5. Create Zod schemas in `lib/validations/[feature].ts` (export types with `z.infer`)
+6. Create service functions in `lib/services/[feature].ts` (use `getMemberWithPermissions()` for permission checks)
+7. Plan invalidation strategy (simple, cascading, or optimistic - see Mutation Invalidation Strategies above)
+8. For forms: Follow form patterns above, use react-hook-form + Zod, pass `control` prop to children
+9. For server pages: Prefetch queries with `Promise.all()` and wrap with `HydrationBoundary`
