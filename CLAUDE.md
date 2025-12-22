@@ -351,15 +351,95 @@ import type { TribeWithMembers, PostWithAuthor } from "@/lib/database/types";
 
 All API responses should use these extended types to ensure consistent data shape across client/server.
 
-### Form Validation
+### Form Handling & Validation
 
-**Zod Schemas** (`lib/validations/`):
-- `tribe.ts` - Tribe creation/update validation
-- `post.ts` - Post CRUD, also exports `validateApiRequest()` helper
+**IMPORTANT:** This project uses **react-hook-form + Zod + shadcn Form components** for ALL forms. Never use manual `useState` for form fields.
+
+**📚 Comprehensive Form Guides:**
+- **Quick Start:** `.claude/form-quick-reference.md` - Templates and cheatsheet
+- **Task-Based:** `.claude/commands/form.md` - Step-by-step instructions
+- **Architecture:** `.claude/form-architecture-guide.md` - Deep dive and patterns
+- **Navigation:** `.claude/FORM_GUIDE_INDEX.md` - Find the right guide
+
+**Architecture Pattern (3 Layers):**
+
+1. **Zod Schema** (`lib/validations/[feature].ts`):
+   ```typescript
+   export const createPostSchema = z.object({
+     content: z.string().min(1, 'Content is required').max(5000),
+     mediaId: z.string().uuid().nullable().optional(),
+   })
+
+   export type CreatePostInput = z.infer<typeof createPostSchema>
+   ```
+
+2. **Form Component** (`app-pages/[feature]/forms/`):
+   ```typescript
+   'use client'
+
+   import { useForm } from 'react-hook-form'
+   import { zodResolver } from '@hookform/resolvers/zod'
+   import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form'
+
+   export function CreatePostForm({ tribeId }: Props) {
+     const form = useForm<CreatePostInput>({
+       resolver: zodResolver(createPostSchema),
+       defaultValues: { content: '', mediaId: null },
+     })
+
+     const { mutate: createPost, isPending } = useCreatePost()
+
+     const onSubmit = (data: CreatePostInput) => {
+       createPost({ tribeId, ...data }, {
+         onSuccess: () => form.reset(),
+       })
+     }
+
+     return (
+       <Form {...form}>
+         <form onSubmit={form.handleSubmit(onSubmit)}>
+           <FormField
+             control={form.control}
+             name="content"
+             render={({ field }) => (
+               <FormItem>
+                 <FormLabel>Content</FormLabel>
+                 <FormControl>
+                   <Input {...field} />
+                 </FormControl>
+                 <FormMessage />
+               </FormItem>
+             )}
+           />
+           <Button type="submit" disabled={isPending}>Create</Button>
+         </form>
+       </Form>
+     )
+   }
+   ```
+
+3. **TanStack Query Mutation** (from `lib/hooks/use-[feature].ts`):
+   - Forms call mutation hooks
+   - Mutations handle invalidation and success toasts
+   - Forms handle reset and UI state
+
+**Validation Schemas** (`lib/validations/`):
+- `auth.ts` - Sign-in, sign-up, forgot/reset password
+- `event.ts` - Create/update event, poll data
+- `album.ts` - Create/update album, step-by-step schemas
+- `post.ts` - Create/update post, also exports `validateApiRequest()` helper
 - `comment.ts` - Comment validation
-- `auth.ts` - Sign-in, sign-up validation
+- `tribe.ts` - Tribe validation
+- `profile.ts` - Profile updates
+- `security.ts` - Password changes
+- `poll.ts` - Poll-specific validation
 
-**API Validation Pattern**:
+**Example Forms in Codebase:**
+- **Simple:** `app-pages/auth/forms/sign-in-form.tsx`
+- **Complex:** `app-pages/auth/forms/sign-up-form.tsx` (dependent fields, password requirements)
+- **Multi-Step:** `app-pages/create-event/index.tsx` (5-step wizard)
+
+**API Validation Pattern** (Server-side):
 ```typescript
 import { createPostSchema, validateApiRequest } from "@/lib/validations/post";
 
@@ -370,6 +450,15 @@ if (!validation.success) {
 }
 // Use validation.data (type-safe)
 ```
+
+**Critical Rules:**
+- ❌ Never use manual `useState` for form fields - RHF manages state
+- ❌ Never pass full `form` object to children - pass `control` prop only
+- ❌ Never use Zustand or external state for form data
+- ✅ Always use `useForm` with `zodResolver`
+- ✅ Always use shadcn Form components from `components/ui/form.tsx`
+- ✅ Always reset form on success: `form.reset()`
+- ✅ See form guides for patterns: simple, multi-step, dialog, edit forms
 
 ### Authentication (Better-Auth)
 

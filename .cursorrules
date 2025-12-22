@@ -1,0 +1,407 @@
+# Tribe - Cursor AI Rules
+
+You are an expert full-stack engineer working on Tribe, a utility-first community organization platform. This document provides authoritative context for all AI interactions.
+
+## Technology Stack
+
+- **Framework**: Next.js 15 (App Router) with React 19
+- **Language**: TypeScript (strict mode)
+- **Database**: PostgreSQL (Neon serverless) + Drizzle ORM
+- **Auth**: Better-Auth (email/password, OAuth, magic link)
+- **Data Fetching**: TanStack Query v5
+- **Forms**: react-hook-form + Zod + shadcn Form components
+- **UI**: shadcn/ui + Tailwind CSS 4
+- **State**: Zustand (global dialogs only)
+- **Media**: Cloudinary
+- **Email**: Resend
+- **Package Manager**: pnpm
+
+## Core Architecture Principles
+
+### 1. Server vs Client Component Separation
+
+**Server Components (`/app/`):**
+- MUST be Server Components (NO "use client" directive)
+- Prefetch data using TanStack Query `prefetchQuery()`
+- Use `Promise.all()` for parallel prefetching
+- Wrap client components with `HydrationBoundary`
+
+```typescript
+// app/(protected)/tribe/[tribe_id]/page.tsx
+import { HydrationBoundary, QueryClient, dehydrate } from '@tanstack/react-query'
+import { tribeDetailOptions, tribePostsOptions } from '@/lib/query-options'
+
+export default async function Page({ params }: PageProps) {
+  const { tribe_id } = await params
+  const queryClient = new QueryClient()
+
+  await Promise.all([
+    queryClient.prefetchQuery(tribeDetailOptions(tribe_id)),
+    queryClient.prefetchQuery(tribePostsOptions(tribe_id, { limit: 20 })),
+  ])
+
+  return (
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <ClientComponent tribeId={tribe_id} />
+    </HydrationBoundary>
+  )
+}
+```
+
+**Client Components (`/app-pages/`):**
+- All UI and interactivity lives here
+- Marked with "use client" directive
+- Use TanStack Query hooks with prefetched data
+
+```typescript
+'use client'
+import { useQuery } from '@tanstack/react-query'
+import { tribeDetailOptions } from '@/lib/query-options'
+
+export function ClientComponent({ tribeId }: { tribeId: string }) {
+  // Uses prefetched data - no loading state on initial render!
+  const { data: tribe } = useQuery(tribeDetailOptions(tribeId))
+  return <div>{tribe?.name}</div>
+}
+```
+
+### 2. Three-Layer TanStack Query Architecture
+
+**Layer 1 - Query Key Factory** (`lib/constants/query-keys.ts`):
+- Single source of truth for ALL query keys
+- NEVER hardcode query keys anywhere
+
+```typescript
+queryKeys.tribes.detail(tribeId)
+queryKeys.posts.tribe(tribeId)
+queryKeys.posts.detail(postId)
+queryKeys.comments.post(postId)
+queryKeys.media.tribe(tribeId, filters)
+queryKeys.albums.tribe(tribeId)
+queryKeys.events.tribe(tribeId)
+queryKeys.activities.tribe(tribeId)
+```
+
+**Layer 2 - Query Options** (`lib/query-options/`):
+- Reusable configuration using `queryOptions()` factory
+- Works in BOTH server (prefetch) and client (hooks)
+
+```typescript
+// lib/query-options/posts.ts
+import { queryOptions } from '@tanstack/react-query'
+import { queryKeys } from '@/lib/constants/query-keys'
+import { fetchTribePosts } from '@/lib/api/posts'
+
+export function tribePostsOptions(tribeId: string, options?: { limit?: number }) {
+  return queryOptions({
+    queryKey: queryKeys.posts.tribe(tribeId),
+    queryFn: () => fetchTribePosts({ tribeId, ...options }),
+  })
+}
+```
+
+**Layer 3 - Custom Hooks** (`lib/hooks/use-*.ts`):
+- Thin wrappers for queries, rich logic for mutations
+- Handle invalidation strategies
+
+```typescript
+// lib/hooks/use-posts.ts
+'use client'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+
+export function useTribePosts(tribeId: string) {
+  return useQuery(tribePostsOptions(tribeId))
+}
+
+export function useCreatePost() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: createPost,
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.posts.tribe(variables.tribeId) })
+    },
+  })
+}
+```
+
+### 3. API Route Pattern
+
+**All API routes follow this structure:**
+
+```typescript
+// app/api/tribes/[tribe_id]/posts/route.ts
+import { NextRequest, NextResponse } from "next/server"
+import { getServerUser } from "@/lib/services/auth"
+import { createPost, getTribePosts } from "@/lib/services/post"
+import { checkTribeMembership } from "@/lib/services/permissions"
+import { createPostSchema, validateApiRequest } from "@/lib/validations/post"
+
+export async function POST(request: NextRequest, ctx: RouteContext) {
+  // 1. Check authentication
+  const user = await getServerUser()
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+
+  const { tribe_id } = await ctx.params
+
+  // 2. Check tribe membership
+  const isMember = await checkTribeMembership(tribe_id, user.id)
+  if (!isMember) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+
+  // 3. Validate request body
+  const body = await request.json()
+  const validation = validateApiRequest(createPostSchema, body)
+  if (!validation.success) {
+    return NextResponse.json({ error: "Validation failed", details: validation.error }, { status: 400 })
+  }
+
+  // 4. Call service function (NOT direct DB queries)
+  const newPost = await createPost(tribe_id, user.id, validation.data)
+
+  return NextResponse.json(newPost, { status: 201 })
+}
+```
+
+### 4. Service Layer Pattern
+
+**All business logic lives in `lib/services/`:**
+
+```typescript
+// lib/services/post.ts
+import { db } from "@/lib/database/client"
+import { getMemberWithPermissions } from "./permissions"
+
+export async function createPost(tribeId: string, userId: string, data: CreatePostInput) {
+  // Permission check
+  const memberData = await getMemberWithPermissions(tribeId, userId)
+  if (!memberData) throw new Error("Not a member")
+  if (memberData.permissions?.canPost === false) throw new Error("No permission to post")
+
+  // Database operation
+  const [post] = await db.insert(posts).values({ ... }).returning()
+
+  // Create activity
+  await createActivity({ type: "new_post", userId, tribeId, postId: post.id })
+
+  return post
+}
+```
+
+**Critical: Use `getMemberWithPermissions()` for permission checks:**
+```typescript
+const memberData = await getMemberWithPermissions(tribeId, userId)
+if (!memberData) return /* forbidden */
+
+// Check permission override first, then role-based default
+const canCreate = memberData.permissions?.canCreateEvents !== false &&
+  (memberData.permissions?.canCreateEvents === true ||
+   ["owner", "admin", "moderator"].includes(memberData.member.role))
+```
+
+### 5. Form Pattern (react-hook-form + Zod)
+
+**All forms use this pattern:**
+
+```typescript
+'use client'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form'
+import { createPostSchema, type CreatePostInput } from '@/lib/validations/post'
+import { useCreatePost } from '@/lib/hooks/use-posts'
+
+export function CreatePostForm({ tribeId }: Props) {
+  const form = useForm<CreatePostInput>({
+    resolver: zodResolver(createPostSchema),
+    defaultValues: { content: '' },
+  })
+
+  const { mutate: createPost, isPending } = useCreatePost()
+
+  const onSubmit = (data: CreatePostInput) => {
+    createPost({ tribeId, ...data }, {
+      onSuccess: () => form.reset(),
+    })
+  }
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)}>
+        <FormField
+          control={form.control}
+          name="content"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Content</FormLabel>
+              <FormControl>
+                <Textarea {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <Button type="submit" disabled={isPending}>Create</Button>
+      </form>
+    </Form>
+  )
+}
+```
+
+**Multi-step forms use ONE form instance:**
+```typescript
+const form = useForm<CreateEventInput>({
+  resolver: zodResolver(createEventSchema),
+  mode: 'onChange',
+})
+
+// Validate specific fields before step transition
+const goToNextStep = async () => {
+  const isValid = await form.trigger(['title', 'description'])
+  if (isValid) setCurrentStep(prev => prev + 1)
+}
+
+// Pass control to step components
+<BasicInfoStep control={form.control} />
+```
+
+### 6. Global Dialog Pattern
+
+**ALWAYS use the global dialog store - NEVER local useState for dialogs:**
+
+```typescript
+import { useDialogStore } from "@/lib/stores/dialog-store"
+
+export function Component() {
+  const openDialog = useDialogStore(s => s.openDialog)
+
+  const handleClick = () => {
+    openDialog('invite', { tribeId, tribeName })
+  }
+}
+
+// ❌ NEVER do this:
+const [isOpen, setIsOpen] = useState(false)
+```
+
+**Available dialog types:**
+- `image-preview`, `invite`, `tribe-members`, `event-preview`
+- `media-upload`, `delete-post`, `delete-comment`, `photo-carousel`
+
+## Directory Structure
+
+```
+app/                          # Next.js App Router (Server Components)
+  (auth)/                     # Auth pages (sign-in, sign-up, verify, etc.)
+  (protected)/                # Protected routes (require auth)
+    tribe/[tribe_id]/         # Tribe pages
+  api/                        # API routes
+
+app-pages/                    # Client Components (feature pages)
+  tribe-dashboard/
+    index.tsx                 # Main component
+    components/               # Feature-specific components
+    lib/                      # Feature utilities
+
+components/
+  ui/                         # shadcn/ui components (DO NOT MODIFY)
+  dialogs/                    # Global dialog components
+  sidebar/                    # Navigation components
+
+lib/
+  api/                        # API client functions (fetch wrappers)
+  clients/                    # Third-party clients (auth, cloudinary)
+  constants/
+    query-keys.ts             # Query key factory (CRITICAL)
+  database/
+    schemas/                  # Drizzle schema definitions
+    types.ts                  # TypeScript types (inferred from schemas)
+  hooks/                      # TanStack Query hooks (use-*.ts)
+  query-options/              # Query options (queryOptions factory)
+  services/                   # Business logic + DB queries
+  stores/                     # Zustand stores
+  validations/                # Zod schemas
+```
+
+## Mutation Invalidation Strategies
+
+### Simple Invalidation (most mutations):
+```typescript
+onSuccess: (_, variables) => {
+  queryClient.invalidateQueries({ queryKey: queryKeys.posts.tribe(variables.tribeId) })
+}
+```
+
+### Cascading Invalidation (related data):
+```typescript
+onSuccess: (_, variables) => {
+  queryClient.invalidateQueries({ queryKey: queryKeys.comments.post(postId) })
+  queryClient.invalidateQueries({ queryKey: queryKeys.posts.detail(postId) }) // Update count
+}
+```
+
+### Optimistic Updates (toggles only):
+```typescript
+onMutate: async (variables) => {
+  await queryClient.cancelQueries({ queryKey: queryKeys.posts.tribe(tribeId) })
+  const previousData = queryClient.getQueryData(queryKeys.posts.tribe(tribeId))
+  queryClient.setQueryData(queryKeys.posts.tribe(tribeId), (old) => /* optimistic update */)
+  return { previousData }
+},
+onError: (_, __, context) => {
+  queryClient.setQueryData(queryKeys.posts.tribe(tribeId), context.previousData)
+},
+onSuccess: () => {
+  queryClient.invalidateQueries({ queryKey: queryKeys.posts.tribe(tribeId) })
+}
+```
+
+## Critical Rules
+
+### ✅ DO:
+- Use `@/*` import alias
+- Check `components/ui/` for shadcn components before building custom UI
+- Use `getMemberWithPermissions()` for permission checks
+- Use `Promise.all()` for parallel server prefetching
+- Always normalize filters before query keys
+- Reset forms on success: `form.reset()`
+- Use Zod schemas from `lib/validations/` for all validation
+
+### ❌ DON'T:
+- Add "use client" to `/app` pages
+- Hardcode query keys - use `queryKeys` factory
+- Write DB queries in API routes - use services
+- Forget invalidation in mutations
+- Modify files in `components/ui/` (auto-generated)
+- Use useState for dialog state - use global store
+- Use useState for form fields - use react-hook-form
+- Call API routes from Server Components - use services directly
+- Fetch permissions separately - use `getMemberWithPermissions()`
+- Use optimistic updates for create/delete (only for toggles/likes)
+
+## Development Commands
+
+```bash
+pnpm run dev              # Start development server
+pnpm run build            # Production build
+pnpm run lint             # Run ESLint
+pnpm run push-db          # Push schema changes (development)
+pnpm run generate-auth    # Generate Better-Auth migrations
+pnpm run migrate-auth     # Run Better-Auth migrations
+```
+
+## Reference Documentation
+
+For detailed guidance:
+- **TanStack Query patterns**: `.claude/tanstack-query-guide.md`
+- **Form patterns**: `.claude/form-architecture-guide.md`
+- **Quick form reference**: `.claude/form-quick-reference.md`
+- **Product requirements**: `docs/MVP_PRD_2025.md`
+
+## Adding New Features Checklist
+
+1. Add query key to `lib/constants/query-keys.ts`
+2. Create API functions in `lib/api/[feature].ts`
+3. Create query options in `lib/query-options/[feature].ts`
+4. Create hooks in `lib/hooks/use-[feature].ts`
+5. Create Zod schemas in `lib/validations/[feature].ts`
+6. Create service functions in `lib/services/[feature].ts`
+7. Plan invalidation strategy (simple, cascading, or optimistic)

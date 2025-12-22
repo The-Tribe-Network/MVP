@@ -46,6 +46,26 @@ Specialized for API and service layer development:
 
 **Usage:** `@.claude/commands/backend.md [your backend task]`
 
+### `/tanstack-query` - TanStack Query Development
+Specialized for data fetching, caching, and state management:
+- Query hooks and query options
+- Mutation patterns and invalidation strategies
+- Optimistic updates
+- Server-side prefetching
+- Cache management
+
+**Usage:** `@.claude/commands/tanstack-query.md [your query/mutation task]`
+
+### `/form` - Form Development
+Specialized for building forms with react-hook-form:
+- Simple forms and multi-step wizards
+- Form validation with Zod
+- Shadcn Form components
+- Dialog/sheet forms
+- File uploads and dynamic fields
+
+**Usage:** `@.claude/commands/form.md [your form task]`
+
 ## Automatic Instructions
 
 The file `.claude/instructions.md` is automatically loaded by Cursor and provides general project guidance. You don't need to reference it manually.
