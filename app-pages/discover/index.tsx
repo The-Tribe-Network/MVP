@@ -1,23 +1,19 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { categories, allTribes, featuredTribes } from './mock-data'
-import { DiscoverHeader } from './discover-header'
-import { SearchFilterSection } from './search-filter-section'
-import { CategoriesSection } from './categories-section'
-import { FeaturedTribesSection } from './featured-tribes-section'
-import { AllTribesSection } from './all-tribes-section'
+import { useState } from 'react';
+
+import { DiscoverHeader } from './components/discover-header';
+import { SearchFilterSection } from './components/search-filter-section';
+import { CategoriesSection } from './components/categories-section';
+import FeaturedTribesSection from './components/featured-tribes';
+import AllTribesSection from './components/all-tribes';
+import { DISCOVER_CATEGORIES, DEFAULT_FILTERS } from './lib/utils';
 
 export default function DiscoverPageContent() {
-  const [searchQuery, setSearchQuery] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState('all')
+  const [searchQuery, setSearchQuery] = useState(DEFAULT_FILTERS.search);
+  const [selectedCategory, setSelectedCategory] = useState(DEFAULT_FILTERS.category);
 
-  const filteredTribes = allTribes.filter((tribe) => {
-    const matchesSearch = tribe.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      tribe.description.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesCategory = selectedCategory === 'all' || tribe.category === selectedCategory
-    return matchesSearch && matchesCategory
-  })
+  const showFeatured = selectedCategory === 'all' && searchQuery === '';
 
   return (
     <div className="flex-1 overflow-auto bg-background">
@@ -30,22 +26,20 @@ export default function DiscoverPageContent() {
         />
 
         <CategoriesSection
-          categories={categories}
+          categories={DISCOVER_CATEGORIES}
           selectedCategory={selectedCategory}
           onCategoryChange={setSelectedCategory}
         />
 
-        {selectedCategory === 'all' && searchQuery === '' && (
-          <FeaturedTribesSection featuredTribes={featuredTribes} />
-        )}
+        {showFeatured && <FeaturedTribesSection />}
 
         <AllTribesSection
-          filteredTribes={filteredTribes}
-          searchQuery={searchQuery}
-          selectedCategory={selectedCategory}
+          filters={{
+            search: searchQuery,
+            category: selectedCategory,
+          }}
         />
       </div>
     </div>
-  )
+  );
 }
-

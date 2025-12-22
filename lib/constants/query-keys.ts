@@ -96,6 +96,14 @@ export const queryKeys = {
     event: (eventId: string) => ["polls", "events", eventId] as const,
     detail: (pollId: string) => ["polls", "detail", pollId] as const,
   },
+
+  // Discover queries
+  discover: {
+    all: ["discover"] as const,
+    tribes: (filters?: Record<string, unknown>) =>
+      ["discover", "tribes", filters] as const,
+    featured: () => ["discover", "featured"] as const,
+  },
 } as const;
 
 

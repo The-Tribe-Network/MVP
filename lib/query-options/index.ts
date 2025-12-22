@@ -15,3 +15,4 @@ export * from './preferences';
 export * from './profile';
 export * from './security';
 export * from './tribes';
+export * from './discover';
