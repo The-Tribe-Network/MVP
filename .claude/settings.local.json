@@ -8,7 +8,8 @@
       "Bash(md5sum:*)",
       "Bash(pnpm exec tsc:*)",
       "WebFetch(domain:tanstack.com)",
-      "Bash(wc:*)"
+      "Bash(wc:*)",
+      "Bash(head:*)"
     ],
     "deny": [],
     "ask": []

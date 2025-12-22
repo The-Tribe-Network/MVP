@@ -4,7 +4,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Tribe is a full-stack social platform for creating and managing private/public tribes (communities). Built with Next.js 15, TypeScript, Better-Auth, Drizzle ORM, and TanStack Query. Features include posts, comments, media/albums, events, notifications, and real-time messaging.
+**Tribe** is a utility-first community organization platform designed for existing, high-density groups that need better tools than GroupMe and Instagram. Built with Next.js 15, TypeScript, Better-Auth, Drizzle ORM, and TanStack Query.
+
+**MVP Status**: Production-Ready
+
+**Core Features**:
+- **Granular RBAC**: Role-based access control with 20+ per-member permission overrides
+- **Superior Photo Archiving**: Organized albums and media management ("The Vault" - the sticky feature)
+- **Structured Events**: Dedicated RSVP system with polls for real-world coordination
+- **Posts & Timeline**: Rich text posts with comments, likes, nested replies
+- **Privacy-First**: Private, invite-only communities with complete access control
+- **Discover**: Find and explore tribes (infrastructure for future public tribes)
+
+**Target Users**: Fraternities/Sororities, Hospitality VIP lists, existing high-density communities
 
 ## Development Commands
 
@@ -114,30 +126,216 @@ Services handle business logic and database queries. Key services:
 
 ### Data Fetching with TanStack Query
 
-**Query Key Factory** (`lib/constants/query-keys.ts`):
+**IMPORTANT:** For comprehensive TanStack Query patterns, see `.claude/tanstack-query-guide.md`. For task-specific guidance, see `.claude/commands/tanstack-query.md`.
+
+**Architecture**: Three-layer pattern optimized for reusability and type safety:
+
+1. **Query Key Factory** (`lib/constants/query-keys.ts`):
+   - Single source of truth for all query keys
+   - Hierarchical structure: `domain.scope.detail`
+   - **NEVER hardcode query keys** - always use this factory
+
+   ```typescript
+   queryKeys.tribes.detail(tribeId)
+   queryKeys.posts.tribe(tribeId)
+   queryKeys.posts.detail(postId)
+   queryKeys.activities.tribe(tribeId)
+   queryKeys.media.tribe(tribeId, filters)
+   queryKeys.albums.tribe(tribeId)
+   queryKeys.comments.post(postId)
+   queryKeys.events.tribe(tribeId)
+   queryKeys.preferences.tribeMember(tribeId)
+   ```
+
+2. **Query Options** (`lib/query-options/` - 14 modules):
+   - Reusable configuration using `queryOptions()` factory
+   - Works in Server Components (prefetch) AND Client Components (hooks)
+   - Single source of truth for query configuration
+
+   ```typescript
+   // lib/query-options/posts.ts
+   export function tribePostsOptions(tribeId: string, options?: PaginationOptions) {
+     return queryOptions({
+       queryKey: queryKeys.posts.tribe(tribeId),
+       queryFn: () => fetchTribePosts({ tribeId, ...options }),
+       staleTime: 1000 * 60, // 1 minute
+     })
+   }
+   ```
+
+3. **Custom Hooks** (`lib/hooks/use-*.ts` - 17 files):
+   - React hooks wrapping query options for client-side usage
+   - Thin wrappers for queries, rich logic for mutations
+
+   ```typescript
+   // lib/hooks/use-posts.ts
+   export function useTribePosts(tribeId: string, options?: PaginationOptions) {
+     return useQuery(tribePostsOptions(tribeId, options))
+   }
+   ```
+
+**Key Files**:
+- `lib/constants/query-keys.ts` - **CRITICAL**: All query keys defined here
+- `lib/query-options/` - Query configuration (auth, tribes, posts, comments, media, albums, activities, events, preferences, profile, security, polls, discover)
+- `lib/hooks/` - Custom React hooks (use-posts, use-tribes, use-comments, use-media, use-albums, use-activities, use-events, use-auth, use-upload, use-preferences, use-polls, use-profile, use-security)
+- `lib/api/` - API client functions (14 modules)
+
+**Server-Side Prefetching Pattern**:
+
+All pages use server-side prefetching to eliminate waterfalls and loading states:
+
 ```typescript
-queryKeys.tribes.detail(tribeId)
-queryKeys.posts.tribe(tribeId)
-queryKeys.activities.tribe(tribeId)
-queryKeys.media.tribe(tribeId, filters)
-queryKeys.albums.tribe(tribeId)
-queryKeys.comments.post(postId)
+// app/(protected)/tribe/[tribe_id]/page.tsx
+export default async function Page({ params }: PageProps) {
+  const { tribe_id } = await params
+  const queryClient = new QueryClient()
+
+  // Prefetch queries IN PARALLEL on server
+  await Promise.all([
+    queryClient.prefetchQuery(tribeDetailOptions(tribe_id)),
+    queryClient.prefetchQuery(tribePostsOptions(tribe_id, { limit: 20 })),
+    queryClient.prefetchQuery(tribeMediaOptions(tribe_id, { type: 'image', limit: 4 })),
+  ])
+
+  // Hydrate client with server data (zero waterfalls!)
+  return (
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <PageComponent tribeId={tribe_id} />
+    </HydrationBoundary>
+  )
+}
 ```
 
-**Custom Hooks** (`lib/hooks/`):
-- `use-posts.ts` - `useTribePosts()`, `useCreatePost()`, `useLikePost()` with optimistic updates
-- `use-albums.ts` - Album queries and mutations
-- `use-media.ts` - Media queries with filtering
-- `use-upload.ts` - Cloudinary upload with progress tracking
-- `use-tribe-preferences.ts` - Tribe member preferences
+Client component uses prefetched data with NO loading state:
 
-**Optimistic Updates Pattern**:
-See `useLikePost()` in `lib/hooks/use-posts.ts` for reference implementation:
-- Cancel ongoing queries
-- Snapshot previous data
-- Optimistically update cache
-- Rollback on error
-- Invalidate on success
+```typescript
+'use client'
+export function PageComponent({ tribeId }: { tribeId: string }) {
+  // Uses prefetched data - instant render!
+  const { data: tribe } = useQuery(tribeDetailOptions(tribeId))
+  return <div>{tribe.name}</div>
+}
+```
+
+**Mutation Invalidation Strategies**:
+
+Three patterns based on complexity:
+
+**1. Simple Invalidation** (most mutations):
+```typescript
+export function useCreatePost() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: createPost,
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.posts.tribe(variables.tribeId) })
+    },
+  })
+}
+```
+
+**2. Cascading Invalidation** (related data):
+```typescript
+export function useCreateComment() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: createComment,
+    onSuccess: (_, variables) => {
+      // Invalidate comments list
+      queryClient.invalidateQueries({ queryKey: queryKeys.comments.post(variables.postId) })
+      // Also invalidate post detail to update comment count
+      queryClient.invalidateQueries({ queryKey: queryKeys.posts.detail(variables.postId) })
+    },
+  })
+}
+```
+
+**3. Optimistic Updates** (instant feedback for toggles):
+
+Used for likes/unlikes only. See `useLikePost()` in `lib/hooks/use-posts.ts`:
+
+```typescript
+export function useLikePost() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: togglePostLike,
+    // STEP 1: Optimistically update cache before server responds
+    onMutate: async (variables) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.posts.tribe(variables.tribeId) })
+      const previousPosts = queryClient.getQueryData(queryKeys.posts.tribe(variables.tribeId))
+      queryClient.setQueryData(queryKeys.posts.tribe(variables.tribeId), (old) =>
+        old?.map((post) =>
+          post.id === variables.postId
+            ? { ...post, isLiked: !post.isLiked, likeCount: post.isLiked ? post.likeCount - 1 : post.likeCount + 1 }
+            : post
+        )
+      )
+      return { previousPosts }
+    },
+    // STEP 2: Rollback on error
+    onError: (_, variables, context) => {
+      if (context?.previousPosts) {
+        queryClient.setQueryData(queryKeys.posts.tribe(variables.tribeId), context.previousPosts)
+      }
+    },
+    // STEP 3: Invalidate on success to sync server state
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.posts.tribe(variables.tribeId) })
+      queryClient.invalidateQueries({ queryKey: queryKeys.posts.detail(variables.postId) })
+      queryClient.invalidateQueries({ queryKey: queryKeys.activities.tribe(variables.tribeId) }) // For like milestones
+    },
+  })
+}
+```
+
+**Common Invalidation Cascades**:
+- Create comment → invalidate `comments.post(postId)` + `posts.detail(postId)` (for count)
+- Like post → invalidate `posts.detail(postId)` + `activities.tribe(tribeId)` (for milestones)
+- Upload media → invalidate `media.tribe(tribeId)` + `albums.tribe(tribeId)`
+- Delete post → invalidate `posts.tribe(tribeId)` + `activities.tribe(tribeId)`
+
+**Stale Time Guidelines**:
+- Auth session/user: 5 minutes (refetch on window focus)
+- Invitations: 30 seconds (real-time refetch interval)
+- Posts, comments, media: 1 minute default (moderate change frequency)
+- Tribe details: 1 minute default
+- Static/preference data: 5-10 minutes
+
+**Filter Normalization Pattern**:
+
+Always normalize filters to prevent cache fragmentation:
+
+```typescript
+export function tribeMediaOptions(tribeId: string, filters?: MediaFilters) {
+  // Remove undefined values to normalize query key
+  const filtersObject = filters
+    ? Object.fromEntries(Object.entries(filters).filter(([_, v]) => v !== undefined))
+    : undefined
+
+  return queryOptions({
+    queryKey: queryKeys.media.tribe(tribeId, filtersObject),
+    queryFn: () => fetchTribeMedia(tribeId, filters),
+  })
+}
+```
+
+**When Adding New Features**:
+
+1. Add query key to `lib/constants/query-keys.ts`
+2. Create API functions in `lib/api/feature.ts`
+3. Create query options in `lib/query-options/feature.ts`
+4. Create hooks in `lib/hooks/use-feature.ts`
+5. Export from `lib/hooks/index.ts`
+6. Plan invalidation strategy (simple, cascading, or optimistic)
+7. Document in `.claude/tanstack-query-guide.md` if pattern is new
+
+**Critical Rules**:
+- ❌ Never hardcode query keys - always use `queryKeys` factory
+- ❌ Never forget invalidation in mutations
+- ❌ Never use optimistic updates for create/delete (only toggles)
+- ✅ Always use `Promise.all()` for parallel server prefetching
+- ✅ Always normalize filters before query keys
+- ✅ Always use query options (not raw `useQuery` objects)
 
 ### Type System
 
