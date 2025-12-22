@@ -47,6 +47,10 @@ export const auth = betterAuth({
         type: "boolean",
         required: false,
       },
+      tourCompleted: {
+        type: "boolean",
+        required: false,
+      },
     },
   },
   advanced: {

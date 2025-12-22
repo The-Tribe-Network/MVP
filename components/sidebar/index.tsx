@@ -92,7 +92,10 @@ export default function AppSidebar({ ...props }: React.ComponentProps<typeof Sid
             <SidebarMenuItem>
               <Link href="/dashboard">
                 <SidebarMenuButton size="lg" asChild className="md:h-8 md:p-0">
-                  <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
+                  <div
+                    data-tour="sidebar-logo"
+                    className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg"
+                  >
                     <FlameKindlingIcon className="size-4" />
                   </div>
                 </SidebarMenuButton>
@@ -103,7 +106,7 @@ export default function AppSidebar({ ...props }: React.ComponentProps<typeof Sid
         <SidebarSeparator className="mx-auto !w-3/4" />
         <SidebarContent className="pt-2">
           <SidebarGroup>
-            <SidebarGroupContent>
+            <SidebarGroupContent data-tour="sidebar-nav">
               <SidebarMenu className="gap-2">
                 {isLoadingTribes ? (
                   <TribeListSkeleton />
@@ -178,13 +181,15 @@ export default function AppSidebar({ ...props }: React.ComponentProps<typeof Sid
           </SidebarGroup>
         </SidebarContent>
         <SidebarFooter>
-          <NavUser
-            user={{
-              name: userName,
-              email: userEmail,
-              avatar: userAvatar,
-            }}
-          />
+          <div data-tour="sidebar-user">
+            <NavUser
+              user={{
+                name: userName,
+                email: userEmail,
+                avatar: userAvatar,
+              }}
+            />
+          </div>
         </SidebarFooter>
       </Sidebar>
 

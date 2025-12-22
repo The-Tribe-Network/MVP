@@ -122,3 +122,59 @@
     @apply bg-card text-foreground;
   }
 }
+
+/* Tour Guide Styles */
+.react-joyride__tooltip,
+div[class*="__floater__content"] {
+  background-color: var(--card) !important;
+  color: var(--card-foreground) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: calc(var(--radius) + 2px) !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+  padding: 20px 24px !important;
+  max-width: 320px !important;
+  font-family: var(--font-sans) !important;
+}
+
+.react-joyride__tooltip p,
+.react-joyride__tooltip div,
+div[class*="__floater__content"] p,
+div[class*="__floater__content"] div:not([class*="button"]):not([class*="footer"]) {
+  color: var(--card-foreground) !important;
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+}
+
+.react-joyride__tooltip button[data-action="primary"],
+.react-joyride__tooltip button[data-action="next"],
+div[class*="__floater__content"] button[data-action="primary"],
+div[class*="__floater__content"] button[data-action="next"] {
+  background-color: var(--primary) !important;
+  color: var(--primary-foreground) !important;
+  border: none !important;
+  border-radius: calc(var(--radius) - 2px) !important;
+  padding: 8px 16px !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+}
+
+.react-joyride__tooltip button[data-action="back"],
+div[class*="__floater__content"] button[data-action="back"] {
+  color: var(--foreground) !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 8px 16px !important;
+  font-size: 14px !important;
+  cursor: pointer !important;
+}
+
+.react-joyride__tooltip button[data-action="skip"],
+div[class*="__floater__content"] button[data-action="skip"] {
+  color: var(--muted-foreground) !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 8px 16px !important;
+  font-size: 14px !important;
+  cursor: pointer !important;
+}

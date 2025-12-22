@@ -3,11 +3,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/constants/query-keys";
 import type { UpdateProfileInput } from "@/lib/validations/profile";
-import { profileOptions } from "@/lib/query-options/profile";
+import { profileOptions, tourStatusOptions } from "@/lib/query-options/profile";
 import {
   updateProfile,
   completeProfile,
   checkUsername,
+  completeTour,
   type UpdateProfileParams,
 } from "@/lib/api/profile";
 
@@ -61,5 +62,29 @@ export function useCompleteProfile() {
 export function useCheckUsername() {
   return useMutation({
     mutationFn: (username: string) => checkUsername(username),
+  });
+}
+
+/**
+ * Fetch tour completion status
+ */
+export function useTourStatus() {
+  return useQuery(tourStatusOptions());
+}
+
+/**
+ * Mark tour as completed
+ */
+export function useCompleteTour() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => completeTour(),
+    onSuccess: () => {
+      // Invalidate tour status query
+      queryClient.invalidateQueries({ queryKey: queryKeys.user.tour() });
+      // Also invalidate auth queries to refresh user data
+      queryClient.invalidateQueries({ queryKey: queryKeys.auth.all });
+    },
   });
 }

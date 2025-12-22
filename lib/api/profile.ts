@@ -96,3 +96,23 @@ export async function deleteAccount(): Promise<void> {
     { method: 'DELETE' }
   );
 }
+
+/**
+ * Fetch tour completion status
+ */
+export async function fetchTourStatus(): Promise<{ tourCompleted: boolean }> {
+  return apiFetch<{ tourCompleted: boolean }>('/api/user/tour');
+}
+
+/**
+ * Mark tour as completed
+ */
+export async function completeTour(): Promise<User> {
+  return apiFetch<User>(
+    '/api/user/tour',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    }
+  );
+}

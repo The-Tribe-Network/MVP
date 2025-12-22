@@ -1,0 +1,82 @@
+/* Tour Guide Custom Styles - Target react-joyride tooltip elements */
+[class*="__floater"] {
+  font-family: var(--font-sans) !important;
+}
+
+[class*="__floater__content"] {
+  background-color: var(--card) !important;
+  color: var(--card-foreground) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: calc(var(--radius) + 2px) !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+  padding: 20px 24px !important;
+  max-width: 320px !important;
+}
+
+[class*="__floater__content"] > div {
+  color: var(--card-foreground) !important;
+}
+
+[class*="__floater__content"] p,
+[class*="__floater__content"] div[style*="color"] {
+  color: var(--card-foreground) !important;
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+  margin: 0 !important;
+}
+
+/* Button styling */
+[class*="__floater"] button[data-action="primary"],
+[class*="__floater"] button[data-action="next"] {
+  background-color: var(--primary) !important;
+  color: var(--primary-foreground) !important;
+  border: none !important;
+  border-radius: calc(var(--radius) - 2px) !important;
+  padding: 8px 16px !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  transition: opacity 0.2s !important;
+}
+
+[class*="__floater"] button[data-action="primary"]:hover,
+[class*="__floater"] button[data-action="next"]:hover {
+  opacity: 0.9 !important;
+}
+
+[class*="__floater"] button[data-action="back"],
+[class*="__floater"] button[data-action="secondary"] {
+  color: var(--foreground) !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 8px 16px !important;
+  font-size: 14px !important;
+  cursor: pointer !important;
+  margin-right: 8px !important;
+}
+
+[class*="__floater"] button[data-action="back"]:hover,
+[class*="__floater"] button[data-action="secondary"]:hover {
+  opacity: 0.8 !important;
+}
+
+[class*="__floater"] button[data-action="skip"] {
+  color: var(--muted-foreground) !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 8px 16px !important;
+  font-size: 14px !important;
+  cursor: pointer !important;
+}
+
+[class*="__floater"] button[data-action="skip"]:hover {
+  opacity: 0.8 !important;
+  color: var(--foreground) !important;
+}
+
+/* Progress indicator */
+[class*="__floater"] [class*="progress"] {
+  color: var(--muted-foreground) !important;
+  font-size: 12px !important;
+}
+

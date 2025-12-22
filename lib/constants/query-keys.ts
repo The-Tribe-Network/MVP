@@ -74,6 +74,12 @@ export const queryKeys = {
     current: () => ["profile", "current"] as const,
   },
 
+  // User queries
+  user: {
+    all: ["user"] as const,
+    tour: () => ["user", "tour"] as const,
+  },
+
   // Security queries
   security: {
     all: ["security"] as const,

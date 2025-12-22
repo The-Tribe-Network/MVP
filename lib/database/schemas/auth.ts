@@ -11,6 +11,7 @@ export const user = pgTable("user", {
   bio: text("bio"),
   location: text("location"),
   profileCompleted: boolean("profile_completed").default(false).notNull(),
+  tourCompleted: boolean("tour_completed").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .defaultNow()

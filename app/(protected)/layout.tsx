@@ -5,6 +5,7 @@ import { ToastProvider } from "@/lib/providers/toast-provider";
 import { TribeDashboardToolbar } from "@/components/tribe-dashboard-toolbar";
 import { ProfileCompletionGuard } from "@/components/profile-completion-guard";
 import { GlobalDialogContainer } from "@/components/dialogs/global-dialog-container";
+import { TourGuide } from "@/components/tour-guide";
 
 export default async function ProtectedLayout({
   children,
@@ -16,6 +17,7 @@ export default async function ProtectedLayout({
 
   return (
     <ProfileCompletionGuard>
+      <TourGuide />
       <SidebarProvider
         style={
           {

@@ -3,6 +3,7 @@
 import { db } from "@/lib/database/client";
 import { user } from "@/lib/database/schemas/auth";
 import { eq, and, ne } from "drizzle-orm";
+import type { SelectUser } from "@/lib/database/types";
 
 export interface UpdateProfileInput {
   displayName?: string;
@@ -94,4 +95,34 @@ export async function isProfileComplete(userId: string): Promise<boolean> {
     !!userData.username &&
     !!userData.location
   );
+}
+
+/**
+ * Check if user has completed the tour
+ */
+export async function isTourCompleted(userId: string): Promise<boolean> {
+  const [userData] = await db
+    .select({
+      tourCompleted: user.tourCompleted,
+    })
+    .from(user)
+    .where(eq(user.id, userId))
+    .limit(1);
+
+  if (!userData) return false;
+
+  return userData.tourCompleted === true;
+}
+
+/**
+ * Mark tour as completed
+ */
+export async function markTourAsCompleted(userId: string): Promise<SelectUser> {
+  const [updatedUser] = await db
+    .update(user)
+    .set({ tourCompleted: true })
+    .where(eq(user.id, userId))
+    .returning();
+
+  return updatedUser;
 }
