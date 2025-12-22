@@ -2,7 +2,6 @@
 
 import { useRouter } from 'next/navigation'
 import { useDeletePost } from '@/lib/hooks/use-posts'
-import { usePostDetailPageStore } from '../store-provider'
 import { toast } from 'sonner'
 import {
   AlertDialog,
@@ -16,23 +15,29 @@ import {
 } from "@/components/ui/alert-dialog"
 
 interface DeletePostDialogProps {
+  isOpen: boolean
+  onOpenChange: (open: boolean) => void
   tribeId: string
   postId: string
   postContent?: string
 }
 
-export function DeletePostDialog({ tribeId, postId, postContent }: DeletePostDialogProps) {
+export function DeletePostDialog({
+  isOpen,
+  onOpenChange,
+  tribeId,
+  postId,
+  postContent
+}: DeletePostDialogProps) {
   const router = useRouter()
   const deletePostMutation = useDeletePost()
-  const isDialogOpen = usePostDetailPageStore((s) => s.isDialogOpen)
-  const closeDialog = usePostDetailPageStore((s) => s.closeDialog)
 
   const handleDelete = async () => {
     try {
       await deletePostMutation.mutateAsync({ tribeId, postId })
       toast.success('Post deleted successfully')
-      closeDialog()
-      router.push(`/tribe/${tribeId}/timeline`)
+      onOpenChange(false)
+      router.push(`/tribe/${tribeId}`)
     } catch (error) {
       console.error('Failed to delete post:', error)
       toast.error(error instanceof Error ? error.message : 'Failed to delete post')
@@ -40,7 +45,7 @@ export function DeletePostDialog({ tribeId, postId, postContent }: DeletePostDia
   }
 
   return (
-    <AlertDialog open={isDialogOpen} onOpenChange={(open) => !open && closeDialog()}>
+    <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Delete post?</AlertDialogTitle>
@@ -48,7 +53,7 @@ export function DeletePostDialog({ tribeId, postId, postContent }: DeletePostDia
             This action cannot be undone. This will permanently delete this post and all its comments.
             {postContent && (
               <span className="block mt-2 text-sm italic truncate">
-                "{postContent}..."
+                &quot;{postContent}...&quot;
               </span>
             )}
           </AlertDialogDescription>
@@ -67,3 +72,4 @@ export function DeletePostDialog({ tribeId, postId, postContent }: DeletePostDia
     </AlertDialog>
   )
 }
+

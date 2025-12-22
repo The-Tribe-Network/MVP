@@ -1,7 +1,6 @@
 "use client"
 
 import { useDeleteComment } from '@/lib/hooks/use-comments'
-import { usePostDetailPageStore } from '../store-provider'
 import { toast } from 'sonner'
 import {
   AlertDialog,
@@ -15,22 +14,29 @@ import {
 } from "@/components/ui/alert-dialog"
 
 interface DeleteCommentDialogProps {
+  isOpen: boolean
+  onOpenChange: (open: boolean) => void
   tribeId: string
   postId: string
   commentId: string
   commentContent?: string
 }
 
-export function DeleteCommentDialog({ tribeId, postId, commentId, commentContent }: DeleteCommentDialogProps) {
+export function DeleteCommentDialog({
+  isOpen,
+  onOpenChange,
+  tribeId,
+  postId,
+  commentId,
+  commentContent
+}: DeleteCommentDialogProps) {
   const deleteCommentMutation = useDeleteComment()
-  const isDialogOpen = usePostDetailPageStore((s) => s.isDialogOpen)
-  const closeDialog = usePostDetailPageStore((s) => s.closeDialog)
 
   const handleDelete = async () => {
     try {
       await deleteCommentMutation.mutateAsync({ tribeId, postId, commentId })
       toast.success('Comment deleted successfully')
-      closeDialog()
+      onOpenChange(false)
     } catch (error) {
       console.error('Failed to delete comment:', error)
       toast.error(error instanceof Error ? error.message : 'Failed to delete comment')
@@ -38,7 +44,7 @@ export function DeleteCommentDialog({ tribeId, postId, commentId, commentContent
   }
 
   return (
-    <AlertDialog open={isDialogOpen} onOpenChange={(open) => !open && closeDialog()}>
+    <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Delete comment?</AlertDialogTitle>
@@ -46,7 +52,7 @@ export function DeleteCommentDialog({ tribeId, postId, commentId, commentContent
             This action cannot be undone. This will permanently delete this comment.
             {commentContent && (
               <span className="block mt-2 text-sm italic truncate">
-                "{commentContent}..."
+                &quot;{commentContent}...&quot;
               </span>
             )}
           </AlertDialogDescription>
@@ -65,3 +71,4 @@ export function DeleteCommentDialog({ tribeId, postId, commentId, commentContent
     </AlertDialog>
   )
 }
+

@@ -1,20 +1,4 @@
-import { z } from "zod";
 import type { CommentWithStats } from "@/lib/api/comments";
-
-/**
- * Parse dialog payload with validation
- */
-export function parseDialogPayload<T extends z.ZodSchema>(
-  schema: T,
-  payload: unknown
-): z.infer<T> | null {
-  const result = schema.safeParse(payload);
-  if (!result.success) {
-    console.error("Invalid dialog payload:", result.error.flatten());
-    return null;
-  }
-  return result.data;
-}
 
 /**
  * UI-friendly Comment interface

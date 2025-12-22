@@ -8,7 +8,7 @@ import { useTribeMedia } from "@/lib/hooks/use-media";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Empty, EmptyTitle, EmptyDescription, EmptyHeader, EmptyContent } from "@/components/ui/empty";
-import { useTribeDashboardStore } from "../../store-provider";
+import { useDialogStore } from "@/lib/stores/dialog-store";
 import { tribeMediaOptions } from "@/lib/query-options/media";
 
 interface MediaWidgetProps {
@@ -24,7 +24,7 @@ export default function MediaWidget({ tribeId }: MediaWidgetProps) {
     })
   );
 
-  const openDialog = useTribeDashboardStore((s) => s.openDialog);
+  const openDialog = useDialogStore((s) => s.openDialog);
 
   return (
     <Card>

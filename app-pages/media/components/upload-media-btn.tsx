@@ -2,14 +2,14 @@
 
 import { Button } from "@/components/ui/button";
 import { Upload } from "lucide-react";
-import { useTribeMediaPageStore } from "./store-provider";
+import { useDialogStore } from "@/lib/stores/dialog-store";
 
 interface UploadMediaBtnProps {
   tribeId: string;
 }
 
 export default function UploadMediaBtn({ tribeId }: UploadMediaBtnProps) {
-  const openDialog = useTribeMediaPageStore((s) => s.openDialog);
+  const openDialog = useDialogStore((s) => s.openDialog);
 
   const handleClick = () => {
     openDialog('media-upload', { tribeId });

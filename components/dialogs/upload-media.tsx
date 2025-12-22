@@ -18,21 +18,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Upload, ImageIcon, X, Loader2 } from 'lucide-react'
+import { ImageIcon, X, Loader2 } from 'lucide-react'
 import { FILE_SIZE_LIMITS } from '@/lib/constants/media'
 import { useTribeAlbums } from '@/lib/hooks/use-albums'
 import { useUploadTribeMedia } from '@/lib/hooks/use-upload'
 import { toast } from 'sonner'
-import { useTribeMediaPageStore } from '../store-provider'
 
 interface UploadMediaDialogProps {
   tribeId: string
+  isOpen: boolean
+  onOpenChange: (open: boolean) => void
 }
 
-export default function UploadMediaDialog({ tribeId }: UploadMediaDialogProps) {
-  const closeDialog = useTribeMediaPageStore((s) => s.closeDialog);
-  const isDialogOpen = useTribeMediaPageStore((s) => s.isDialogOpen);
-
+export default function UploadMediaDialog({ tribeId, isOpen, onOpenChange }: UploadMediaDialogProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [selectedAlbum, setSelectedAlbum] = useState<string | null>(null)
@@ -76,6 +74,12 @@ export default function UploadMediaDialog({ tribeId }: UploadMediaDialogProps) {
     }
   }
 
+  const handleClose = () => {
+    handleRemoveFile()
+    setSelectedAlbum(null)
+    onOpenChange(false)
+  }
+
   const handleUpload = async () => {
     if (!selectedFile) return
 
@@ -89,7 +93,7 @@ export default function UploadMediaDialog({ tribeId }: UploadMediaDialogProps) {
       // Success - reset form and close
       handleRemoveFile()
       setSelectedAlbum(null)
-      closeDialog()
+      onOpenChange(false)
       toast.success('Media uploaded successfully')
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to upload media')
@@ -97,7 +101,7 @@ export default function UploadMediaDialog({ tribeId }: UploadMediaDialogProps) {
   }
 
   return (
-    <Dialog open={isDialogOpen} onOpenChange={closeDialog}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Upload Media</DialogTitle>
@@ -196,7 +200,7 @@ export default function UploadMediaDialog({ tribeId }: UploadMediaDialogProps) {
           <Button
             type="button"
             variant="outline"
-            onClick={() => closeDialog()}
+            onClick={handleClose}
             disabled={uploadMedia.isPending}
           >
             Cancel
@@ -219,3 +223,4 @@ export default function UploadMediaDialog({ tribeId }: UploadMediaDialogProps) {
     </Dialog>
   )
 }
+

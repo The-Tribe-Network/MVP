@@ -7,7 +7,7 @@ import { UserPlus, Users } from "lucide-react";
 import TribeLocation from "./tribe-location";
 import { TribeInfoWidgetSkeleton } from "./tribe-info-widget-skeleton";
 import { TribeInfoWidgetError } from "./tribe-info-widget-error";
-import { useTribeDashboardStore } from "../../store-provider";
+import { useDialogStore } from "@/lib/stores/dialog-store";
 import { useQuery } from "@tanstack/react-query";
 import { tribeDetailOptions } from "@/lib/query-options";
 
@@ -24,7 +24,7 @@ export default function TribeInfoWidget({
     isError,
     refetch
   } = useQuery(tribeDetailOptions(tribeId));
-  const openDialog = useTribeDashboardStore((s) => s.openDialog);
+  const openDialog = useDialogStore((s) => s.openDialog);
 
   if (isLoading && !tribe) {
     return <TribeInfoWidgetSkeleton />

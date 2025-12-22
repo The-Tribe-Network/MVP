@@ -6,7 +6,7 @@ import PostCard from '@/components/post-card'
 import { PostDetailSkeleton } from './loading'
 import { PostDetailError } from './error'
 import { PostDetailEmpty } from './empty'
-import { usePostDetailPageStore } from '../store-provider'
+import { useDialogStore } from '@/lib/stores/dialog-store'
 import { useQuery } from '@tanstack/react-query'
 import { postDetailOptions } from '@/lib/query-options/posts'
 
@@ -19,7 +19,7 @@ export function PostDetailSection({ tribeId, postId }: PostDetailSectionProps) {
   const { data: post, isLoading, error, isError, refetch } = useQuery(postDetailOptions(tribeId, postId))
   const likePostMutation = useLikePost()
   const deletePostMutation = useDeletePost()
-  const openDialog = usePostDetailPageStore((s) => s.openDialog)
+  const openDialog = useDialogStore((s) => s.openDialog)
 
   const handleLike = async (postId: string) => {
     try {

@@ -7,7 +7,7 @@ import { useLikeComment } from '@/lib/hooks/use-comments'
 import { formatRelativeTime, cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import type { CommentUIData } from '../../lib/utils'
-import { usePostDetailPageStore } from '../store-provider'
+import { useDialogStore } from '@/lib/stores/dialog-store'
 import { useAuthUser } from '@/lib/hooks/use-auth'
 
 interface CommentItemProps {
@@ -19,7 +19,7 @@ interface CommentItemProps {
 export function CommentItem({ comment, tribeId, postId }: CommentItemProps) {
   const { user } = useAuthUser()
   const likeCommentMutation = useLikeComment()
-  const openDialog = usePostDetailPageStore((s) => s.openDialog)
+  const openDialog = useDialogStore((s) => s.openDialog)
 
   // Check if current user is the comment author
   // Note: We need author.id from the API to properly check this
