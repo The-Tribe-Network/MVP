@@ -20,8 +20,10 @@ import { toast } from "sonner";
 import { validateImageFile } from "@/lib/utils/image";
 import { User } from "better-auth";
 import NewPostAlbumToggle from "../components/new-post-album-toggle";
+import AttachedAlbumPreview from "../components/attached-album-preview";
 import { useAuthUser } from "@/lib/hooks/use-auth";
 import SelectPostMediaDialog from "@/components/dialogs/select-post-media";
+import SelectPostAlbumDialog, { type SelectedAlbum } from "@/components/dialogs/select-post-album";
 
 interface NewPostProps {
   tribeId: string;
@@ -37,6 +39,8 @@ export function NewPost({ tribeId, onViewChange }: NewPostProps) {
   const [selectedAlbumId, setSelectedAlbumId] = useState<string | null>(null)
   const [isMediaPickerOpen, setIsMediaPickerOpen] = useState(false)
   const [isMediaFromLibrary, setIsMediaFromLibrary] = useState(false)
+  const [isAlbumPickerOpen, setIsAlbumPickerOpen] = useState(false)
+  const [linkedAlbum, setLinkedAlbum] = useState<SelectedAlbum | null>(null)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -73,7 +77,7 @@ export function NewPost({ tribeId, onViewChange }: NewPostProps) {
       return
     }
 
-    // Delete previous image if one exists
+    // Delete previous image if one exists (uploaded, not from library)
     const previousImageId = uploadedImageId
     if (previousImageId && !isMediaFromLibrary) {
       try {
@@ -83,6 +87,9 @@ export function NewPost({ tribeId, onViewChange }: NewPostProps) {
         // Continue with upload even if deletion fails
       }
     }
+
+    // Clear any linked album - only one attachment type allowed
+    setLinkedAlbum(null)
 
     setIsUploadingImage(true)
     try {
@@ -140,6 +147,9 @@ export function NewPost({ tribeId, onViewChange }: NewPostProps) {
   }
 
   const handleMediaSelected = (media: { id: string; url: string }) => {
+    // Clear any linked album - only one attachment type allowed
+    setLinkedAlbum(null)
+    
     setUploadedImageId(media.id)
     setImagePreview(media.url)
     setIsMediaFromLibrary(true)
@@ -151,8 +161,32 @@ export function NewPost({ tribeId, onViewChange }: NewPostProps) {
   }
 
   const handleAlbums = () => {
-    // TODO: Implement albums functionality
-    toast.info('Albums feature coming soon')
+    setIsAlbumPickerOpen(true)
+  }
+
+  const handleAlbumSelected = async (album: SelectedAlbum) => {
+    // Clear any attached photo - only one attachment type allowed
+    // Delete uploaded image if it was uploaded for this post (not from library)
+    if (uploadedImageId && !isMediaFromLibrary) {
+      try {
+        await deleteMediaMutation.mutateAsync(uploadedImageId)
+      } catch (error) {
+        console.error('Failed to delete previous image:', error)
+      }
+    }
+    setUploadedImageId(null)
+    setImagePreview(null)
+    setIsMediaFromLibrary(false)
+    setSelectedAlbumId(null)
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+    
+    setLinkedAlbum(album)
+  }
+
+  const handleRemoveLinkedAlbum = () => {
+    setLinkedAlbum(null)
   }
 
   const handleEvents = () => {
@@ -170,11 +204,13 @@ export function NewPost({ tribeId, onViewChange }: NewPostProps) {
         addToAlbum,
         mediaId: uploadedImageId || null,
         albumId: addToAlbum ? selectedAlbumId || null : null,
+        linkedAlbumId: linkedAlbum?.id || null,
       })
       setNewPost('')
       setUploadedImageId(null)
       setImagePreview(null)
       setIsMediaFromLibrary(false)
+      setLinkedAlbum(null)
       if (fileInputRef.current) {
         fileInputRef.current.value = ''
       }
@@ -223,6 +259,15 @@ export function NewPost({ tribeId, onViewChange }: NewPostProps) {
               <X className="h-4 w-4" />
             </Button>
           </div>
+        )}
+
+        {/* Linked album preview */}
+        {linkedAlbum && (
+          <AttachedAlbumPreview
+            album={linkedAlbum}
+            onRemove={handleRemoveLinkedAlbum}
+            disabled={createPostMutation.isPending}
+          />
         )}
 
         <div className="flex items-center justify-between">
@@ -302,6 +347,13 @@ export function NewPost({ tribeId, onViewChange }: NewPostProps) {
         isOpen={isMediaPickerOpen}
         onOpenChange={setIsMediaPickerOpen}
         onSelect={handleMediaSelected}
+      />
+
+      <SelectPostAlbumDialog
+        tribeId={tribeId}
+        isOpen={isAlbumPickerOpen}
+        onOpenChange={setIsAlbumPickerOpen}
+        onSelect={handleAlbumSelected}
       />
     </div>
   )

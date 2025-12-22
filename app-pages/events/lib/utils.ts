@@ -1,67 +1,9 @@
-import type { EventWithCreator, EventWithDetails } from '@/lib/database/types'
-import type { Event, PastEvent } from './types'
-
 /**
- * Transform API event data to UI event format
+ * Event utility functions
  *
- * TODO: Implement when connecting to real API
- * This will convert EventWithCreator from the database to Event type for the UI
+ * Now that we're using backend types directly (EventWithDetails),
+ * transformation functions are no longer needed.
  */
-export function transformEventForUI(event: EventWithCreator): Event {
-  // Placeholder implementation
-  // Will be implemented when connecting to real API
-  return {
-    id: 0,
-    title: '',
-    date: '',
-    time: '',
-    location: '',
-    attendees: 0,
-    description: '',
-    host: { name: '', avatar: '' },
-    status: 'confirmed',
-  }
-}
-
-/**
- * Transform array of API events to UI events
- *
- * TODO: Implement when connecting to real API
- */
-export function transformEventsForUI(events: EventWithCreator[]): Event[] {
-  return events.map(transformEventForUI)
-}
-
-/**
- * Transform API event data to UI past event format
- *
- * TODO: Implement when connecting to real API
- */
-export function transformPastEventForUI(event: EventWithCreator): PastEvent {
-  // Placeholder implementation
-  return {
-    id: 0,
-    title: '',
-    date: '',
-    time: '',
-    location: '',
-    attendees: 0,
-    description: '',
-    host: { name: '', avatar: '' },
-  }
-}
-
-/**
- * Extract event dates for calendar highlighting
- *
- * TODO: Implement when connecting to real API
- * This will extract Date objects from events for calendar highlighting
- */
-export function extractEventDates(events: EventWithCreator[]): Date[] {
-  // Placeholder implementation
-  // Will parse event.startDate and return array of Date objects
-  return []
-}
 
 /**
  * Format event date for display

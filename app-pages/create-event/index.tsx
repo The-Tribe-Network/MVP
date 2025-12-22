@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Form } from "@/components/ui/form"
-import { createEventSchema, type CreateEventInput } from "@/lib/validations/event"
+import { createEventWithPollSchema, type CreateEventWithPollInput } from "@/lib/validations/event"
 import { toast } from "sonner"
 import { useCreateEvent } from "@/lib/hooks/use-events"
 import { EventCreationStepper } from "./components/event-creation-stepper"
@@ -13,7 +13,7 @@ import { StepNavigation } from "./components/step-navigation"
 import { BasicInfoStep } from "./steps/basic-info-step"
 import { DateTimeStep } from "./steps/date-time-step"
 import { LocationStep } from "./steps/location-step"
-import { PollStep, type PollData } from "./steps/poll-step"
+import { PollStep } from "./steps/poll-step"
 import { ReviewStep } from "./steps/review-step"
 
 interface CreateEventPageProps {
@@ -33,34 +33,24 @@ export function CreateEventPage({ tribeId }: CreateEventPageProps) {
   const [currentStep, setCurrentStep] = useState(1)
   const { mutate: createEvent, isPending: isSubmitting } = useCreateEvent()
 
-  // Poll state (optional)
-  const [includePoll, setIncludePoll] = useState(false)
-  const [poll, setPoll] = useState<PollData>({
-    question: "",
-    options: ["", ""],
-    allowMultiple: false,
-    isAnonymous: false,
-  })
-
-  const form = useForm<CreateEventInput>({
-    resolver: zodResolver(createEventSchema),
+  const form = useForm<CreateEventWithPollInput>({
+    resolver: zodResolver(createEventWithPollSchema),
     defaultValues: {
       title: "",
       description: "",
       location: "",
       startDate: undefined,
       endDate: undefined,
+      poll: null,
     },
   })
 
-  const isPollValid = () => {
-    if (!includePoll) return true
-    const validOptions = poll.options.filter(opt => opt.trim() !== "")
-    return poll.question.trim() !== "" && validOptions.length >= 2
-  }
+  // Watch poll value to determine if poll is included
+  const pollValue = form.watch('poll')
+  const includePoll = pollValue !== null && pollValue !== undefined
 
   const nextStep = async () => {
-    let fieldsToValidate: (keyof CreateEventInput)[] = []
+    let fieldsToValidate: (keyof CreateEventWithPollInput)[] = []
 
     switch (currentStep) {
       case 1:
@@ -73,11 +63,7 @@ export function CreateEventPage({ tribeId }: CreateEventPageProps) {
         fieldsToValidate = ["location"]
         break
       case 4:
-        // Poll validation (optional step)
-        if (includePoll && !isPollValid()) {
-          toast.error("Please complete the poll or disable it to continue")
-          return
-        }
+        fieldsToValidate = ["poll"]
         break
     }
 
@@ -96,23 +82,13 @@ export function CreateEventPage({ tribeId }: CreateEventPageProps) {
     }
   }
 
-  const onSubmit = async (data: CreateEventInput) => {
-    // Prepare poll data if included
-    const pollData = includePoll && isPollValid() ? {
-      question: poll.question.trim(),
-      options: poll.options.filter(opt => opt.trim() !== ""),
-      allowMultiple: poll.allowMultiple,
-      isAnonymous: poll.isAnonymous,
-    } : null
-
+  const onSubmit = async (data: CreateEventWithPollInput) => {
     createEvent(
-      {
-        tribeId,
-        data: { ...data, poll: pollData }
-      },
+      { tribeId, data },
       {
         onSuccess: () => {
           toast.success("Event created successfully!")
+          form.reset()
           router.push(`/tribe/${tribeId}/events`)
         },
         onError: (error) => {
@@ -132,22 +108,9 @@ export function CreateEventPage({ tribeId }: CreateEventPageProps) {
       case 3:
         return <LocationStep control={form.control} />
       case 4:
-        return (
-          <PollStep
-            includePoll={includePoll}
-            poll={poll}
-            onIncludePollChange={setIncludePoll}
-            onPollChange={setPoll}
-          />
-        )
+        return <PollStep control={form.control} />
       case 5:
-        return (
-          <ReviewStep
-            formData={form.getValues()}
-            poll={includePoll && isPollValid() ? poll : null}
-            includePoll={includePoll}
-          />
-        )
+        return <ReviewStep formData={form.getValues()} />
       default:
         return null
     }

@@ -14,9 +14,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Heart, MessageCircle, Share2, Loader2, MoreVertical, Trash2 } from 'lucide-react'
+import { Heart, MessageCircle, Share2, Loader2, MoreVertical, Trash2, ImageIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import PhotoMediaDialog from './dialogs/photo-media'
 import { usePathname } from 'next/navigation'
 import type { PostWithStats } from '@/lib/database/types'
@@ -60,6 +61,7 @@ export default function PostCard({
 }: PostCardProps) {
   const [isImageDialogOpen, setIsImageDialogOpen] = useState(false)
   const pathname = usePathname();
+  const router = useRouter();
   const { user } = useAuthUser()
 
   // Check if current user is the author (by ID comparison)
@@ -167,6 +169,47 @@ export default function PostCard({
                   : undefined,
               }}
             />
+          </div>
+        )}
+
+        {/* Linked Album */}
+        {post.linkedAlbum && (
+          <div
+            className="mt-3 rounded-lg overflow-hidden border border-border cursor-pointer hover:bg-muted/50 transition-colors"
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              router.push(`/tribe/${tribeId}/media/album/${post.linkedAlbum!.id}`)
+            }}
+          >
+            <div className="flex gap-3 p-3">
+              {/* Album Cover */}
+              <div className="relative h-16 w-16 flex-shrink-0 rounded-md overflow-hidden bg-muted">
+                {post.linkedAlbum.coverUrl ? (
+                  <img
+                    src={post.linkedAlbum.coverUrl}
+                    alt={post.linkedAlbum.name}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="h-full w-full flex items-center justify-center">
+                    <ImageIcon className="h-6 w-6 text-muted-foreground" />
+                  </div>
+                )}
+              </div>
+              
+              {/* Album Details */}
+              <div className="flex flex-col justify-center min-w-0 flex-1">
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-0.5">
+                  Album
+                </span>
+                <h4 className="font-semibold text-sm truncate">{post.linkedAlbum.name}</h4>
+                <span className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                  <ImageIcon className="h-3 w-3" />
+                  {post.linkedAlbum.photoCount} {post.linkedAlbum.photoCount === 1 ? 'photo' : 'photos'}
+                </span>
+              </div>
+            </div>
           </div>
         )}
 

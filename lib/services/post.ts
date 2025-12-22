@@ -2,9 +2,9 @@ import { db } from "@/lib/database/client";
 import { post, postLike, comment } from "@/lib/database/schemas/post";
 import { tribeMember, tribeMemberPermission } from "@/lib/database/schemas/tribe";
 import { user } from "@/lib/database/schemas/auth";
-import { albumMedia, media } from "@/lib/database/schemas/media";
-import { eq, and, desc, count, inArray } from "drizzle-orm";
-import type { Post, PostInsert, PostWithAuthor } from "@/lib/database/types";
+import { album, albumMedia, media } from "@/lib/database/schemas/media";
+import { eq, and, desc, count, inArray, sql } from "drizzle-orm";
+import type { Post, PostInsert, PostWithAuthor, LinkedAlbumPreview } from "@/lib/database/types";
 import { getMemberWithPermissions } from "./permissions";
 
 /**
@@ -61,6 +61,7 @@ export async function createPost(
   addToAlbum: boolean,
   mediaId?: string | null,
   albumId?: string | null,
+  linkedAlbumId?: string | null,
 ): Promise<PostWithAuthor> {
   // Check permission
   const canPost = await canUserPost(tribeId, userId);
@@ -75,6 +76,7 @@ export async function createPost(
       tribeId,
       authorId: userId,
       content: content.trim(),
+      linkedAlbumId: linkedAlbumId || null,
     } as PostInsert)
     .returning();
 
@@ -130,14 +132,14 @@ export async function createPost(
 }
 
 /**
- * Get posts for a tribe with author info, like count, comment count, user's like status, and image
+ * Get posts for a tribe with author info, like count, comment count, user's like status, image, and linked album
  */
 export async function getTribePosts(
   tribeId: string,
   limit: number = 20,
   offset: number = 0,
   currentUserId?: string
-): Promise<Array<PostWithAuthor & { likeCount: number; commentCount: number; isLiked: boolean; image: { id: string; url: string; width?: number; height?: number } | null }>> {
+): Promise<Array<PostWithAuthor & { likeCount: number; commentCount: number; isLiked: boolean; image: { id: string; url: string; width?: number; height?: number } | null; linkedAlbum: LinkedAlbumPreview | null }>> {
   // Fetch posts with author
   const posts = await db
     .select({
@@ -145,6 +147,7 @@ export async function getTribePosts(
       tribeId: post.tribeId,
       authorId: post.authorId,
       content: post.content,
+      linkedAlbumId: post.linkedAlbumId,
       createdAt: post.createdAt,
       updatedAt: post.updatedAt,
       author: {
@@ -229,6 +232,48 @@ export async function getTribePosts(
     }
   }
 
+  // Get linked albums for posts that have linkedAlbumId
+  // OPTIMIZED: Single query with subquery for photo count (follows getAlbumsByTribe pattern)
+  const linkedAlbumIds = posts
+    .map((p) => p.linkedAlbumId)
+    .filter((id): id is string => id !== null);
+
+  const linkedAlbumsMap = new Map<string, LinkedAlbumPreview>();
+  
+  if (linkedAlbumIds.length > 0) {
+    // Subquery to get media count per album
+    const mediaCountSubquery = db
+      .select({
+        albumId: albumMedia.albumId,
+        count: count(albumMedia.id).as('count'),
+      })
+      .from(albumMedia)
+      .groupBy(albumMedia.albumId)
+      .as('media_counts');
+
+    // Get albums with cover URL and photo count in single query
+    const linkedAlbums = await db
+      .select({
+        id: album.id,
+        name: album.name,
+        coverUrl: media.fileUrl,
+        photoCount: sql<number>`COALESCE(${mediaCountSubquery.count}, 0)`,
+      })
+      .from(album)
+      .leftJoin(media, eq(album.coverId, media.id))
+      .leftJoin(mediaCountSubquery, eq(album.id, mediaCountSubquery.albumId))
+      .where(inArray(album.id, linkedAlbumIds));
+
+    for (const a of linkedAlbums) {
+      linkedAlbumsMap.set(a.id, {
+        id: a.id,
+        name: a.name,
+        coverUrl: a.coverUrl || null,
+        photoCount: Number(a.photoCount) || 0,
+      });
+    }
+  }
+
   // Create maps for quick lookup
   const likeCountMap = new Map(likeCounts.map((lc) => [lc.postId, Number(lc.count)]));
   const commentCountMap = new Map(commentCounts.map((cc) => [cc.postId, Number(cc.count)]));
@@ -239,6 +284,7 @@ export async function getTribePosts(
     tribeId: p.tribeId,
     authorId: p.authorId,
     content: p.content,
+    linkedAlbumId: p.linkedAlbumId,
     createdAt: p.createdAt,
     updatedAt: p.updatedAt,
     author: {
@@ -249,6 +295,7 @@ export async function getTribePosts(
     commentCount: commentCountMap.get(p.id) || 0,
     isLiked: userLikedPostIds.has(p.id),
     image: mediaMap.get(p.id) || null,
+    linkedAlbum: p.linkedAlbumId ? linkedAlbumsMap.get(p.linkedAlbumId) || null : null,
   }));
 }
 
@@ -262,6 +309,7 @@ export async function getPostById(postId: string): Promise<PostWithAuthor | null
       tribeId: post.tribeId,
       authorId: post.authorId,
       content: post.content,
+      linkedAlbumId: post.linkedAlbumId,
       createdAt: post.createdAt,
       updatedAt: post.updatedAt,
       author: {
@@ -293,6 +341,7 @@ export async function getPostById(postId: string): Promise<PostWithAuthor | null
     tribeId: postData.tribeId,
     authorId: postData.authorId,
     content: postData.content,
+    linkedAlbumId: postData.linkedAlbumId,
     createdAt: postData.createdAt,
     updatedAt: postData.updatedAt,
     author: postData.author,
@@ -300,13 +349,13 @@ export async function getPostById(postId: string): Promise<PostWithAuthor | null
 }
 
 /**
- * Get a single post by ID with author info, like count, comment count, user's like status, and image
+ * Get a single post by ID with author info, like count, comment count, user's like status, image, and linked album
  * OPTIMIZED: 2 DB calls instead of 5 (1 for post, 1 parallel for all metadata)
  */
 export async function getPostByIdWithMetadata(
   postId: string,
   currentUserId?: string
-): Promise<(PostWithAuthor & { likeCount: number; commentCount: number; isLiked: boolean; image: { id: string; url: string; width?: number; height?: number } | null }) | null> {
+): Promise<(PostWithAuthor & { likeCount: number; commentCount: number; isLiked: boolean; image: { id: string; url: string; width?: number; height?: number } | null; linkedAlbum: LinkedAlbumPreview | null }) | null> {
   // Fetch post with author
   const [postData] = await db
     .select({
@@ -314,6 +363,7 @@ export async function getPostByIdWithMetadata(
       tribeId: post.tribeId,
       authorId: post.authorId,
       content: post.content,
+      linkedAlbumId: post.linkedAlbumId,
       createdAt: post.createdAt,
       updatedAt: post.updatedAt,
       author: {
@@ -389,11 +439,49 @@ export async function getPostByIdWithMetadata(
     }
     : null;
 
+  // Get linked album if exists
+  // OPTIMIZED: Single query with subquery for photo count
+  let linkedAlbum: LinkedAlbumPreview | null = null;
+  if (postData.linkedAlbumId) {
+    // Subquery for photo count
+    const mediaCountSubquery = db
+      .select({
+        albumId: albumMedia.albumId,
+        count: count(albumMedia.id).as('count'),
+      })
+      .from(albumMedia)
+      .groupBy(albumMedia.albumId)
+      .as('media_counts');
+
+    const [albumData] = await db
+      .select({
+        id: album.id,
+        name: album.name,
+        coverUrl: media.fileUrl,
+        photoCount: sql<number>`COALESCE(${mediaCountSubquery.count}, 0)`,
+      })
+      .from(album)
+      .leftJoin(media, eq(album.coverId, media.id))
+      .leftJoin(mediaCountSubquery, eq(album.id, mediaCountSubquery.albumId))
+      .where(eq(album.id, postData.linkedAlbumId))
+      .limit(1);
+
+    if (albumData) {
+      linkedAlbum = {
+        id: albumData.id,
+        name: albumData.name,
+        coverUrl: albumData.coverUrl || null,
+        photoCount: Number(albumData.photoCount) || 0,
+      };
+    }
+  }
+
   return {
     id: postData.id,
     tribeId: postData.tribeId,
     authorId: postData.authorId,
     content: postData.content,
+    linkedAlbumId: postData.linkedAlbumId,
     createdAt: postData.createdAt,
     updatedAt: postData.updatedAt,
     author: postData.author,
@@ -401,6 +489,7 @@ export async function getPostByIdWithMetadata(
     commentCount,
     isLiked,
     image,
+    linkedAlbum,
   };
 }
 

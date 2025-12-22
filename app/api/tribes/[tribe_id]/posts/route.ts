@@ -98,6 +98,7 @@ export async function POST(
       validation.data.addToAlbum,
       validation.data.mediaId || null,
       validation.data.albumId || null,
+      validation.data.linkedAlbumId || null,
     );
 
     return NextResponse.json(newPost, { status: 201 });

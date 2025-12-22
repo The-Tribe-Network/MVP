@@ -19,6 +19,7 @@ export interface CreatePostParams {
   mediaId?: string | null;
   albumId?: string | null;
   addToAlbum: boolean;
+  linkedAlbumId?: string | null;
 }
 
 export interface UpdatePostParams {

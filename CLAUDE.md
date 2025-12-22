@@ -616,6 +616,163 @@ There is a `socket-server/` directory for real-time messaging (Socket.IO). This 
 - `docs/PHASE_1_OPTIMIZATIONS.md`, `docs/PHASE_2_OPTIMIZATIONS.md` - Implementation phases
 - `docs/google_mvp_prd.md` - Google-specific MVP requirements
 
+## Anti-Patterns (NEVER DO)
+
+This section shows explicit BAD vs GOOD patterns. **Always follow the GOOD pattern.**
+
+### Database Queries - Never Use Sequential Queries When Joins Are Possible
+
+❌ **BAD - Two separate queries for related data:**
+```typescript
+// This makes 2 database round trips when 1 would suffice
+const albums = await db
+  .select({ id: album.id, name: album.name, coverUrl: media.fileUrl })
+  .from(album)
+  .leftJoin(media, eq(album.coverId, media.id))
+  .where(inArray(album.id, albumIds));
+
+// SEPARATE QUERY - BAD!
+const albumPhotoCounts = await db
+  .select({ albumId: albumMedia.albumId, count: count() })
+  .from(albumMedia)
+  .where(inArray(albumMedia.albumId, albumIds))
+  .groupBy(albumMedia.albumId);
+
+const photoCountMap = new Map(albumPhotoCounts.map((ac) => [ac.albumId, Number(ac.count)]));
+```
+
+✅ **GOOD - Single query with subquery join:**
+```typescript
+// Subquery to get media count per album
+const mediaCountSubquery = db
+  .select({
+    albumId: albumMedia.albumId,
+    count: count(albumMedia.id).as('count'),
+  })
+  .from(albumMedia)
+  .groupBy(albumMedia.albumId)
+  .as('media_counts');
+
+// Single query with LEFT JOIN to subquery
+const albums = await db
+  .select({
+    id: album.id,
+    name: album.name,
+    coverUrl: media.fileUrl,
+    photoCount: sql<number>`COALESCE(${mediaCountSubquery.count}, 0)`,
+  })
+  .from(album)
+  .leftJoin(media, eq(album.coverId, media.id))
+  .leftJoin(mediaCountSubquery, eq(album.id, mediaCountSubquery.albumId))
+  .where(inArray(album.id, albumIds));
+```
+
+### Types - Never Create Types From Scratch When Extending Existing Types
+
+❌ **BAD - Creating types from scratch:**
+```typescript
+// Don't redefine fields that already exist in the database types
+export type LinkedAlbumPreview = {
+  id: string;
+  name: string;
+  coverUrl: string | null;
+  photoCount: number;
+};
+```
+
+✅ **GOOD - Use Pick/Extend from existing types:**
+```typescript
+import type { Album } from '@/lib/database/types';
+
+// Extend existing types using Pick, Omit, or intersection
+export type LinkedAlbumPreview = Pick<Album, 'id' | 'name'> & {
+  coverUrl: string | null;
+  photoCount: number;
+};
+```
+
+### Query Keys - Never Hardcode Query Keys
+
+❌ **BAD - Hardcoded query keys:**
+```typescript
+const { data } = useQuery({
+  queryKey: ['posts', 'tribe', tribeId], // HARDCODED - BAD!
+  queryFn: () => fetchTribePosts(tribeId),
+});
+```
+
+✅ **GOOD - Use query key factory:**
+```typescript
+import { queryKeys } from '@/lib/constants/query-keys';
+
+const { data } = useQuery({
+  queryKey: queryKeys.posts.tribe(tribeId), // Uses factory
+  queryFn: () => fetchTribePosts(tribeId),
+});
+```
+
+### Form State - Never Use useState for Form Fields
+
+❌ **BAD - Manual state management:**
+```typescript
+const [name, setName] = useState('');
+const [email, setEmail] = useState('');
+const [errors, setErrors] = useState({});
+
+const handleSubmit = () => {
+  if (!name) setErrors({ name: 'Required' });
+  // Manual validation logic...
+};
+```
+
+✅ **GOOD - Use react-hook-form with Zod:**
+```typescript
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+
+const form = useForm<FormInput>({
+  resolver: zodResolver(formSchema),
+  defaultValues: { name: '', email: '' },
+});
+
+const onSubmit = form.handleSubmit((data) => {
+  // data is validated and typed
+});
+```
+
+### Database Queries in API Routes - Never Write Queries Directly
+
+❌ **BAD - Database queries in API route:**
+```typescript
+// app/api/tribes/[tribe_id]/posts/route.ts
+export async function POST(request: NextRequest) {
+  const body = await request.json();
+  
+  // DON'T write queries directly in API routes
+  const [post] = await db.insert(posts).values({
+    tribeId: body.tribeId,
+    content: body.content,
+  }).returning();
+  
+  return NextResponse.json(post);
+}
+```
+
+✅ **GOOD - Use service functions:**
+```typescript
+// app/api/tribes/[tribe_id]/posts/route.ts
+import { createPost } from '@/lib/services/post';
+
+export async function POST(request: NextRequest) {
+  const body = await request.json();
+  
+  // Service handles permissions, validation, activity tracking
+  const post = await createPost(tribeId, userId, body.content);
+  
+  return NextResponse.json(post);
+}
+```
+
 ## Common Pitfalls to Avoid
 
 1. **Don't skip membership checks** in API routes - always verify user is in tribe

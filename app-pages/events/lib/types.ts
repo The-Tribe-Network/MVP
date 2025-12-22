@@ -1,40 +1,20 @@
-// Local UI types for events page
-interface Host {
-  name: string
-  avatar: string
-}
+/**
+ * Event Types - Using Backend Types
+ *
+ * This file re-exports backend types and extends them with UI-specific properties.
+ * The backend types (EventWithCreator, EventWithDetails) come from the database layer.
+ */
 
-interface VoteOption {
-  id: number
-  title: string
-  votes: number
-}
+import type { EventWithCreator, EventWithDetails } from '@/lib/database/types'
 
-interface Event {
-  id: number
-  title: string
-  date: string
-  time: string
-  location: string
-  attendees: number
-  description: string
-  host: Host
-  status: 'confirmed' | 'voting'
-  hasVote?: boolean
-  isAttending?: boolean
-  voteDeadline?: string
-  voteOptions?: VoteOption[]
-}
+// Re-export backend types for component use
+export type { EventWithCreator, EventWithDetails }
 
-interface PastEvent {
-  id: number
-  title: string
-  date: string
-  time: string
-  location: string
-  attendees: number
-  description: string
-  host: Host
+/**
+ * Extended event type with UI-specific computed properties
+ * This is used for the events list display
+ */
+export type EventListItem = EventWithDetails & {
+  // UI computed properties can be added here if needed
+  // For example: formattedDate, isUpcoming, etc.
 }
-
-export type { Host, VoteOption, Event, PastEvent };

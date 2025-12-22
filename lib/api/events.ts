@@ -18,6 +18,7 @@ export interface CreateEventInput {
     options: string[];
     allowMultiple: boolean;
     isAnonymous: boolean;
+    endsAt?: Date;
   } | null;
 }
 
@@ -58,9 +59,9 @@ export interface RemoveEventAttendeeParams {
 export async function fetchTribeEvents(
   tribeId: string,
   options?: { status?: 'upcoming' | 'ongoing' | 'completed' | 'cancelled' }
-): Promise<EventWithCreator[]> {
+): Promise<EventWithDetails[]> {
   const queryString = buildQueryString(options || {});
-  return apiFetch<EventWithCreator[]>(
+  return apiFetch<EventWithDetails[]>(
     `${API_BASE}/${tribeId}/events${queryString}`
   );
 }

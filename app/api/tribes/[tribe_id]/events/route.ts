@@ -33,6 +33,7 @@ export async function GET(
       status: status || undefined,
       limit: limit ? parseInt(limit) : undefined,
       offset: offset ? parseInt(offset) : undefined,
+      userId: user.id, // Pass userId to get attendance info
     });
 
     return NextResponse.json(events);

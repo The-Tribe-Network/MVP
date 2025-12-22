@@ -258,12 +258,19 @@ export type ActivityWithUser = Activity & {
 // Extended types with engagement stats
 // ============================================
 
+// Linked album preview for posts
+export type LinkedAlbumPreview = Pick<Album, 'id' | 'name'> & {
+  coverUrl: string | null;
+  photoCount: number;
+};
+
 // Post with engagement stats
 export type PostWithStats = PostWithAuthor & {
   likeCount: number;
   commentCount: number;
   isLiked: boolean;
   image: { id: string; url: string; width?: number; height?: number } | null;
+  linkedAlbum: LinkedAlbumPreview | null;
 };
 
 // Media with engagement stats (uses partial User type)

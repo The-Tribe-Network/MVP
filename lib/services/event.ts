@@ -3,7 +3,7 @@ import { event, eventAttendee } from "@/lib/database/schemas/event";
 import { user } from "@/lib/database/schemas/auth";
 import { tribe } from "@/lib/database/schemas/tribe";
 import { poll, pollOption } from "@/lib/database/schemas/poll";
-import { eq, and, desc, sql, inArray } from "drizzle-orm";
+import { eq, and, desc, sql, inArray, count } from "drizzle-orm";
 import { createActivity } from "./activity";
 import type {
   EventWithCreator,
@@ -146,8 +146,20 @@ export async function getTribeEvents(
     status?: "upcoming" | "ongoing" | "completed" | "cancelled";
     limit?: number;
     offset?: number;
+    userId?: string;
   }
-): Promise<EventWithCreator[]> {
+): Promise<EventWithDetails[]> {
+  // Subquery for attendee count
+  const attendeeCountSubquery = db
+    .select({
+      eventId: eventAttendee.eventId,
+      count: count(eventAttendee.userId).as('count'),
+    })
+    .from(eventAttendee)
+    .groupBy(eventAttendee.eventId)
+    .as('attendee_counts');
+
+  // Main query with attendee count joined
   const baseSelect = db
     .select({
       id: event.id,
@@ -185,10 +197,12 @@ export async function getTribeEvents(
         createdAt: tribe.createdAt,
         updatedAt: tribe.updatedAt,
       },
+      attendeeCount: sql<number>`COALESCE(${attendeeCountSubquery.count}, 0)`,
     })
     .from(event)
     .innerJoin(user, eq(event.createdBy, user.id))
     .innerJoin(tribe, eq(event.tribeId, tribe.id))
+    .leftJoin(attendeeCountSubquery, eq(event.id, attendeeCountSubquery.eventId))
     .$dynamic();
 
   const conditions = options?.status
@@ -205,7 +219,39 @@ export async function getTribeEvents(
     query = query.offset(options.offset);
   }
 
-  return query as Promise<EventWithCreator[]>;
+  const events = await query;
+
+  // If userId provided, check user attendance for each event
+  if (options?.userId) {
+    const eventIds = events.map((e) => e.id);
+    if (eventIds.length > 0) {
+      const userAttendances = await db
+        .select({
+          eventId: eventAttendee.eventId,
+        })
+        .from(eventAttendee)
+        .where(
+          and(
+            inArray(eventAttendee.eventId, eventIds),
+            eq(eventAttendee.userId, options.userId)
+          )
+        );
+
+      const attendingEventIds = new Set(userAttendances.map((a) => a.eventId));
+
+      return events.map((event) => ({
+        ...event,
+        attendees: [], // Empty array for list view
+        isUserAttending: attendingEventIds.has(event.id),
+      })) as EventWithDetails[];
+    }
+  }
+
+  return events.map((event) => ({
+    ...event,
+    attendees: [], // Empty array for list view
+    isUserAttending: undefined,
+  })) as EventWithDetails[];
 }
 
 /**

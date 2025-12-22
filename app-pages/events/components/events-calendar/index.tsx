@@ -1,29 +1,32 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Calendar } from '@/components/ui/calendar'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { EventsCalendarSkeleton } from './loading'
+import { useTribeEvents } from '@/lib/hooks/use-events'
 
 interface EventsCalendarProps {
   tribeId: string
-  eventDates?: Date[]
 }
 
 /**
  * Events Calendar Section
  *
- * Displays a calendar with highlighted dates that have events
- *
- * TODO: Replace eventDates prop with real data from API:
- * const { data: events } = useQuery(tribeEventsOptions(tribeId))
- * const eventDates = useMemo(() => events?.map(e => new Date(e.startDate)), [events])
+ * Displays a calendar with highlighted dates that have events.
+ * Fetches upcoming events and marks their start dates on the calendar.
  */
-export function EventsCalendar({ tribeId, eventDates = [] }: EventsCalendarProps) {
+export function EventsCalendar({ tribeId }: EventsCalendarProps) {
   const [date, setDate] = useState<Date | undefined>(new Date())
 
-  // Mock loading state (for demonstration)
-  const isLoading = false
+  // Fetch upcoming events to get event dates
+  const { data: events, isLoading } = useTribeEvents(tribeId, { status: 'upcoming' })
+
+  // Extract event dates for calendar highlighting
+  const eventDates = useMemo(() => {
+    if (!events) return []
+    return events.map(event => new Date(event.startDate))
+  }, [events])
 
   // Loading state
   if (isLoading) return <EventsCalendarSkeleton />

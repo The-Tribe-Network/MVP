@@ -4,16 +4,16 @@ import { format } from "date-fns"
 import { Check, Vote } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import type { CreateEventInput } from "@/lib/validations/event"
-import type { PollData } from "./poll-step"
+import type { CreateEventWithPollInput } from "@/lib/validations/event"
 
 interface ReviewStepProps {
-  formData: CreateEventInput
-  poll: PollData | null
-  includePoll: boolean
+  formData: CreateEventWithPollInput
 }
 
-export function ReviewStep({ formData, poll, includePoll }: ReviewStepProps) {
+export function ReviewStep({ formData }: ReviewStepProps) {
+  const poll = formData.poll
+  const includePoll = poll !== null && poll !== undefined
+
   return (
     <Card>
       <CardHeader>
@@ -83,14 +83,14 @@ export function ReviewStep({ formData, poll, includePoll }: ReviewStepProps) {
             <h3 className="text-sm font-medium text-muted-foreground mb-1">
               Poll
             </h3>
-            {includePoll && poll && poll.question.trim() ? (
+            {includePoll && poll.question?.trim() ? (
               <div className="p-3 rounded-lg border bg-muted/30 space-y-2">
                 <div className="flex items-center gap-2">
                   <Vote className="h-4 w-4 text-primary" />
                   <p className="text-sm font-medium">{poll.question}</p>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
-                  {poll.options.filter(opt => opt.trim()).map((option, idx) => (
+                  {poll.options?.filter(opt => opt.trim()).map((option, idx) => (
                     <Badge key={idx} variant="secondary" className="text-xs">
                       {option}
                     </Badge>
@@ -99,6 +99,9 @@ export function ReviewStep({ formData, poll, includePoll }: ReviewStepProps) {
                 <div className="flex gap-2 text-xs text-muted-foreground">
                   {poll.allowMultiple && <span>• Multiple choice</span>}
                   {poll.isAnonymous && <span>• Anonymous</span>}
+                  {poll.endsAt && (
+                    <span>• Closes {format(poll.endsAt, "PPP")}</span>
+                  )}
                 </div>
               </div>
             ) : (

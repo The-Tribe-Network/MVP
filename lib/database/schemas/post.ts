@@ -1,6 +1,7 @@
-import { pgTable, text, timestamp, unique, uuid } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, unique, uuid, index } from "drizzle-orm/pg-core";
 import { tribe } from "./tribe";
 import { user } from "./auth";
+import { album } from "./media";
 
 export const post = pgTable("post", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -11,12 +12,16 @@ export const post = pgTable("post", {
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
   content: text("content").notNull(),
+  linkedAlbumId: uuid("linked_album_id")
+    .references(() => album.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .defaultNow()
     .$onUpdate(() => new Date())
     .notNull(),
-});
+}, (table) => ({
+  linkedAlbumIdIdx: index("idx_post_linked_album_id").on(table.linkedAlbumId),
+}));
 
 export const postLike = pgTable("post_like", {
   id: uuid("id").primaryKey().defaultRandom(),

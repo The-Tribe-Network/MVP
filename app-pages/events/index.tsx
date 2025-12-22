@@ -21,14 +21,6 @@ interface EventsPageProps {
  * - State components: Loading, error, empty states
  */
 export default function EventsPage({ tribeId }: EventsPageProps) {
-  // Mock event dates for calendar (will be derived from real data later)
-  const eventDates = [
-    new Date(2024, 6, 15),
-    new Date(2024, 6, 20),
-    new Date(2024, 6, 22),
-    new Date(2024, 6, 28),
-  ]
-
   return (
     <div className="flex h-screen">
       <div className="flex-1">
@@ -45,7 +37,7 @@ export default function EventsPage({ tribeId }: EventsPageProps) {
 
             {/* Right Column - Calendar & Past Events */}
             <div className="lg:col-span-1 space-y-6">
-              <EventsCalendar tribeId={tribeId} eventDates={eventDates} />
+              <EventsCalendar tribeId={tribeId} />
               <PastEvents tribeId={tribeId} />
             </div>
           </div>
