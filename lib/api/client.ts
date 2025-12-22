@@ -3,6 +3,26 @@
  * Used by all API modules for consistent fetch behavior
  */
 
+/**
+ * Get the base URL for API requests
+ * On server-side, we need an absolute URL since there's no browser context
+ */
+function getBaseUrl(): string {
+  // Browser - use relative URL
+  if (typeof window !== 'undefined') {
+    return '';
+  }
+
+  // Server-side - need absolute URL
+  // Check for Vercel deployment
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+
+  // Local development
+  return `http://localhost:${process.env.PORT || 3000}`;
+}
+
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -43,7 +63,8 @@ export async function apiFetch<TResponse>(
   options?: RequestInit
 ): Promise<TResponse> {
   try {
-    const response = await fetch(url, options);
+    const fullUrl = `${getBaseUrl()}${url}`;
+    const response = await fetch(fullUrl, options);
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
@@ -65,6 +86,7 @@ export async function apiFetch<TResponse>(
     if (error instanceof ApiError) {
       throw error;
     }
+    console.error('Network request failed:', error);
     // Network error or other fetch failure
     throw new ApiError(
       'Network request failed',

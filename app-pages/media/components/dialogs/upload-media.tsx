@@ -9,7 +9,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import {
@@ -24,13 +23,16 @@ import { FILE_SIZE_LIMITS } from '@/lib/constants/media'
 import { useTribeAlbums } from '@/lib/hooks/use-albums'
 import { useUploadTribeMedia } from '@/lib/hooks/use-upload'
 import { toast } from 'sonner'
+import { useTribeMediaPageStore } from '../store-provider'
 
-interface MediaUploadDialogProps {
+interface UploadMediaDialogProps {
   tribeId: string
 }
 
-export function MediaUploadDialog({ tribeId }: MediaUploadDialogProps) {
-  const [open, setOpen] = useState(false)
+export default function UploadMediaDialog({ tribeId }: UploadMediaDialogProps) {
+  const closeDialog = useTribeMediaPageStore((s) => s.closeDialog);
+  const isDialogOpen = useTribeMediaPageStore((s) => s.isDialogOpen);
+
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [selectedAlbum, setSelectedAlbum] = useState<string | null>(null)
@@ -87,7 +89,7 @@ export function MediaUploadDialog({ tribeId }: MediaUploadDialogProps) {
       // Success - reset form and close
       handleRemoveFile()
       setSelectedAlbum(null)
-      setOpen(false)
+      closeDialog()
       toast.success('Media uploaded successfully')
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to upload media')
@@ -95,13 +97,7 @@ export function MediaUploadDialog({ tribeId }: MediaUploadDialogProps) {
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline">
-          <Upload className="h-4 w-4 mr-2" />
-          Upload Media
-        </Button>
-      </DialogTrigger>
+    <Dialog open={isDialogOpen} onOpenChange={closeDialog}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Upload Media</DialogTitle>
@@ -109,6 +105,8 @@ export function MediaUploadDialog({ tribeId }: MediaUploadDialogProps) {
             Upload photos to your tribe. You can optionally add them to an album.
           </DialogDescription>
         </DialogHeader>
+
+        {/* Dialog Content */}
         <div className="grid gap-4 py-4">
           {/* Show mutation error */}
           {uploadMedia.error && (
@@ -182,7 +180,7 @@ export function MediaUploadDialog({ tribeId }: MediaUploadDialogProps) {
                 />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">Don't add to album</SelectItem>
+                <SelectItem value="none">General</SelectItem>
                 {albums.map((album) => (
                   <SelectItem key={album.id} value={album.id}>
                     {album.name}
@@ -192,11 +190,13 @@ export function MediaUploadDialog({ tribeId }: MediaUploadDialogProps) {
             </Select>
           </div>
         </div>
+
+        {/* Dialog Footer */}
         <DialogFooter>
           <Button
             type="button"
             variant="outline"
-            onClick={() => setOpen(false)}
+            onClick={() => closeDialog()}
             disabled={uploadMedia.isPending}
           >
             Cancel

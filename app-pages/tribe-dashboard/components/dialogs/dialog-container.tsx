@@ -3,8 +3,8 @@
 import InviteDialogContent from "@/components/dialogs/invite";
 import PhotoMediaDialog from "@/components/dialogs/photo-media";
 import TribeMembersDialog from "@/components/dialogs/tribe-members";
-import { useTribeDashboardStore } from "./providers/store";
-import type { DialogPayload } from "../lib/store";
+import { useTribeDashboardStore } from "../store-provider";
+import type { DialogPayload } from "../../lib/store";
 
 export function TribeDashboardDialogContainer() {
   const isDialogOpen = useTribeDashboardStore((s) => s.isDialogOpen);

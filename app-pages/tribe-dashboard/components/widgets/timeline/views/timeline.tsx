@@ -75,7 +75,7 @@ export default function TimelineContent({ tribeId, onViewChange }: TimelineConte
     return (
       <div className="space-y-2">
         {[...Array(3)].map((_, index) => (
-          <PostCardSkeleton key={index} />
+          <PostCardSkeleton key={`skeleton-${index}`} />
         ))}
       </div>
     )
@@ -106,7 +106,7 @@ export default function TimelineContent({ tribeId, onViewChange }: TimelineConte
             onDelete={handleDelete}
             isDeleting={deletingPostId === post.id}
           />
-          <Separator />
+          <Separator key={`separator-${post.id}`} />
         </>
 
       ))}

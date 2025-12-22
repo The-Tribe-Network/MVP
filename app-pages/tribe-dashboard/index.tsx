@@ -6,8 +6,8 @@ import {
   TimelineWidget,
   trendingWidgetMockData
 } from "@/app-pages/tribe-dashboard/components/widgets";
-import { TribeDashboardStoreProvider } from "@/app-pages/tribe-dashboard/components/providers/store";
-import { TribeDashboardDialogContainer } from "@/app-pages/tribe-dashboard/components/dialog-container";
+import { TribeDashboardStoreProvider } from "@/app-pages/tribe-dashboard/components/store-provider";
+import { TribeDashboardDialogContainer } from "@/app-pages/tribe-dashboard/components/dialogs/dialog-container";
 
 interface TribeDashboardPageProps {
   tribeId: string;

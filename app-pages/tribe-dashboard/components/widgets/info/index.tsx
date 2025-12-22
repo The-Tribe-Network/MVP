@@ -8,7 +8,7 @@ import { useTribe } from "@/lib/hooks/use-tribes";
 import TribeLocation from "./tribe-location";
 import { TribeInfoWidgetSkeleton } from "./tribe-info-widget-skeleton";
 import { TribeInfoWidgetError } from "./tribe-info-widget-error";
-import { useTribeDashboardStore } from "../../providers/store";
+import { useTribeDashboardStore } from "../../store-provider";
 import { useQuery } from "@tanstack/react-query";
 import { tribeDetailOptions } from "@/lib/query-options";
 

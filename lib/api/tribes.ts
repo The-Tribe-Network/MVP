@@ -52,6 +52,15 @@ export async function fetchUserTribes(): Promise<UserTribeListItem[]> {
 }
 
 /**
+ * Check if the current user is a member of a tribe
+ * @param tribeId - The ID of the tribe to check membership for
+ * @returns True if the current user is a member of the tribe, false otherwise
+ */
+export async function checkTribeMembership(tribeId: string): Promise<boolean> {
+  return apiFetch<boolean>(`${API_BASE}/${tribeId}/members/membership`);
+};
+
+/**
  * Fetch a single tribe by ID with full details
  */
 export async function fetchTribeById(id: string): Promise<TribeWithMembers> {

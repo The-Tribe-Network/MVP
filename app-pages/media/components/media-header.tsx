@@ -1,10 +1,7 @@
-'use client'
-
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, Plus } from 'lucide-react'
-import { CreateAlbumDialog } from './create-album-dialog'
-import { MediaUploadDialog } from './media-upload-dialog'
 import Link from 'next/link'
+import UploadMediaBtn from './upload-media-btn'
 
 interface MediaHeaderProps {
   tribeId: string
@@ -22,14 +19,13 @@ export function MediaHeader({ tribeId }: MediaHeaderProps) {
 
       <div className="flex gap-2">
         {/* No callbacks needed - hooks handle invalidation */}
-        <MediaUploadDialog tribeId={tribeId} />
+        <UploadMediaBtn tribeId={tribeId} />
         <Link href={`/tribe/${tribeId}/media/album/new`}>
           <Button className="bg-primary hover:bg-primary/90">
             <Plus className="h-4 w-4 mr-2" />
             Create Album
           </Button>
         </Link>
-        {/* <CreateAlbumDialog tribeId={tribeId} /> */}
       </div>
     </div>
   )
