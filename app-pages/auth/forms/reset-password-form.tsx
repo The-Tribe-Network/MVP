@@ -4,7 +4,7 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { useToast } from "@/components/ui/use-toast"
+import { toast } from "sonner"
 import { authClient } from "@/lib/clients/auth-client"
 import { resetPasswordSchema } from "@/lib/validations/auth"
 import { useFormValidation } from "@/lib/hooks/use-form-validation"
@@ -23,7 +23,6 @@ export function ResetPasswordForm() {
     confirmPassword: "",
     token: "",
   })
-  const { toast } = useToast()
   const searchParams = useSearchParams()
   const token = searchParams.get("token")
 
@@ -38,33 +37,26 @@ export function ResetPasswordForm() {
         })
 
         if (result.error) {
-          toast({
-            title: "Error",
+          toast.error("Error", {
             description: result.error.message || "Failed to reset password. Please try again.",
-            variant: "destructive",
           })
         } else {
           setIsPasswordReset(true)
-          toast({
-            title: "Success",
+          toast.success("Success", {
             description: "Your password has been reset successfully.",
           })
         }
       } catch (error) {
-        toast({
-          title: "Error",
+        toast.error("Error", {
           description: "Failed to reset password. Please try again.",
-          variant: "destructive",
         })
       } finally {
         setIsLoading(false)
       }
     },
     onValidationError: () => {
-      toast({
-        title: "Validation Error",
+      toast.error("Validation Error", {
         description: "Please fix the errors below and try again.",
-        variant: "destructive",
       })
     },
   })

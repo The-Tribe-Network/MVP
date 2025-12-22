@@ -1,86 +1,75 @@
-"use client"
+'use client'
 
-import { useState, useEffect } from "react"
-import { AlbumHeader } from "./album-header"
-import { PhotoGrid } from "./photo-grid"
-import { PhotoCarouselModal } from "./photo-carousel-modal"
-import { Loader2 } from "lucide-react"
-import type { AlbumWithMedia } from "@/lib/database/types"
+import { useQuery } from '@tanstack/react-query';
+import { albumDetailOptions } from '@/lib/query-options';
+import { AlbumHeader } from './components/album-header';
+import { AlbumHeaderSkeleton } from './components/album-header/loading';
+import { PhotoGrid } from './components/photo-grid';
+import { PhotoGridSkeleton } from './components/photo-grid/loading';
+import { PhotoGridEmpty } from './components/photo-grid/empty';
+import { PhotoGridError } from './components/photo-grid/error';
+import { transformAlbumMediaToPhotos } from './lib/utils';
 
-interface AlbumDetailClientProps {
-  tribeId: string
-  albumId: string
+interface AlbumPageProps {
+  tribeId: string;
+  albumId: string;
 }
 
-export function AlbumDetailClient({ tribeId, albumId }: AlbumDetailClientProps) {
-  const [isOpen, setIsOpen] = useState(false)
-  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0)
-  const [album, setAlbum] = useState<AlbumWithMedia | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-
-  useEffect(() => {
-    fetchAlbum()
-  }, [tribeId, albumId])
-
-  const fetchAlbum = async () => {
-    try {
-      const response = await fetch(`/api/tribes/${tribeId}/albums/${albumId}`)
-      if (response.ok) {
-        const data = await response.json()
-        setAlbum(data.album)
-      }
-    } catch (err) {
-      console.error('Failed to fetch album:', err)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const openPhoto = (index: number) => {
-    setCurrentPhotoIndex(index)
-    setIsOpen(true)
-  }
+export default function AlbumPage({ tribeId, albumId }: AlbumPageProps) {
+  const {
+    data: album,
+    isLoading,
+    isError,
+    error,
+    refetch
+  } = useQuery(albumDetailOptions(tribeId, albumId));
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto px-4 py-8 mt-16">
+          <AlbumHeaderSkeleton />
+          <PhotoGridSkeleton />
+        </div>
       </div>
-    )
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto px-4 py-8 mt-16">
+          <PhotoGridError
+            message={error?.message}
+            onRetry={() => refetch()}
+          />
+        </div>
+      </div>
+    );
   }
 
   if (!album) {
     return (
-      <div className="text-center py-12">
-        <p className="text-gray-500">Album not found</p>
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto px-4 py-8 mt-16">
+          <PhotoGridError message="Album not found" />
+        </div>
       </div>
-    )
+    );
   }
 
-  const photos = album.media?.map((media) => ({
-    id: media.id,
-    url: media.fileUrl,
-    caption: media.altText || '',
-    likes: 0, // TODO: Add likeCount to media query in getAlbumById
-    comments: 0, // TODO: Add commentCount to media
-    date: new Date(media.createdAt).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    }),
-  })) || []
+  const photos = transformAlbumMediaToPhotos(album);
 
   return (
-    <>
-      <AlbumHeader album={album} />
-      <PhotoGrid photos={photos} onPhotoClick={openPhoto} />
-
-      <PhotoCarouselModal
-        isOpen={isOpen}
-        onOpenChange={setIsOpen}
-        photos={photos}
-        currentPhotoIndex={currentPhotoIndex}
-      />
-    </>
-  )
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto px-4 py-8 mt-16">
+        <AlbumHeader album={album} />
+        {photos.length === 0 ? (
+          <PhotoGridEmpty />
+        ) : (
+          <PhotoGrid photos={photos} />
+        )}
+      </div>
+    </div>
+  );
 }

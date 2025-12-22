@@ -50,12 +50,14 @@ export const queryKeys = {
   albums: {
     all: ["albums"] as const,
     tribe: (tribeId: string) => ["albums", "tribe", tribeId] as const,
+    detail: (tribeId: string, albumId: string) => ["albums", "detail", tribeId, albumId] as const,
   },
 
   // Media queries
   media: {
     all: ["media"] as const,
     tribes: () => ["media", "tribes"] as const,
+    detail: (mediaId: string) => ["media", "detail", mediaId] as const,
     tribe: (tribeId: string, filters?: Record<string, unknown>) =>
       ["media", "tribes", tribeId, filters] as const,
   },
@@ -93,6 +95,14 @@ export const queryKeys = {
     events: () => ["polls", "events"] as const,
     event: (eventId: string) => ["polls", "events", eventId] as const,
     detail: (pollId: string) => ["polls", "detail", pollId] as const,
+  },
+
+  // Discover queries
+  discover: {
+    all: ["discover"] as const,
+    tribes: (filters?: Record<string, unknown>) =>
+      ["discover", "tribes", filters] as const,
+    featured: () => ["discover", "featured"] as const,
   },
 } as const;
 

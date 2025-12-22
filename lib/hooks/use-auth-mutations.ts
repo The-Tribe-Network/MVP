@@ -2,42 +2,32 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { signIn, signUp, forgetPassword, resetPassword, signOut } from "@/lib/clients/auth-client"
-import { useAuth } from "@/lib/providers/auth-provider"
 import { useRouter } from "next/navigation"
-import { toast } from "@/components/ui/use-toast"
+import { toast } from "sonner"
 import { AUTH_MESSAGES } from "@/lib/constants/auth"
+import { queryKeys } from "../constants/query-keys"
 
 export function useSignInMutation() {
   const router = useRouter()
-  const { setUser, setError, clearError } = useAuth()
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: async (data: { email: string; password: string }) => {
-      clearError()
       const result = await signIn.email(data)
       if (result.error) {
         throw new Error(result.error.message)
       }
-      return result
+      return result.data
     },
     onSuccess: (data) => {
-      if (data.data?.user) {
-        setUser(data.data.user)
-        queryClient.invalidateQueries({ queryKey: ["auth", "session"] })
-        toast({
-          title: "Success",
-          description: AUTH_MESSAGES.SUCCESS.SIGN_IN,
-        })
-        router.push("/dashboard")
-      }
+      // Optimistically set the session in cache
+      queryClient.setQueryData(queryKeys.auth.user(), data.user ?? undefined);
+      toast.success("Signed in successfully")
+      router.push("/dashboard")
     },
     onError: (error: Error) => {
-      setError(error.message)
-      toast({
-        title: "Error",
+      toast.error("Sign in failed", {
         description: error.message,
-        variant: "destructive",
       })
     },
   })
@@ -45,7 +35,6 @@ export function useSignInMutation() {
 
 export function useSignUpMutation() {
   const router = useRouter()
-  const { setUser, setError, clearError } = useAuth()
   const queryClient = useQueryClient()
 
   return useMutation({
@@ -55,41 +44,32 @@ export function useSignUpMutation() {
       password: string
       birthday: string
     }) => {
-      clearError()
       const result = await signUp.email(data)
       if (result.error) {
         throw new Error(result.error.message)
       }
       return result
     },
-    onSuccess: (data) => {
-      if (data.data?.user) {
-        setUser(data.data.user)
+    onSuccess: ({ data: { user }}) => {
+      if (user) {
         queryClient.invalidateQueries({ queryKey: ["auth", "session"] })
-        toast({
-          title: "Success",
+        toast.success("Signed up successfully", {
           description: AUTH_MESSAGES.SUCCESS.SIGN_UP,
         })
         router.push("/dashboard")
       }
     },
     onError: (error: Error) => {
-      setError(error.message)
-      toast({
-        title: "Error",
+      toast.error('Error', {
         description: error.message,
-        variant: "destructive",
       })
     },
   })
 }
 
 export function useForgotPasswordMutation() {
-  const { setError, clearError } = useAuth()
-
   return useMutation({
     mutationFn: async (data: { email: string }) => {
-      clearError()
       const result = await forgetPassword(data)
       if (result.error) {
         throw new Error(result.error.message)
@@ -97,17 +77,13 @@ export function useForgotPasswordMutation() {
       return result
     },
     onSuccess: () => {
-      toast({
-        title: "Success",
+      toast.success("Password reset email sent", {
         description: AUTH_MESSAGES.SUCCESS.PASSWORD_RESET_EMAIL,
       })
     },
     onError: (error: Error) => {
-      setError(error.message)
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: error.message,
-        variant: "destructive",
       })
     },
   })
@@ -115,11 +91,9 @@ export function useForgotPasswordMutation() {
 
 export function useResetPasswordMutation() {
   const router = useRouter()
-  const { setError, clearError } = useAuth()
 
   return useMutation({
     mutationFn: async (data: { password: string; token: string }) => {
-      clearError()
       const result = await resetPassword({
         newPassword: data.password,
         token: data.token,
@@ -130,18 +104,14 @@ export function useResetPasswordMutation() {
       return result
     },
     onSuccess: () => {
-      toast({
-        title: "Success",
+      toast.success("Password reset successfully", {
         description: AUTH_MESSAGES.SUCCESS.PASSWORD_RESET,
       })
       router.push("/sign-in")
     },
     onError: (error: Error) => {
-      setError(error.message)
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: error.message,
-        variant: "destructive",
       })
     },
   })
@@ -149,7 +119,6 @@ export function useResetPasswordMutation() {
 
 export function useSignOutMutation() {
   const router = useRouter()
-  const { reset } = useAuth()
   const queryClient = useQueryClient()
 
   return useMutation({
@@ -157,19 +126,15 @@ export function useSignOutMutation() {
       await signOut()
     },
     onSuccess: () => {
-      reset()
       queryClient.clear()
-      toast({
-        title: "Success",
+      toast.success("Signed out successfully", {
         description: AUTH_MESSAGES.SUCCESS.SIGN_OUT,
       })
       router.push("/")
     },
     onError: (error: Error) => {
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: "Failed to sign out. Please try again.",
-        variant: "destructive",
       })
     },
   })

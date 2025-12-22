@@ -1,64 +1,30 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { PostWithAuthor, PostWithStats } from "@/lib/database/types";
+import type { PostWithStats } from "@/lib/database/types";
 import { queryKeys } from "@/lib/constants/query-keys";
-
-const API_BASE = "/api/tribes";
-
-type CreatePostInput = {
-  content: string;
-  addToAlbum: boolean;
-  mediaId?: string | null;
-  albumId?: string | null;
-};
-
-type UpdatePostInput = {
-  content: string;
-};
+import { tribePostsOptions, postDetailOptions } from "@/lib/query-options/posts";
+import {
+  createPost,
+  updatePost,
+  deletePost,
+  togglePostLike,
+  type CreatePostParams,
+  type UpdatePostParams,
+} from "@/lib/api/posts";
 
 /**
  * Fetch posts for a tribe
  */
 export function useTribePosts(tribeId: string, options?: { limit?: number; offset?: number }) {
-  return useQuery<PostWithStats[]>({
-    queryKey: queryKeys.posts.tribe(tribeId),
-    queryFn: async () => {
-      const params = new URLSearchParams();
-      if (options?.limit) params.set("limit", options.limit.toString());
-      if (options?.offset) params.set("offset", options.offset.toString());
-
-      const response = await fetch(
-        `${API_BASE}/${tribeId}/posts${params.toString() ? `?${params.toString()}` : ''}`
-      );
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to fetch posts");
-      }
-
-      return response.json();
-    },
-  });
+  return useQuery(tribePostsOptions(tribeId, options));
 }
 
 /**
  * Fetch a single post by ID
  */
 export function usePost(tribeId: string, postId: string) {
-  return useQuery<PostWithStats>({
-    queryKey: queryKeys.posts.detail(postId),
-    queryFn: async () => {
-      const response = await fetch(`${API_BASE}/${tribeId}/posts/${postId}`);
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to fetch post");
-      }
-
-      return response.json();
-    },
-  });
+  return useQuery(postDetailOptions(tribeId, postId));
 }
 
 /**
@@ -68,33 +34,7 @@ export function useCreatePost() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
-      tribeId,
-      data,
-    }: {
-      tribeId: string;
-      data: CreatePostInput;
-    }): Promise<PostWithAuthor> => {
-      const response = await fetch(`${API_BASE}/${tribeId}/posts`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          content: data.content,
-          mediaId: data.mediaId || null,
-          albumId: data.albumId || null,
-          addToAlbum: data.addToAlbum,
-        }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to create post");
-      }
-
-      return response.json();
-    },
+    mutationFn: (params: CreatePostParams) => createPost(params),
     onSuccess: (_, variables) => {
       // Invalidate tribe posts query
       queryClient.invalidateQueries({
@@ -111,30 +51,7 @@ export function useUpdatePost() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
-      tribeId,
-      postId,
-      data,
-    }: {
-      tribeId: string;
-      postId: string;
-      data: UpdatePostInput;
-    }): Promise<PostWithAuthor> => {
-      const response = await fetch(`${API_BASE}/${tribeId}/posts/${postId}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to update post");
-      }
-
-      return response.json();
-    },
+    mutationFn: (params: UpdatePostParams) => updatePost(params),
     onSuccess: (_, variables) => {
       // Invalidate tribe posts query and post detail query
       queryClient.invalidateQueries({
@@ -154,22 +71,8 @@ export function useDeletePost() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
-      tribeId,
-      postId,
-    }: {
-      tribeId: string;
-      postId: string;
-    }): Promise<void> => {
-      const response = await fetch(`${API_BASE}/${tribeId}/posts/${postId}`, {
-        method: "DELETE",
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to delete post");
-      }
-    },
+    mutationFn: (params: { tribeId: string; postId: string }) =>
+      deletePost(params.tribeId, params.postId),
     onSuccess: (_, variables) => {
       // Invalidate tribe posts query and post detail query
       queryClient.invalidateQueries({
@@ -183,30 +86,14 @@ export function useDeletePost() {
 }
 
 /**
- * Like or unlike a post
+ * Like or unlike a post with optimistic updates
  */
 export function useLikePost() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
-      tribeId,
-      postId,
-    }: {
-      tribeId: string;
-      postId: string;
-    }): Promise<{ isLiked: boolean }> => {
-      const response = await fetch(`${API_BASE}/${tribeId}/posts/${postId}/like`, {
-        method: "POST",
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to toggle like");
-      }
-
-      return response.json();
-    },
+    mutationFn: (params: { tribeId: string; postId: string }) =>
+      togglePostLike(params.tribeId, params.postId),
     onMutate: async (variables) => {
       // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: queryKeys.posts.tribe(variables.tribeId) });

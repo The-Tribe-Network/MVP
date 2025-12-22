@@ -3,7 +3,7 @@
 import type React from "react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { useToast } from "@/components/ui/use-toast"
+import { toast } from "sonner"
 import { authClient } from "@/lib/clients/auth-client"
 import { forgotPasswordSchema, type ForgotPasswordFormData } from "@/lib/validations/auth"
 import { useFormValidation } from "@/lib/hooks/use-form-validation"
@@ -14,7 +14,6 @@ export function ForgotPasswordForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [isEmailSent, setIsEmailSent] = useState(false)
   const [formData, setFormData] = useState<ForgotPasswordFormData>({ email: "" })
-  const { toast } = useToast()
 
   const { errors, validate, clearErrors } = useFormValidation({
     schema: forgotPasswordSchema,
@@ -27,33 +26,26 @@ export function ForgotPasswordForm() {
         })
 
         if (result.error) {
-          toast({
-            title: "Error",
+          toast.error("Error", {
             description: result.error.message || "Failed to send reset email. Please try again.",
-            variant: "destructive",
           })
         } else {
           setIsEmailSent(true)
-          toast({
-            title: "Email sent",
+          toast.success("Email sent", {
             description: "Check your email for password reset instructions.",
           })
         }
       } catch (error) {
-        toast({
-          title: "Error",
+        toast.error("Error", {
           description: "Failed to send reset email. Please try again.",
-          variant: "destructive",
         })
       } finally {
         setIsLoading(false)
       }
     },
     onValidationError: () => {
-      toast({
-        title: "Validation Error",
+      toast.error("Validation Error", {
         description: "Please enter a valid email address.",
-        variant: "destructive",
       })
     },
   })

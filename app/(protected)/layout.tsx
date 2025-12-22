@@ -4,6 +4,7 @@ import { requireAuth } from "@/lib/services/auth";
 import { ToastProvider } from "@/lib/providers/toast-provider";
 import { TribeDashboardToolbar } from "@/components/tribe-dashboard-toolbar";
 import { ProfileCompletionGuard } from "@/components/profile-completion-guard";
+import { GlobalDialogContainer } from "@/components/dialogs/global-dialog-container";
 
 export default async function ProtectedLayout({
   children,
@@ -29,6 +30,7 @@ export default async function ProtectedLayout({
             <div className="container mx-auto px-4 pt-6 min-h-[calc(100vh-64px)] h-full">
               {children}
             </div>
+            <GlobalDialogContainer />
           </ToastProvider>
         </SidebarInset>
       </SidebarProvider>

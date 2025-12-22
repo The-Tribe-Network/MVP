@@ -1,14 +1,14 @@
 import { Dialog, DialogContent } from "../ui/dialog";
 
-interface PhotoMediaDialogProps extends React.ComponentProps<typeof Dialog> {
+interface PhotoMediaDialogProps {
+  imageUrl: string;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  imageUrl: string;
-};
+}
 
-export default function PhotoMediaDialog({ isOpen, onOpenChange, imageUrl, ...props }: PhotoMediaDialogProps) {
+export default function PhotoMediaDialog({ imageUrl, isOpen, onOpenChange }: PhotoMediaDialogProps) {
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange} {...props} >
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent
         className="max-w-[95vw] sm:max-w-[90vw] lg:max-w-[85vw] max-h-[95vh] w-[95vw] sm:w-[90vw] lg:w-auto h-auto p-4 flex items-center justify-center"
         showCloseButton={true}

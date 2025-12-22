@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react"
 import { useSearchParams, useRouter, usePathname } from "next/navigation"
-import { toast } from "@/components/ui/use-toast"
+import { toast } from "sonner"
 
 /**
  * Toast code definitions
@@ -12,57 +12,57 @@ const TOAST_CODES = {
   OAUTH_SUCCESS: {
     title: "Success",
     description: "You have been signed in successfully with OAuth.",
-    variant: "default" as const,
+    type: "success" as const,
   },
   SIGN_IN_SUCCESS: {
     title: "Success",
     description: "You have been signed in successfully.",
-    variant: "default" as const,
+    type: "success" as const,
   },
   SIGN_UP_SUCCESS: {
     title: "Success",
     description: "Your account has been created successfully.",
-    variant: "default" as const,
+    type: "success" as const,
   },
   PASSWORD_RESET_SUCCESS: {
     title: "Success",
     description: "Your password has been reset successfully.",
-    variant: "default" as const,
+    type: "success" as const,
   },
   PASSWORD_RESET_LINK_SENT: {
     title: "Success",
     description: "Password reset link has been sent to your email.",
-    variant: "default" as const,
+    type: "success" as const,
   },
   EMAIL_VERIFIED: {
     title: "Success",
     description: "Your email has been verified successfully.",
-    variant: "default" as const,
+    type: "success" as const,
   },
   GENERIC_ERROR: {
     title: "Error",
     description: "Something went wrong. Please try again.",
-    variant: "destructive" as const,
+    type: "error" as const,
   },
   UNAUTHORIZED: {
     title: "Unauthorized",
     description: "You don't have permission to access this resource.",
-    variant: "destructive" as const,
+    type: "error" as const,
   },
   UNAUTHORIZED_TRIBE_ACCESS: {
     title: "Unauthorized",
     description: "You don't have permission to access this tribe.",
-    variant: "destructive" as const,
+    type: "error" as const,
   },
   SESSION_EXPIRED: {
     title: "Session Expired",
     description: "Your session has expired. Please sign in again.",
-    variant: "destructive" as const,
+    type: "error" as const,
   },
   TRIBE_NOT_FOUND: {
     title: "Tribe Not Found",
     description: "The tribe you are looking for does not exist.",
-    variant: "destructive" as const,
+    type: "error" as const,
   },
 } as const
 
@@ -100,11 +100,15 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       const toastConfig = TOAST_CODES[toastCode]
 
       if (toastConfig) {
-        toast({
-          title: toastConfig.title,
-          description: toastConfig.description,
-          variant: toastConfig.variant,
-        })
+        if (toastConfig.type === "success") {
+          toast.success(toastConfig.title, {
+            description: toastConfig.description,
+          })
+        } else {
+          toast.error(toastConfig.title, {
+            description: toastConfig.description,
+          })
+        }
 
         // Clean up the URL by removing the toast_code parameter
         const newSearchParams = new URLSearchParams(searchParams.toString())

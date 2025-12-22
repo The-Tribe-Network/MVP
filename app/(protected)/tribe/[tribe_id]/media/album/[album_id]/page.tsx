@@ -1,12 +1,21 @@
-import { AlbumDetailClient } from "@/app-pages/album"
-import { notFound } from "next/navigation"
+import {
+  HydrationBoundary,
+  QueryClient,
+  dehydrate,
+} from '@tanstack/react-query';
 
-export default async function AlbumPage({ params }: PageProps<'/tribe/[tribe_id]/media/album/[album_id]'>) {
-  const { tribe_id, album_id } = await params
+import { albumDetailOptions } from '@/lib/query-options';
+import AlbumPage from '@/app-pages/album';
 
-  if (!tribe_id || !album_id) {
-    notFound()
-  }
+export default async function Page({ params }: PageProps<'/tribe/[tribe_id]/albums/[album_id]'>) {
+  const { tribe_id, album_id } = await params;
 
-  return <AlbumDetailClient tribeId={tribe_id} albumId={album_id} />
+  const queryClient = new QueryClient();
+  await queryClient.prefetchQuery(albumDetailOptions(tribe_id, album_id));
+
+  return (
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <AlbumPage tribeId={tribe_id} albumId={album_id} />
+    </HydrationBoundary>
+  );
 }

@@ -17,10 +17,10 @@ import {
 import { Heart, MessageCircle, Share2, Loader2, MoreVertical, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
-import { useAuth } from '@/lib/providers/auth-provider'
 import PhotoMediaDialog from './dialogs/photo-media'
 import { usePathname } from 'next/navigation'
 import type { PostWithStats } from '@/lib/database/types'
+import { useAuthUser } from '@/lib/hooks/use-auth'
 
 export interface PostCardProps {
   post: PostWithStats
@@ -60,7 +60,7 @@ export default function PostCard({
 }: PostCardProps) {
   const [isImageDialogOpen, setIsImageDialogOpen] = useState(false)
   const pathname = usePathname();
-  const { user } = useAuth()
+  const { user } = useAuthUser()
 
   // Check if current user is the author (by ID comparison)
   const isAuthor = user && post.author.id && user.id === post.author.id

@@ -5,15 +5,13 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { useSignInMutation } from "@/lib/hooks/use-auth-mutations"
-import { useAuth } from "@/lib/providers/auth-provider"
 import { signInSchema, type SignInFormData } from "@/lib/validations/auth"
 import { useFormValidation } from "@/lib/hooks/use-form-validation"
 import { FormField } from "./form-field"
 import { OAuthSection } from "./oauth-section"
 
 export function SignInForm() {
-  const signInMutation = useSignInMutation()
-  const { error, clearError } = useAuth()
+  const { mutate: signIn, isPending, error } = useSignInMutation()
 
   const [formData, setFormData] = useState<SignInFormData>({
     email: "",
@@ -23,7 +21,7 @@ export function SignInForm() {
   const { errors, validate, clearErrors } = useFormValidation({
     schema: signInSchema,
     onValidationSuccess: (data) => {
-      signInMutation.mutate({
+      signIn({
         email: data.email,
         password: data.password,
       })
@@ -33,13 +31,12 @@ export function SignInForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     clearErrors()
-    clearError()
     validate(formData)
   }
 
   return (
     <div className="space-y-4">
-      <OAuthSection disabled={signInMutation.isPending} />
+      <OAuthSection disabled={isPending} />
 
       {/* Email/Password Form */}
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -71,10 +68,10 @@ export function SignInForm() {
           </Link>
         </div>
 
-        {error && <div className="text-sm text-destructive bg-destructive/10 p-3 rounded-md">{error}</div>}
+        {error && <div className="text-sm text-destructive bg-destructive/10 p-3 rounded-md">{error.message}</div>}
 
-        <Button type="submit" className="w-full" disabled={signInMutation.isPending}>
-          {signInMutation.isPending ? "Signing in..." : "Sign in"}
+        <Button type="submit" className="w-full" disabled={isPending}>
+          {isPending ? "Signing in..." : "Sign in"}
         </Button>
       </form>
     </div>
