@@ -1,10 +1,10 @@
-import { Search, Filter } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { Search, Filter } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 interface SearchFilterSectionProps {
-  searchQuery: string
-  onSearchChange: (value: string) => void
+  searchQuery: string;
+  onSearchChange: (value: string) => void;
 }
 
 export function SearchFilterSection({ searchQuery, onSearchChange }: SearchFilterSectionProps) {
@@ -24,6 +24,6 @@ export function SearchFilterSection({ searchQuery, onSearchChange }: SearchFilte
         Filters
       </Button>
     </div>
-  )
+  );
 }
 

@@ -1,27 +1,14 @@
-import { MapPin, Users, Lock, Globe, TrendingUp, Sparkles } from 'lucide-react'
-import { getLocationDisplayName } from '@/lib/utils/location'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-
-// Local UI type for discover page tribe cards
-interface Tribe {
-  id: string
-  name: string
-  description: string
-  avatar: string
-  memberCount: number
-  location: string
-  isPublic: boolean
-  category: string
-  trending?: boolean
-  featured?: boolean
-}
+import { MapPin, Users, Lock, Globe, TrendingUp, Sparkles } from 'lucide-react';
+import { getLocationDisplayName } from '@/lib/utils/location';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import type { DiscoverTribe } from '@/app-pages/discover/lib/types';
 
 interface TribeCardProps {
-  tribe: Tribe
-  featured?: boolean
+  tribe: DiscoverTribe;
+  featured?: boolean;
 }
 
 export function TribeCard({ tribe, featured = false }: TribeCardProps) {
@@ -87,6 +74,6 @@ export function TribeCard({ tribe, featured = false }: TribeCardProps) {
         </Button>
       </CardFooter>
     </Card>
-  )
+  );
 }
 
