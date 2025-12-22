@@ -14,9 +14,10 @@ import {
  * Query options for fetching tribes for discovery
  */
 export function discoverTribesOptions(params: DiscoverTribesParams = {}) {
+  const normalizedParams = Object.fromEntries(Object.entries(params).filter(([_, v]) => v !== undefined));
   return queryOptions({
-    queryKey: queryKeys.discover.tribes(params),
-    queryFn: () => fetchDiscoverTribes(params),
+    queryKey: queryKeys.discover.tribes(normalizedParams),
+    queryFn: () => fetchDiscoverTribes(normalizedParams),
   });
 }
 

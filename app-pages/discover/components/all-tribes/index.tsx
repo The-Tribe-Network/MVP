@@ -30,7 +30,7 @@ export default function AllTribesSection({ filters }: AllTribesSectionProps) {
 
   if (isLoading) return <AllTribesLoading />;
   if (isError) return <AllTribesError message={error.message} onRetry={() => refetch()} />;
-  if (tribes.length === 0) return <AllTribesEmpty hasFilters={showSearchResults} />;
+  if (tribes.length === 0) return <AllTribesEmpty hasFilters={!!showSearchResults} />;
 
   return (
     <section>

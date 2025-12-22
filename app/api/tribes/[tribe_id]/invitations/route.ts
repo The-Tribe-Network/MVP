@@ -60,7 +60,10 @@ export async function POST(
     const createdInvitations = await createTribeInvitations(
       tribeValidation.data.id,
       tribeData.name,
-      validation.data.invitations,
+      validation.data.invitations.map((invitation) => ({
+        email: invitation.email,
+        role: invitation.role || "member",
+      })),
       user.id,
       inviterName
     );

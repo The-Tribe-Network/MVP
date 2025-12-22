@@ -10,6 +10,7 @@ import { ActivityFeedSkeleton } from './loading'
 import { ActivityFeedEmpty } from './empty'
 import { ActivityFeedError } from './error'
 import { transformActivityData } from '../../lib/utils'
+import { ActivityWithUser } from '@/lib/database/types'
 
 export default function ActivityFeed() {
   const { data: activities, isLoading, error, isError, refetch } = useUserActivities({ limit: 20 })
@@ -27,7 +28,7 @@ export default function ActivityFeed() {
     )
   }
 
-  const transformedActivities = activities?.map(transformActivityData) || []
+  const transformedActivities = activities?.map((activity) => transformActivityData(activity as unknown as ActivityWithUser)) || []
 
   if (transformedActivities.length === 0) {
     return <ActivityFeedEmpty />
