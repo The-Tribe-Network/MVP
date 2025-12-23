@@ -3,13 +3,15 @@
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { UserPlus, Users } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Settings, UserPlus, Users, MoreVertical } from "lucide-react";
 import TribeLocation from "./tribe-location";
 import { TribeInfoWidgetSkeleton } from "./tribe-info-widget-skeleton";
 import { TribeInfoWidgetError } from "./tribe-info-widget-error";
 import { useDialogStore } from "@/lib/stores/dialog-store";
 import { useQuery } from "@tanstack/react-query";
 import { tribeDetailOptions } from "@/lib/query-options";
+import Link from "next/link";
 
 interface TribeInfoWidgetProps {
   tribeId: string;
@@ -38,7 +40,24 @@ export default function TribeInfoWidget({
 
   return (
     <Card>
-      <CardHeader className="text-center pb-3">
+      <CardHeader className="text-center pb-3 relative">
+        <div className="absolute top-0 right-0 mr-2 -mt-3">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem asChild>
+                <Link href={`/tribe/${tribe.id}/settings`}>
+                  <Settings className="h-4 w-4" />
+                  <span>Settings</span>
+                </Link>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
         <div className="flex justify-center mb-4">
           <button
             onClick={() => {
