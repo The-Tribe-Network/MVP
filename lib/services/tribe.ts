@@ -1,9 +1,11 @@
 import { db, getDbTransaction } from "@/lib/database/client";
-import { tribe, tribeMember } from "@/lib/database/schemas/tribe";
+import { tribe, tribeMember, tribeMemberPermission } from "@/lib/database/schemas/tribe";
 import { user } from "@/lib/database/schemas/auth";
 import { media } from "@/lib/database/schemas/media";
-import { eq, count, and } from "drizzle-orm";
+import { eq, count, and, inArray } from "drizzle-orm";
 import type { TribeInsert, TribeWithCreator, TribeWithMembers, Tribe } from "@/lib/database/types";
+import { getMemberWithPermissions } from "./permissions";
+import type { UpdateTribeInput } from "@/lib/validations/tribe";
 
 /**
  * Create a new tribe and add the creator as owner
@@ -203,5 +205,177 @@ export async function leaveTribe(
     .where(and(eq(tribeMember.tribeId, tribeId), eq(tribeMember.userId, userId)));
 
   return { success: true };
+}
+
+/**
+ * Update tribe settings (name, description, avatar, location, category)
+ * Requires canEditTribeSettings permission (owner or admin with permission)
+ * OPTIMIZED: Returns void - query invalidation handles refetching
+ */
+export async function updateTribe(
+  tribeId: string,
+  userId: string,
+  data: UpdateTribeInput
+): Promise<void> {
+  // Check permissions
+  const memberData = await getMemberWithPermissions(tribeId, userId);
+  if (!memberData) {
+    throw new Error("Not a member of this tribe");
+  }
+
+  // Check if user can edit tribe settings
+  const canEdit =
+    memberData.member.role === "owner" ||
+    memberData.permissions?.canEditTribeSettings === true ||
+    (memberData.member.role === "admin" &&
+      memberData.permissions?.canEditTribeSettings !== false);
+
+  if (!canEdit) {
+    throw new Error("No permission to edit tribe settings");
+  }
+
+  // Build update object with only provided fields
+  const updateData: Partial<typeof tribe.$inferInsert> = {};
+  if (data.name !== undefined) updateData.name = data.name;
+  if (data.description !== undefined) updateData.description = data.description || null;
+  if (data.avatar !== undefined) updateData.avatar = data.avatar ?? null;
+  if (data.location !== undefined) updateData.location = data.location || null;
+  if (data.category !== undefined) updateData.category = data.category;
+  if (data.privacy !== undefined) updateData.privacy = data.privacy;
+
+  // Update tribe
+  const [updatedTribe] = await db
+    .update(tribe)
+    .set(updateData)
+    .where(eq(tribe.id, tribeId))
+    .returning();
+
+  if (!updatedTribe) {
+    throw new Error("Tribe not found");
+  }
+
+  // No need to fetch updated tribe - query invalidation will handle refetching
+}
+
+/**
+ * Delete a tribe permanently
+ * Requires canDeleteTribe permission (owner only by default)
+ */
+export async function deleteTribe(tribeId: string, userId: string): Promise<void> {
+  // Check permissions
+  const memberData = await getMemberWithPermissions(tribeId, userId);
+  if (!memberData) {
+    throw new Error("Not a member of this tribe");
+  }
+
+  // Check if user can delete tribe
+  const canDelete =
+    memberData.member.role === "owner" || memberData.permissions?.canDeleteTribe === true;
+
+  if (!canDelete) {
+    throw new Error("No permission to delete tribe");
+  }
+
+  // Delete tribe (cascade will handle related records)
+  await db.delete(tribe).where(eq(tribe.id, tribeId));
+}
+
+/**
+ * Transfer tribe ownership to another member
+ * Requires canTransferOwnership permission (owner only by default)
+ * New owner must be an admin member
+ * OPTIMIZED: Single query for both member checks, returns void - query invalidation handles refetching
+ */
+export async function transferOwnership(
+  tribeId: string,
+  userId: string,
+  newOwnerId: string
+): Promise<void> {
+  // OPTIMIZED: Fetch both members in a single query
+  const members = await db
+    .select({
+      member: tribeMember,
+      permissions: tribeMemberPermission,
+    })
+    .from(tribeMember)
+    .leftJoin(
+      tribeMemberPermission,
+      eq(tribeMemberPermission.tribeMemberId, tribeMember.id)
+    )
+    .where(
+      and(
+        eq(tribeMember.tribeId, tribeId),
+        inArray(tribeMember.userId, [userId, newOwnerId])
+      )
+    );
+
+  // Find current user's member data
+  const memberData = members.find((m) => m.member.userId === userId);
+  if (!memberData) {
+    throw new Error("Not a member of this tribe");
+  }
+
+  // Check if user can transfer ownership
+  const canTransfer =
+    memberData.member.role === "owner" ||
+    memberData.permissions?.canTransferOwnership === true;
+
+  if (!canTransfer) {
+    throw new Error("No permission to transfer ownership");
+  }
+
+  // Find new owner's member data
+  const newOwnerData = members.find((m) => m.member.userId === newOwnerId);
+  if (!newOwnerData) {
+    throw new Error("New owner is not a member of this tribe");
+  }
+
+  if (newOwnerData.member.role !== "admin") {
+    throw new Error("New owner must be an admin member");
+  }
+
+  // Transfer ownership in a transaction
+  const dbTx = getDbTransaction();
+  await dbTx.transaction(async (tx) => {
+    // Update current owner to admin
+    await tx
+      .update(tribeMember)
+      .set({ role: "admin" })
+      .where(
+        and(eq(tribeMember.tribeId, tribeId), eq(tribeMember.userId, userId))
+      );
+
+    // Update new owner to owner
+    await tx
+      .update(tribeMember)
+      .set({ role: "owner" })
+      .where(
+        and(eq(tribeMember.tribeId, tribeId), eq(tribeMember.userId, newOwnerId))
+      );
+
+    // Update tribe createdBy (for consistency)
+    await tx.update(tribe).set({ createdBy: newOwnerId }).where(eq(tribe.id, tribeId));
+  });
+
+  // No need to fetch updated tribe - query invalidation will handle refetching
+}
+
+/**
+ * Get admin members of a tribe (for transfer ownership selection)
+ */
+export async function getTribeAdminMembers(tribeId: string): Promise<Array<{ id: string; name: string; username: string | null; image: string | null }>> {
+  const adminMembers = await db
+    .select({
+      id: user.id,
+      name: user.name,
+      username: user.username,
+      image: user.image,
+    })
+    .from(tribeMember)
+    .innerJoin(user, eq(tribeMember.userId, user.id))
+    .where(and(eq(tribeMember.tribeId, tribeId), eq(tribeMember.role, "admin")))
+    .limit(50);
+
+  return adminMembers;
 }
 

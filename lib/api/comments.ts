@@ -19,9 +19,23 @@ export interface CreateCommentParams {
   parentCommentId?: string;
 }
 
+export interface CreateEventCommentParams {
+  tribeId: string;
+  eventId: string;
+  content: string;
+  parentCommentId?: string;
+}
+
 export interface UpdateCommentParams {
   tribeId: string;
   postId: string;
+  commentId: string;
+  content: string;
+}
+
+export interface UpdateEventCommentParams {
+  tribeId: string;
+  eventId: string;
   commentId: string;
   content: string;
 }
@@ -39,6 +53,18 @@ export async function fetchPostComments(
 ): Promise<CommentWithStats[]> {
   return apiFetch<CommentWithStats[]>(
     `${API_BASE}/${tribeId}/posts/${postId}/comments`
+  );
+}
+
+/**
+ * Fetch comments for an event
+ */
+export async function fetchEventComments(
+  tribeId: string,
+  eventId: string
+): Promise<CommentWithStats[]> {
+  return apiFetch<CommentWithStats[]>(
+    `${API_BASE}/${tribeId}/events/${eventId}/comments`
   );
 }
 
@@ -95,6 +121,54 @@ export async function deleteComment(
 }
 
 /**
+ * Create a new comment on an event
+ */
+export async function createEventComment(
+  params: CreateEventCommentParams
+): Promise<CommentWithAuthor> {
+  const { tribeId, eventId, content, parentCommentId } = params;
+  return apiFetch<CommentWithAuthor>(
+    `${API_BASE}/${tribeId}/events/${eventId}/comments`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content, parentCommentId }),
+    }
+  );
+}
+
+/**
+ * Update an event comment
+ */
+export async function updateEventComment(
+  params: UpdateEventCommentParams
+): Promise<CommentWithAuthor> {
+  const { tribeId, eventId, commentId, content } = params;
+  return apiFetch<CommentWithAuthor>(
+    `${API_BASE}/${tribeId}/events/${eventId}/comments/${commentId}`,
+    {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content }),
+    }
+  );
+}
+
+/**
+ * Delete an event comment
+ */
+export async function deleteEventComment(
+  tribeId: string,
+  eventId: string,
+  commentId: string
+): Promise<void> {
+  return apiFetch<void>(
+    `${API_BASE}/${tribeId}/events/${eventId}/comments/${commentId}`,
+    { method: 'DELETE' }
+  );
+}
+
+/**
  * Toggle like status on a comment
  */
 export async function toggleCommentLike(
@@ -104,6 +178,20 @@ export async function toggleCommentLike(
 ): Promise<{ isLiked: boolean }> {
   return apiFetch<{ isLiked: boolean }>(
     `${API_BASE}/${tribeId}/posts/${postId}/comments/${commentId}/like`,
+    { method: 'POST' }
+  );
+}
+
+/**
+ * Toggle like status on an event comment
+ */
+export async function toggleEventCommentLike(
+  tribeId: string,
+  eventId: string,
+  commentId: string
+): Promise<{ isLiked: boolean }> {
+  return apiFetch<{ isLiked: boolean }>(
+    `${API_BASE}/${tribeId}/events/${eventId}/comments/${commentId}/like`,
     { method: 'POST' }
   );
 }

@@ -52,7 +52,7 @@ export function EventAttachmentsSection({ eventId }: EventAttachmentsSectionProp
   if (isError) {
     return (
       <EventAttachmentsError
-        message={error?.message}
+        message={error?.message as string}
         onRetry={() => console.log('Retry loading attachments')}
       />
     )

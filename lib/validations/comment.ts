@@ -34,11 +34,19 @@ export const tribePostCommentIdParamSchema = z.object({
   comment_id: uuidSchema,
 });
 
+// Combined schema for event comment routes (tribe_id, event_id, comment_id)
+export const tribeEventCommentIdParamSchema = z.object({
+  tribe_id: uuidSchema,
+  event_id: uuidSchema,
+  comment_id: uuidSchema,
+});
+
 // Export types
 export type CreateCommentInput = z.infer<typeof createCommentSchema>;
 export type UpdateCommentInput = z.infer<typeof updateCommentSchema>;
 export type CommentIdParam = z.infer<typeof commentIdParamSchema>;
 export type TribePostCommentIdParam = z.infer<typeof tribePostCommentIdParamSchema>;
+export type TribeEventCommentIdParam = z.infer<typeof tribeEventCommentIdParamSchema>;
 
 // Validation helper for API routes
 export function validateApiRequest<T>(

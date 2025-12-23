@@ -1,15 +1,17 @@
-import { db } from "@/lib/database/client";
+import { db, getDbTransaction } from "@/lib/database/client";
 import { event, eventAttendee } from "@/lib/database/schemas/event";
 import { user } from "@/lib/database/schemas/auth";
 import { tribe } from "@/lib/database/schemas/tribe";
 import { poll, pollOption } from "@/lib/database/schemas/poll";
-import { eq, and, desc, sql, inArray, count } from "drizzle-orm";
+import { activity } from "@/lib/database/schemas/activity";
+import { eq, and, desc, sql, inArray, count, asc } from "drizzle-orm";
 import { createActivity } from "./activity";
 import type {
   EventWithCreator,
   EventWithDetails,
   Poll,
-  Event
+  Event,
+  EventAttendeeWithUser,
 } from "@/lib/database/types";
 
 type CreateEventPollData = {
@@ -36,8 +38,10 @@ export async function createEvent(
     poll?: CreateEventPollData;
   }
 ): Promise<EventWithCreator> {
+  const dbTx = getDbTransaction();
+  
   // Use transaction for event + poll creation
-  return await db.transaction(async (tx) => {
+  return await dbTx.transaction(async (tx) => {
     // 1. Create event
     const [newEvent] = await tx
       .insert(event)
@@ -77,14 +81,20 @@ export async function createEvent(
       await tx.insert(pollOption).values(optionValues);
     }
 
-    // 4. Create activity
-    await createActivity({
+    // 4. Create activity (within transaction)
+    await tx.insert(activity).values({
       type: "event",
       userId,
       tribeId,
       eventId: newEvent.id,
       action: "created",
       preview: newEvent.title,
+    });
+
+    await tx.insert(eventAttendee).values({
+      eventId: newEvent.id,
+      userId,
+      status: "going",
     });
 
     // 5. Fetch event with creator info
@@ -458,4 +468,39 @@ export async function removeMultipleEventAttendees(eventId: string, userIds: str
         inArray(eventAttendee.userId, userIds)
       )
     );
+}
+
+/**
+ * Get all attendees for an event with user details
+ * Ordered by status (going, maybe, not_going) and creation date
+ */
+export async function getEventAttendees(eventId: string): Promise<EventAttendeeWithUser[]> {
+  const attendees = await db
+    .select({
+      id: eventAttendee.id,
+      eventId: eventAttendee.eventId,
+      userId: eventAttendee.userId,
+      status: eventAttendee.status,
+      createdAt: eventAttendee.createdAt,
+      updatedAt: eventAttendee.updatedAt,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        emailVerified: user.emailVerified,
+        image: user.image,
+        username: user.username,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      },
+    })
+    .from(eventAttendee)
+    .innerJoin(user, eq(eventAttendee.userId, user.id))
+    .where(eq(eventAttendee.eventId, eventId))
+    .orderBy(
+      sql`CASE ${eventAttendee.status} WHEN 'going' THEN 1 WHEN 'maybe' THEN 2 WHEN 'not_going' THEN 3 ELSE 4 END`,
+      asc(eventAttendee.createdAt)
+    );
+
+  return attendees as EventAttendeeWithUser[];
 }

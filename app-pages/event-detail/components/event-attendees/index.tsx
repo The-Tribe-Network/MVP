@@ -7,35 +7,30 @@ import { AttendeeAvatar } from './attendee-avatar'
 import { AttendeeList } from './attendee-list'
 import { ViewAllButton } from './view-all-button'
 import { EventAttendeesSkeleton } from './loading'
+import { useEventAttendees, useEventDetail } from '@/lib/hooks/use-events'
 import type { EventAttendee, User } from '@/lib/database/types'
 
 interface EventAttendeesSectionProps {
-  attendees: (EventAttendee & { user: User })[]
-  attendeeCount: number
+  tribeId: string
   eventId: string
-  isLoading?: boolean
 }
 
 /**
  * Event Attendees Section
  *
  * Displays list of event attendees grouped by status (going/maybe)
- *
- * TODO: If needed, connect to real API for dynamic attendee list:
- * const { data: attendees, isLoading } = useQuery(eventAttendeesOptions(eventId))
  */
-export function EventAttendeesSection({
-  attendees,
-  attendeeCount,
-  eventId,
-  isLoading,
-}: EventAttendeesSectionProps) {
+export function EventAttendeesSection({ tribeId, eventId }: EventAttendeesSectionProps) {
+  const { data: attendees = [], isLoading: isLoadingAttendees } = useEventAttendees(tribeId, eventId)
+  const { data: event } = useEventDetail(tribeId, eventId)
+
   // Group attendees by status
   const goingAttendees = attendees.filter((a) => a.status === 'going')
   const maybeAttendees = attendees.filter((a) => a.status === 'maybe')
+  const attendeeCount = event?.attendeeCount || attendees.length
 
   // Loading state
-  if (isLoading) return <EventAttendeesSkeleton />
+  if (isLoadingAttendees) return <EventAttendeesSkeleton />
 
   return (
     <Card>

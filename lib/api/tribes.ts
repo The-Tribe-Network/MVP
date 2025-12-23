@@ -1,5 +1,7 @@
 import { apiFetch } from './client';
 import type { TribeWithCreator, TribeWithMembers } from '@/lib/database/types';
+import type { UpdateTribeInput, TransferOwnershipInput } from '@/lib/validations/tribe';
+import type { MemberWithPermissions } from '@/lib/services/permissions';
 
 const API_BASE = '/api/tribes';
 
@@ -65,6 +67,27 @@ export async function checkTribeMembership(tribeId: string): Promise<boolean> {
  */
 export async function fetchTribeById(id: string): Promise<TribeWithMembers> {
   return apiFetch<TribeWithMembers>(`${API_BASE}/${id}`);
+}
+
+/**
+ * Fetch current user's member data with permissions for a tribe
+ */
+export async function fetchMemberWithPermissions(tribeId: string): Promise<MemberWithPermissions> {
+  return apiFetch<MemberWithPermissions>(`${API_BASE}/${tribeId}/members/me`);
+}
+
+export interface AdminMember {
+  id: string;
+  name: string;
+  username: string | null;
+  image: string | null;
+}
+
+/**
+ * Fetch admin members of a tribe (for transfer ownership)
+ */
+export async function fetchTribeAdminMembers(tribeId: string): Promise<{ members: AdminMember[] }> {
+  return apiFetch<{ members: AdminMember[] }>(`${API_BASE}/${tribeId}/members/admins`);
 }
 
 /**
@@ -152,6 +175,56 @@ export async function leaveTribe(
     {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
+    }
+  );
+}
+
+/**
+ * Update tribe general settings
+ */
+export async function updateGeneralTribeSettings(
+  tribeId: string,
+  data: UpdateTribeInput
+): Promise<{ success: boolean }> {
+  return apiFetch<{ success: boolean }>(
+    `${API_BASE}/${tribeId}`,
+    {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    }
+  );
+}
+
+/**
+ * Delete a tribe
+ */
+export async function deleteTribe(
+  tribeId: string
+): Promise<{ success: boolean }> {
+  return apiFetch<{ success: boolean }>(
+    `${API_BASE}/${tribeId}`,
+    {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ confirmation: 'DELETE' }),
+    }
+  );
+}
+
+/**
+ * Transfer tribe ownership
+ */
+export async function transferTribeOwnership(
+  tribeId: string,
+  data: TransferOwnershipInput
+): Promise<{ success: boolean }> {
+  return apiFetch<{ success: boolean }>(
+    `${API_BASE}/${tribeId}/transfer-ownership`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
     }
   );
 }

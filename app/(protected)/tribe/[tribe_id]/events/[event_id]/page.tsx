@@ -1,11 +1,7 @@
 import { EventDetailContent } from '@/app-pages/event-detail'
-import { dehydrate, QueryClient } from '@tanstack/react-query'
-
-// Mock service - will need to create real service later
-async function getEventById(eventId: string, userId: string) {
-  // TODO: Implement real service
-  return null
-}
+import { dehydrate, HydrationBoundary, QueryClient } from '@tanstack/react-query'
+import { eventDetailOptions, eventAttendeesOptions } from '@/lib/query-options/events'
+import { eventPollsOptions } from '@/lib/query-options/polls'
 
 export default async function EventDetailPage({
   params
@@ -13,14 +9,19 @@ export default async function EventDetailPage({
   const { tribe_id, event_id } = await params
 
   const queryClient = new QueryClient()
-  // await queryClient.prefetchQuery(eventDetailOptions(event_id))
-  const dehydratedState = dehydrate(queryClient)
+
+  await Promise.all([
+    queryClient.prefetchQuery(eventDetailOptions(tribe_id, event_id)),
+    queryClient.prefetchQuery(eventPollsOptions(tribe_id, event_id)),
+    queryClient.prefetchQuery(eventAttendeesOptions(tribe_id, event_id)),
+  ])
 
   return (
-    <EventDetailContent
-      tribeId={tribe_id}
-      eventId={event_id}
-      dehydratedState={dehydratedState}
-    />
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <EventDetailContent
+        tribeId={tribe_id}
+        eventId={event_id}
+      />
+    </HydrationBoundary>
   )
 }

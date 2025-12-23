@@ -6,9 +6,11 @@ import { CheckCircle2, X, Share2, MoreVertical } from 'lucide-react'
 import type { EventWithDetails } from '@/lib/database/types'
 import { EventHeaderSkeleton } from './loading'
 import { EventHeaderError } from './error'
+import { useAddEventAttendee, useRemoveEventAttendee } from '@/lib/hooks/use-events'
 
 interface EventHeaderProps {
-  event: EventWithDetails
+  event: EventWithDetails | undefined
+  tribeId: string
   isLoading?: boolean
   isError?: boolean
   error?: Error | null
@@ -19,29 +21,33 @@ interface EventHeaderProps {
  * Event Header Section
  *
  * Displays event title, status, host info, and action buttons
- *
- * TODO: Connect RSVP and share actions to real API mutations
  */
-export function EventHeader({ event, isLoading, isError, error, onRetry }: EventHeaderProps) {
-  // TODO: Replace with real mutation hooks
-  // const { mutate: toggleRSVP } = useToggleEventRSVP()
-  // const { mutate: shareEvent } = useShareEvent()
+export function EventHeader({ event, tribeId, isLoading, isError, error, onRetry }: EventHeaderProps) {
+  const { mutate: addAttendee, isPending: isAddingAttendee } = useAddEventAttendee()
+  const { mutate: removeAttendee, isPending: isRemovingAttendee } = useRemoveEventAttendee()
 
   const handleRSVP = () => {
-    // TODO: Call toggleRSVP({ eventId: event.id })
-    console.log('Toggle RSVP for event:', event.id)
+    if (!event) return
+
+    if (event.isUserAttending) {
+      removeAttendee({ tribeId, eventId: event.id })
+    } else {
+      addAttendee({ tribeId, eventId: event.id })
+    }
   }
 
   const handleShare = () => {
     // TODO: Implement share functionality
-    console.log('Share event:', event.id)
+    console.log('Share event:', event?.id)
   }
+
+  const isRSVPLoading = isAddingAttendee || isRemovingAttendee
 
   // Loading state
   if (isLoading) return <EventHeaderSkeleton />
 
   // Error state
-  if (isError) {
+  if (isError || !event) {
     return <EventHeaderError message={error?.message} onRetry={onRetry} />
   }
 
@@ -66,12 +72,12 @@ export function EventHeader({ event, isLoading, isError, error, onRetry }: Event
       </div>
       <div className="flex items-center gap-2">
         {event.isUserAttending ? (
-          <Button variant="outline" size="sm" onClick={handleRSVP}>
+          <Button variant="outline" size="sm" onClick={handleRSVP} disabled={isRSVPLoading}>
             <X className="h-4 w-4 mr-2" />
             Cancel RSVP
           </Button>
         ) : (
-          <Button size="sm" onClick={handleRSVP}>
+          <Button size="sm" onClick={handleRSVP} disabled={isRSVPLoading}>
             <CheckCircle2 className="h-4 w-4 mr-2" />
             RSVP
           </Button>

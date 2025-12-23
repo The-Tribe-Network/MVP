@@ -38,7 +38,7 @@ export function TribeDashboardPage({
         <div className="lg:col-span-3 lg:block hidden">
           <div className="space-y-6 sticky top-[72px]">
             <TrendingWidget trends={trendingWidgetMockData} />
-            <EventsWidget events={[]} tribeId={tribeId} />
+            <EventsWidget tribeId={tribeId} />
           </div>
         </div>
       </div>

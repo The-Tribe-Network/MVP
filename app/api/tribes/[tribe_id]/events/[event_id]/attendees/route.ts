@@ -1,7 +1,36 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
-import { addEventAttendee, removeEventAttendee } from "@/lib/services/event";
+import { addEventAttendee, removeEventAttendee, getEventAttendees } from "@/lib/services/event";
 import { getMemberWithPermissions } from "@/lib/services/permissions";
+
+// GET /api/tribes/[tribe_id]/events/[event_id]/attendees
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ tribe_id: string; event_id: string }> }
+) {
+  try {
+    const user = await getServerUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { tribe_id, event_id } = await params;
+
+    const memberData = await getMemberWithPermissions(tribe_id, user.id);
+    if (!memberData) {
+      return NextResponse.json({ error: "Not a member" }, { status: 403 });
+    }
+
+    const attendees = await getEventAttendees(event_id);
+    return NextResponse.json(attendees);
+  } catch (error) {
+    console.error("Error fetching attendees:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch attendees" },
+      { status: 500 }
+    );
+  }
+}
 
 // POST /api/tribes/[tribe_id]/events/[event_id]/attendees
 export async function POST(

@@ -5,7 +5,7 @@ import type { EventWithDetails } from '@/lib/database/types'
 import { EventDescriptionSkeleton } from './loading'
 
 interface EventDescriptionProps {
-  event: EventWithDetails
+  event: EventWithDetails | undefined
   isLoading?: boolean
 }
 
@@ -17,6 +17,8 @@ interface EventDescriptionProps {
 export function EventDescription({ event, isLoading }: EventDescriptionProps) {
   // Loading state
   if (isLoading) return <EventDescriptionSkeleton />
+
+  if (!event) return null
 
   return (
     <Card>

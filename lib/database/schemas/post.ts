@@ -2,6 +2,7 @@ import { pgTable, text, timestamp, unique, uuid, index } from "drizzle-orm/pg-co
 import { tribe } from "./tribe";
 import { user } from "./auth";
 import { album } from "./media";
+import { event } from "./event";
 
 export const post = pgTable("post", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -39,8 +40,9 @@ export const postLike = pgTable("post_like", {
 export const comment = pgTable("comment", {
   id: uuid("id").primaryKey().defaultRandom(),
   postId: uuid("post_id")
-    .notNull()
     .references(() => post.id, { onDelete: "cascade" }),
+  eventId: uuid("event_id")
+    .references(() => event.id, { onDelete: "cascade" }),
   authorId: uuid("author_id")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),

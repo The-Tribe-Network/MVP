@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { EventWithDetails } from "@/lib/database/types";
 import { Calendar, Clock, MapPin } from "lucide-react";
+import Link from "next/link";
 
 interface EventPreviewItemProps {
   event: EventWithDetails;
@@ -19,6 +20,7 @@ export default function EventPreviewItem({ event }: EventPreviewItemProps) {
   })
 
   return (
+    <Link href={`/tribe/${event.tribe.id}/events/${event.id}`}>
     <div
       key={event.id}
       className="p-3 rounded-lg border border-border hover:bg-muted/50 cursor-pointer transition-colors space-y-2"
@@ -44,5 +46,6 @@ export default function EventPreviewItem({ event }: EventPreviewItemProps) {
         </div>
       </div>
     </div>
+    </Link>
   )
 }

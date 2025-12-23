@@ -86,10 +86,10 @@ export function CreateEventPage({ tribeId }: CreateEventPageProps) {
     createEvent(
       { tribeId, data },
       {
-        onSuccess: () => {
+        onSuccess: (data) => {
           toast.success("Event created successfully!")
           form.reset()
-          router.push(`/tribe/${tribeId}/events`)
+          router.push(`/tribe/${tribeId}/events/${data.id}`)
         },
         onError: (error) => {
           console.error("Failed to create event:", error)

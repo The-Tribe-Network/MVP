@@ -1,5 +1,5 @@
 import { apiFetch, buildQueryString } from './client';
-import type { EventWithCreator, EventWithDetails } from '@/lib/database/types';
+import type { EventWithCreator, EventWithDetails, EventAttendeeWithUser } from '@/lib/database/types';
 
 const API_BASE = '/api/tribes';
 
@@ -58,7 +58,10 @@ export interface RemoveEventAttendeeParams {
  */
 export async function fetchTribeEvents(
   tribeId: string,
-  options?: { status?: 'upcoming' | 'ongoing' | 'completed' | 'cancelled' }
+  options?: { 
+    status?: 'upcoming' | 'ongoing' | 'completed' | 'cancelled';
+    limit?: number;
+  }
 ): Promise<EventWithDetails[]> {
   const queryString = buildQueryString(options || {});
   return apiFetch<EventWithDetails[]>(
@@ -75,6 +78,18 @@ export async function fetchEvent(
 ): Promise<EventWithDetails> {
   return apiFetch<EventWithDetails>(
     `${API_BASE}/${tribeId}/events/${eventId}`
+  );
+}
+
+/**
+ * Fetch attendees for an event
+ */
+export async function fetchEventAttendees(
+  tribeId: string,
+  eventId: string
+): Promise<EventAttendeeWithUser[]> {
+  return apiFetch<EventAttendeeWithUser[]>(
+    `${API_BASE}/${tribeId}/events/${eventId}/attendees`
   );
 }
 

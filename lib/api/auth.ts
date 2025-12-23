@@ -32,7 +32,7 @@ export interface Session {
 /**
  * Get the current session using Better-Auth client
  */
-export async function getSession(): Promise<Session> {
+export async function getSession() {
   const result = await authClient.getSession();
   if (result.error) {
     throw new Error(result.error.message || 'Failed to get session');
@@ -45,8 +45,9 @@ export async function getSession(): Promise<Session> {
  */
 export async function getAuthUser() {
   const session = await getSession();
-  if (!session.user) {
+  if (!session?.user) {
     throw new Error('Not authenticated');
   }
+  
   return session.user;
 }

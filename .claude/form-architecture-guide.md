@@ -569,6 +569,190 @@ export function EditPostForm({ post, onCancel, onSuccess }: EditPostFormProps) {
 
 ---
 
+### Pattern 5: Form with Data Fetching (Edit Settings)
+
+**Use Case:** Edit tribe settings, edit profile, edit event details
+
+**Example:** General Tribe Settings Form
+
+**Implementation:**
+```typescript
+'use client'
+
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useQuery } from '@tanstack/react-query'
+import { Form } from '@/components/ui/form'
+import { useUpdateGeneralTribeSettings } from '@/lib/hooks/use-tribe-settings'
+import { updateTribeSchema, type UpdateTribeInput } from '@/lib/validations/tribe'
+import { tribeGeneralSettingsOptions } from '@/lib/query-options/tribe-settings'
+import { GeneralSettingsSkeleton } from './loading'
+import { GeneralSettingsError } from './error'
+
+interface GeneralSettingsProps {
+  tribeId: string
+}
+
+export function GeneralSettings({ tribeId }: GeneralSettingsProps) {
+  // 1. Fetch data with proper error handling
+  const {
+    data: tribe,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useQuery(tribeGeneralSettingsOptions(tribeId))
+
+  // 2. Initialize form with fetched data
+  const form = useForm<UpdateTribeInput>({
+    resolver: zodResolver(updateTribeSchema),
+    defaultValues: {
+      name: tribe?.name || '',
+      description: tribe?.description || '',
+      // ... other defaults
+    },
+    values: tribe
+      ? {
+          name: tribe.name,
+          description: tribe.description || undefined,
+          // ... map tribe data to form values
+        }
+      : undefined,
+  })
+
+  // 3. Get mutation hook
+  const { mutate: updateTribe, isPending } = useUpdateGeneralTribeSettings(tribeId)
+
+  // 4. Handle submission
+  const onSubmit = (data: UpdateTribeInput) => {
+    updateTribe(data, {
+      onSuccess: () => {
+        toast.success('Settings updated successfully')
+        form.reset(data)
+      },
+      onError: (error: Error) => {
+        toast.error(error.message || 'Failed to update settings')
+      },
+    })
+  }
+
+  // 5. Handle loading state FIRST
+  if (isLoading) {
+    return <GeneralSettingsSkeleton />
+  }
+
+  // 6. Handle error state SECOND
+  if (isError) {
+    return (
+      <GeneralSettingsError
+        message={error?.message}
+        onRetry={() => refetch()}
+      />
+    )
+  }
+
+  // 7. Handle missing data
+  if (!tribe) {
+    return <GeneralSettingsError message="Tribe not found" />
+  }
+
+  // 8. Render form with data
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        {/* Form sections */}
+      </form>
+    </Form>
+  )
+}
+```
+
+**Loading Component Pattern:**
+```typescript
+// app-pages/[feature]/loading.tsx
+import { Skeleton } from "@/components/ui/skeleton"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+
+export function GeneralSettingsSkeleton() {
+  return (
+    <div className="space-y-6">
+      <Skeleton className="h-9 w-48 mb-2" />
+      <Card>
+        <CardHeader>
+          <CardTitle>Settings</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-32 w-full" />
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+```
+
+**Error Component Pattern:**
+```typescript
+// app-pages/[feature]/error.tsx
+import { AlertCircle, RefreshCw } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import {
+  Empty,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+  EmptyDescription,
+  EmptyContent,
+} from "@/components/ui/empty"
+
+interface GeneralSettingsErrorProps {
+  message?: string
+  onRetry?: () => void
+}
+
+export function GeneralSettingsError({ message, onRetry }: GeneralSettingsErrorProps) {
+  return (
+    <Empty className="border border-destructive/20 bg-destructive/5 min-h-[400px]">
+      <EmptyHeader>
+        <EmptyMedia variant="icon" className="bg-destructive/10 text-destructive">
+          <AlertCircle className="size-5" />
+        </EmptyMedia>
+        <EmptyTitle>Failed to load settings</EmptyTitle>
+        <EmptyDescription>
+          {message || "Something went wrong while loading the settings. Please try again."}
+        </EmptyDescription>
+      </EmptyHeader>
+      
+      {onRetry && (
+        <EmptyContent>
+          <Button variant="outline" size="sm" onClick={onRetry}>
+            <RefreshCw className="size-4 mr-2" />
+            Try again
+          </Button>
+        </EmptyContent>
+      )}
+    </Empty>
+  )
+}
+```
+
+**Key Points for Forms with Data Fetching:**
+- **ALWAYS** destructure `isLoading`, `isError`, `error`, and `refetch` from `useQuery`
+- **ALWAYS** check `isLoading` first, then `isError`, then `!data`
+- Create dedicated `loading.tsx` and `error.tsx` components following the established pattern
+- Use `values` prop in `useForm` to sync form with fetched data (reacts to data changes)
+- Provide `refetch` callback to error component for retry functionality
+- Use `Empty` component from shadcn/ui for error states (consistent with rest of app)
+- Use `Skeleton` components for loading states (match the form structure)
+
+**Critical Rules:**
+- ❌ **NEVER** check `!data` before checking `isError` - this will show wrong error state
+- ❌ **NEVER** use inline loading/error text - always use dedicated components
+- ❌ **NEVER** forget to handle the `!data` case after error check
+- ✅ **ALWAYS** follow the order: `isLoading` → `isError` → `!data` → render form
+
+---
+
 ## Integration with TanStack Query
 
 ### Mutation Hook Pattern

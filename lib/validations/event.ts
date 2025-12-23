@@ -47,7 +47,7 @@ export const pollDataSchema = z.object({
     .max(10, "Poll cannot have more than 10 options"),
   allowMultiple: z.boolean(),
   isAnonymous: z.boolean(),
-  endsAt: z.date().optional(),
+  endsAt: z.coerce.date().optional(),
 }).refine(
   (data) => new Set(data.options).size === data.options.length,
   { message: "Poll options must be unique", path: ["options"] }
@@ -58,10 +58,11 @@ export const createEventWithPollSchema = z.object({
   title: z.string().min(1, "Event title is required").max(200, "Title is too long"),
   description: z.string().optional(),
   location: z.string().optional(),
-  startDate: z.date({
+  startDate: z.coerce.date({
     required_error: "Start date is required",
+    invalid_type_error: "Start date must be a valid date",
   }),
-  endDate: z.date().optional(),
+  endDate: z.coerce.date().optional(),
   poll: pollDataSchema.optional().nullable(),
 }).refine(
   (data) => {

@@ -1,6 +1,5 @@
 'use client'
 
-import { HydrationBoundary } from '@tanstack/react-query'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { EventHeader } from './components/event-header'
 import { EventInfoCard } from './components/event-info-card'
@@ -10,12 +9,11 @@ import { EventAttachmentsSection } from './components/event-attachments'
 import { EventLocationMap } from './components/event-location'
 import { EventPollsSection } from './components/event-polls'
 import { EventAttendeesSection } from './components/event-attendees'
-import { mockEvent } from './lib/mock-data'
+import { useEventDetail } from '@/lib/hooks/use-events'
 
 interface EventDetailContentProps {
   tribeId: string
   eventId: string
-  dehydratedState: any
 }
 
 /**
@@ -28,37 +26,25 @@ interface EventDetailContentProps {
  * - Root component: Layout and section composition only
  * - Section components: Handle data fetching and state management
  * - State components: Loading, error, empty states
- *
- * TODO: Replace mock data with real API integration using:
- * const { data: event, isLoading, error, isError, refetch } = useQuery(
- *   eventDetailOptions(eventId)
- * )
  */
-export function EventDetailContent({ tribeId, eventId, dehydratedState }: EventDetailContentProps) {
-  // TODO: Use real query hook
-  // const { data: event, isLoading, error, isError, refetch } = useQuery(
-  //   eventDetailOptions(eventId)
-  // )
-
-  const event = mockEvent
-  const isLoading = false
-  const isError = false
-  const error = null
+export function EventDetailContent({ tribeId, eventId }: EventDetailContentProps) {
+  const { data: event, isLoading, error, isError, refetch } = useEventDetail(tribeId, eventId)
 
   return (
-    <HydrationBoundary state={dehydratedState}>
-      <div className="min-h-screen bg-background">
-        <div className="max-w-7xl mx-auto p-6 space-y-6">
-          {/* Header */}
-          <EventHeader
-            event={event}
-            isLoading={isLoading}
-            isError={isError}
-            error={error}
-            onRetry={() => console.log('Retry loading event')}
-          />
+    <div className="min-h-screen bg-background">
+      <div className="max-w-7xl mx-auto p-6 space-y-6">
+        {/* Header */}
+        <EventHeader
+          event={event}
+          tribeId={tribeId}
+          isLoading={isLoading}
+          isError={isError}
+          error={error}
+          onRetry={() => refetch()}
+        />
 
-          {/* Main Content Grid */}
+        {/* Only render content if event exists or is loading */}
+        {(event || isLoading) && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left Column - Main Details */}
             <div className="lg:col-span-2 space-y-6">
@@ -75,7 +61,7 @@ export function EventDetailContent({ tribeId, eventId, dehydratedState }: EventD
                   <TabsTrigger value="attachments">Media & Links</TabsTrigger>
                 </TabsList>
                 <TabsContent value="discussion" className="mt-6">
-                  <EventCommentsSection eventId={eventId} />
+                  <EventCommentsSection tribeId={tribeId} eventId={eventId} />
                 </TabsContent>
                 <TabsContent value="attachments" className="mt-6">
                   <EventAttachmentsSection eventId={eventId} />
@@ -86,22 +72,17 @@ export function EventDetailContent({ tribeId, eventId, dehydratedState }: EventD
             {/* Right Column - Location, Polls, Attendees */}
             <div className="lg:col-span-1 space-y-6">
               {/* Location Map */}
-              {event.location && <EventLocationMap location={event.location} isLoading={isLoading} />}
+              {event?.location && <EventLocationMap location={event.location} isLoading={isLoading} />}
 
               {/* Polls Section */}
-              <EventPollsSection eventId={eventId} />
+              <EventPollsSection tribeId={tribeId} eventId={eventId} />
 
               {/* Attendees */}
-              <EventAttendeesSection
-                attendees={event.attendees}
-                attendeeCount={event.attendeeCount}
-                eventId={eventId}
-                isLoading={isLoading}
-              />
+              <EventAttendeesSection tribeId={tribeId} eventId={eventId} />
             </div>
           </div>
-        </div>
+        )}
       </div>
-    </HydrationBoundary>
+    </div>
   )
 }

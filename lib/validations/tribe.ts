@@ -61,8 +61,8 @@ export const updateTribeSchema = z.object({
     .transform((val) => (val === "" ? undefined : val))
     .optional(),
   avatar: z
-    .union([uuidSchema, z.literal("")])
-    .transform((val) => (val === "" ? undefined : val))
+    .union([uuidSchema, z.literal(""), z.null()])
+    .transform((val) => (val === "" ? null : val))
     .optional(),
   location: z
     .string()
@@ -135,11 +135,25 @@ export const inviteTribeMembersSchema = z.object({
     .max(50, "Cannot send more than 50 invitations at once"),
 });
 
+// Transfer ownership schema
+export const transferOwnershipSchema = z.object({
+  newOwnerId: uuidSchema,
+});
+
+// Delete tribe confirmation schema
+export const deleteTribeConfirmationSchema = z.object({
+  confirmation: z.literal("DELETE", {
+    errorMap: () => ({ message: "You must type DELETE to confirm" }),
+  }),
+});
+
 // Type exports
 export type CreateTribeInput = z.infer<typeof createTribeSchema>;
 export type UpdateTribeInput = z.infer<typeof updateTribeSchema>;
 export type TribeIdParam = z.infer<typeof tribeIdParamSchema>;
 export type InviteTribeMembersInput = z.infer<typeof inviteTribeMembersSchema>;
+export type TransferOwnershipInput = z.infer<typeof transferOwnershipSchema>;
+export type DeleteTribeConfirmationInput = z.infer<typeof deleteTribeConfirmationSchema>;
 
 // Validation helper for API routes
 export function validateApiRequest<T>(

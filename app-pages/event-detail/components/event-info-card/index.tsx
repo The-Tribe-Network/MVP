@@ -7,7 +7,7 @@ import { formatEventDate, formatEventTimeRange } from '../../lib/utils'
 import { EventInfoCardSkeleton } from './loading'
 
 interface EventInfoCardProps {
-  event: EventWithDetails
+  event: EventWithDetails | undefined
   isLoading?: boolean
 }
 
@@ -19,6 +19,8 @@ interface EventInfoCardProps {
 export function EventInfoCard({ event, isLoading }: EventInfoCardProps) {
   // Loading state
   if (isLoading) return <EventInfoCardSkeleton />
+
+  if (!event) return null
 
   return (
     <Card>

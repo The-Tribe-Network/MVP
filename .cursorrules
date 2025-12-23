@@ -59,17 +59,27 @@ import { useQuery } from '@tanstack/react-query'
 import { tribeDetailOptions } from '@/lib/query-options'
 
 export function ClientComponent({ tribeId }: { tribeId: string }) {
-  // Uses prefetched data - no loading state on initial render!
+  // ✅ CORRECT: Uses query options
   const { data: tribe } = useQuery(tribeDetailOptions(tribeId))
+  
+  // ❌ FORBIDDEN: NEVER do this:
+  // const { data: tribe } = useQuery({
+  //   queryKey: ['tribes', 'detail', tribeId],
+  //   queryFn: () => fetchTribeById(tribeId),
+  // })
+  
   return <div>{tribe?.name}</div>
 }
 ```
 
 ### 2. Three-Layer TanStack Query Architecture
 
+**⚠️ CRITICAL: NEVER use inline query keys in components!**
+
 **Layer 1 - Query Key Factory** (`lib/constants/query-keys.ts`):
 - Single source of truth for ALL query keys
 - NEVER hardcode query keys anywhere
+- ALWAYS add new query keys here first before using them
 
 ```typescript
 queryKeys.tribes.detail(tribeId)
@@ -86,6 +96,8 @@ queryKeys.activities.tribe(tribeId)
 - Reusable configuration using `queryOptions()` factory
 - Works in BOTH server (prefetch) and client (hooks)
 - Always normalize filters to prevent cache fragmentation
+- **MANDATORY: ALL `useQuery` calls MUST use query options from `lib/query-options/`**
+- **FORBIDDEN: NEVER write `queryKey: [...]` directly in components**
 
 ```typescript
 // lib/query-options/posts.ts
@@ -448,7 +460,8 @@ onSuccess: (_, variables) => {
 
 ### ❌ DON'T:
 - Add "use client" to `/app` pages
-- Hardcode query keys - use `queryKeys` factory
+- **Hardcode query keys - use `queryKeys` factory (NEVER write `queryKey: [...]` in components)**
+- **Use inline `useQuery({ queryKey: [...], queryFn: ... })` - ALWAYS use query options from `lib/query-options/`**
 - Write DB queries in API routes - use services
 - Forget invalidation in mutations
 - Modify files in `components/ui/` (auto-generated)
@@ -484,12 +497,13 @@ For detailed guidance:
 
 ## Adding New Features Checklist
 
-1. Add query key to `lib/constants/query-keys.ts` (use hierarchical structure: `domain.scope.detail`)
-2. Create API functions in `lib/api/[feature].ts` (use `apiFetch` base client)
-3. Create query options in `lib/query-options/[feature].ts` (normalize filters if applicable)
+1. **Add query key to `lib/constants/query-keys.ts` FIRST** (use hierarchical structure: `domain.scope.detail`)
+2. **Create query options in `lib/query-options/[feature].ts`** (use `queryOptions()` factory, reference query key from step 1)
+3. Create API functions in `lib/api/[feature].ts` (use `apiFetch` base client)
 4. Create hooks in `lib/hooks/use-[feature].ts` (export from `lib/hooks/index.ts`)
 5. Create Zod schemas in `lib/validations/[feature].ts` (export types with `z.infer`)
 6. Create service functions in `lib/services/[feature].ts` (use `getMemberWithPermissions()` for permission checks)
 7. Plan invalidation strategy (simple, cascading, or optimistic - see Mutation Invalidation Strategies above)
 8. For forms: Follow form patterns above, use react-hook-form + Zod, pass `control` prop to children
 9. For server pages: Prefetch queries with `Promise.all()` and wrap with `HydrationBoundary`
+10. **In components: ALWAYS use query options - NEVER write inline `queryKey: [...]` in `useQuery` calls**

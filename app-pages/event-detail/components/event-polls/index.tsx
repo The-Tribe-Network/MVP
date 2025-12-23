@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -10,86 +10,117 @@ import { CreatePollSheet } from '../../create-poll-sheet'
 import { EventPollsSkeleton } from './loading'
 import { EventPollsError } from './error'
 import { EventPollsEmpty } from './empty'
-import { mockPolls } from '../../lib/mock-data'
+import { useEventPolls, useCreatePoll, useVotePoll, useRemoveVote } from '@/lib/hooks/use-polls'
 import type { Poll } from '../../lib/types'
+import type { PollWithDetails } from '@/lib/database/types'
 
 interface EventPollsSectionProps {
+  tribeId: string
   eventId: string
+}
+
+/**
+ * Transform PollWithDetails from API to component Poll type
+ */
+function transformPoll(poll: PollWithDetails): Poll {
+  return {
+    id: poll.id,
+    question: poll.question,
+    options: poll.options.map((opt) => ({
+      id: opt.id,
+      text: opt.text,
+      votes: opt.votes,
+      voters: opt.voters.map((v) => ({
+        id: v.id,
+        name: v.name,
+        image: v.image,
+      })),
+    })),
+    createdBy: {
+      id: poll.creator.id,
+      name: poll.creator.name,
+      image: poll.creator.image,
+    },
+    createdAt: poll.createdAt,
+    endsAt: poll.endsAt,
+    allowMultiple: poll.allowMultiple,
+    isAnonymous: poll.isAnonymous,
+    userVotes: poll.userVotes,
+  }
 }
 
 /**
  * Event Polls Section
  *
  * Displays polls for the event with voting functionality
- *
- * TODO: Replace mock data with real API integration using:
- * const { data: polls, isLoading, error, isError, refetch } = useQuery(
- *   eventPollsOptions(eventId)
- * )
- * const { mutate: createPoll } = useCreateEventPoll()
- * const { mutate: votePoll } = useVoteEventPoll()
  */
-export function EventPollsSection({ eventId }: EventPollsSectionProps) {
-  // Mock state management (for demonstration)
-  const isLoading = false
-  const isError = false
-  const error = null
-  const [localPolls, setLocalPolls] = useState<Poll[]>(mockPolls)
+export function EventPollsSection({ tribeId, eventId }: EventPollsSectionProps) {
+  const { data: pollsData, isLoading, error, isError, refetch } = useEventPolls(tribeId, eventId)
+  const { mutate: createPoll } = useCreatePoll()
+  const { mutate: votePoll } = useVotePoll()
+  const { mutate: removeVote } = useRemoveVote()
   const [isCreateOpen, setIsCreateOpen] = useState(false)
 
+  // Transform PollWithDetails to component Poll type
+  const polls = useMemo(() => {
+    return pollsData?.map(transformPoll) || []
+  }, [pollsData])
+
   const handleVote = (pollId: string, optionId: string) => {
-    setLocalPolls((prev) =>
-      prev.map((poll) => {
-        if (poll.id !== pollId) return poll
+    const poll = polls.find((p) => p.id === pollId)
+    if (!poll) return
 
-        // Toggle vote
-        const hasVoted = poll.userVotes.includes(optionId)
-        const newUserVotes = hasVoted
-          ? poll.userVotes.filter((id) => id !== optionId)
-          : poll.allowMultiple
-            ? [...poll.userVotes, optionId]
-            : [optionId]
+    const hasVoted = poll.userVotes.includes(optionId)
 
-        // Update vote counts
-        const newOptions = poll.options.map((opt) => ({
-          ...opt,
-          votes:
-            opt.id === optionId
-              ? hasVoted
-                ? opt.votes - 1
-                : opt.votes + 1
-              : !poll.allowMultiple &&
-                  poll.userVotes.length > 0 &&
-                  !hasVoted &&
-                  poll.userVotes[0] === opt.id
-                ? opt.votes - 1
-                : opt.votes,
-        }))
-
-        return {
-          ...poll,
-          options: newOptions,
-          userVotes: newUserVotes,
-        }
+    if (hasVoted) {
+      // Remove vote
+      removeVote({
+        tribeId,
+        eventId,
+        pollId,
+        optionId,
       })
-    )
-
-    // TODO: Call votePoll({ pollId, optionId })
-    console.log('Voting on poll:', pollId, 'option:', optionId)
+    } else {
+      // Add vote
+      if (poll.allowMultiple) {
+        // Multiple votes allowed - add to existing votes
+        votePoll({
+          tribeId,
+          eventId,
+          pollId,
+          optionIds: [...poll.userVotes, optionId],
+        })
+      } else {
+        // Single vote - replace existing vote if any
+        votePoll({
+          tribeId,
+          eventId,
+          pollId,
+          optionIds: [optionId],
+        })
+      }
+    }
   }
 
   const handleCreatePoll = (newPoll: Omit<Poll, 'id' | 'createdAt' | 'createdBy'>) => {
-    const poll: Poll = {
-      ...newPoll,
-      id: `poll-${Date.now()}`,
-      createdAt: new Date(),
-      createdBy: { id: 'current-user', name: 'You' },
-    }
-    setLocalPolls((prev) => [poll, ...prev])
-    setIsCreateOpen(false)
-
-    // TODO: Call createPoll({ eventId, ...newPoll })
-    console.log('Creating poll:', newPoll)
+    createPoll(
+      {
+        tribeId,
+        eventId,
+        data: {
+          question: newPoll.question,
+          options: newPoll.options.map((opt) => opt.text),
+          allowMultiple: newPoll.allowMultiple,
+          isAnonymous: newPoll.isAnonymous,
+          endsAt: newPoll.endsAt ? newPoll.endsAt.toISOString() : undefined,
+        },
+      },
+      {
+        onSuccess: () => {
+          setIsCreateOpen(false)
+        },
+      }
+    )
   }
 
   // Loading state
@@ -97,9 +128,7 @@ export function EventPollsSection({ eventId }: EventPollsSectionProps) {
 
   // Error state
   if (isError) {
-    return (
-      <EventPollsError message={error?.message} onRetry={() => console.log('Retry loading polls')} />
-    )
+    return <EventPollsError message={error?.message} onRetry={() => refetch()} />
   }
 
   return (
@@ -109,7 +138,7 @@ export function EventPollsSection({ eventId }: EventPollsSectionProps) {
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg flex items-center gap-2">
               <Vote className="h-5 w-5" />
-              Polls ({localPolls.length})
+              Polls ({polls.length})
             </CardTitle>
             <Button size="sm" onClick={() => setIsCreateOpen(true)} className="h-8">
               <Plus className="h-4 w-4 mr-1" />
@@ -118,12 +147,12 @@ export function EventPollsSection({ eventId }: EventPollsSectionProps) {
           </div>
         </CardHeader>
         <CardContent>
-          {localPolls.length === 0 ? (
+          {polls.length === 0 ? (
             <EventPollsEmpty onCreatePoll={() => setIsCreateOpen(true)} />
           ) : (
             <ScrollArea className="h-[400px] pr-2">
               <div className="space-y-3">
-                {localPolls.map((poll) => (
+                {polls.map((poll) => (
                   <PollCard key={poll.id} poll={poll} onVote={handleVote} />
                 ))}
               </div>
@@ -132,7 +161,11 @@ export function EventPollsSection({ eventId }: EventPollsSectionProps) {
         </CardContent>
       </Card>
 
-      <CreatePollSheet open={isCreateOpen} onOpenChange={setIsCreateOpen} onCreatePoll={handleCreatePoll} />
+      <CreatePollSheet
+        open={isCreateOpen}
+        onOpenChange={setIsCreateOpen}
+        onCreatePoll={handleCreatePoll}
+      />
     </>
   )
 }

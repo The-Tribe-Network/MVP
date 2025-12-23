@@ -7,7 +7,7 @@ import {
 import { albumDetailOptions } from '@/lib/query-options';
 import AlbumPage from '@/app-pages/album';
 
-export default async function Page({ params }: PageProps<'/tribe/[tribe_id]/albums/[album_id]'>) {
+export default async function Page({ params }: PageProps<'/tribe/[tribe_id]/media/album/[album_id]'>) {
   const { tribe_id, album_id } = await params;
 
   const queryClient = new QueryClient();

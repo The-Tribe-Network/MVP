@@ -19,6 +19,12 @@ export const queryKeys = {
       ["tribes", "list", filters] as const,
     details: () => ["tribes", "detail"] as const,
     detail: (id: string) => ["tribes", "detail", id] as const,
+    generalSettings: (id: string) => ["tribes", "general-settings", id] as const,
+    members: {
+      all: (tribeId: string) => ["tribes", "members", tribeId] as const,
+      me: (tribeId: string) => ["tribes", "members", "me", tribeId] as const,
+      admins: (tribeId: string) => ["tribes", "members", "admins", tribeId] as const,
+    },
     // Legacy support - keep for backward compatibility
     tribe: (id: string | null | undefined) => ["tribe", id] as const,
   },
@@ -44,6 +50,7 @@ export const queryKeys = {
   comments: {
     all: ["comments"] as const,
     post: (postId: string) => ["comments", "post", postId] as const,
+    event: (eventId: string) => ["comments", "event", eventId] as const,
   },
 
   // Album queries
@@ -90,7 +97,8 @@ export const queryKeys = {
   events: {
     all: ["events"] as const,
     tribes: () => ["events", "tribes"] as const,
-    tribe: (tribeId: string) => ["events", "tribes", tribeId] as const,
+    tribe: (tribeId: string, filters?: Record<string, unknown>) =>
+      ["events", "tribes", tribeId, filters] as const,
     detail: (eventId: string) => ["events", "detail", eventId] as const,
     attendees: (eventId: string) => ["events", "attendees", eventId] as const,
   },

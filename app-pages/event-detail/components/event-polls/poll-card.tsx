@@ -18,6 +18,9 @@ export function PollCard({ poll, onVote }: PollCardProps) {
   const hasVoted = poll.userVotes.length > 0
   const isExpired = poll.endsAt ? new Date() > poll.endsAt : false
 
+  const pollEndDate = poll.endsAt ? new Date(poll.endsAt) : null;
+  console.log(poll.options);
+
   return (
     <div className="rounded-lg border bg-card p-4 space-y-4">
       {/* Poll Header */}
@@ -87,7 +90,7 @@ export function PollCard({ poll, onVote }: PollCardProps) {
       {/* Poll Footer */}
       <div className="flex items-center justify-between pt-2 border-t">
         <div className="flex items-center gap-2">
-          {poll.endsAt && (
+          {pollEndDate && (
             <div
               className={`flex items-center gap-1 text-xs ${isExpired ? 'text-destructive' : 'text-muted-foreground'}`}
             >
@@ -95,7 +98,7 @@ export function PollCard({ poll, onVote }: PollCardProps) {
               <span>
                 {isExpired
                   ? 'Ended'
-                  : `Ends ${poll.endsAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
+                  : `Ends ${pollEndDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
               </span>
             </div>
           )}

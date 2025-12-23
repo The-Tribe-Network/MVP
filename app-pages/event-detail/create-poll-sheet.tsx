@@ -22,7 +22,7 @@ import {
   Vote,
   Calendar
 } from "lucide-react"
-import type { Poll, PollOption } from "./event-polls-section"
+import type { Poll, PollOption } from "./lib/types"
 
 interface CreatePollSheetProps {
   open: boolean
