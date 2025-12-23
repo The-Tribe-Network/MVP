@@ -1,5 +1,5 @@
 import { apiFetch } from './client';
-import type { TribeWithCreator, TribeWithMembers } from '@/lib/database/types';
+import type { TribeWithCreator, TribeWithMembers, TribeInvitationWithInviter } from '@/lib/database/types';
 import type { UpdateTribeInput, TransferOwnershipInput } from '@/lib/validations/tribe';
 import type { MemberWithPermissions } from '@/lib/services/permissions';
 
@@ -95,6 +95,43 @@ export async function fetchTribeAdminMembers(tribeId: string): Promise<{ members
  */
 export async function fetchUserInvitations(): Promise<UserInvitation[]> {
   return apiFetch<UserInvitation[]>('/api/invitations');
+}
+
+/**
+ * Fetch all invitations for a tribe (for settings page)
+ */
+export async function fetchTribeInvitations(
+  tribeId: string
+): Promise<TribeInvitationWithInviter[]> {
+  return apiFetch<TribeInvitationWithInviter[]>(
+    `${API_BASE}/${tribeId}/invitations`
+  );
+}
+
+/**
+ * Resend a tribe invitation
+ */
+export async function resendInvitation(
+  tribeId: string,
+  invitationId: string
+): Promise<{ success: boolean; message: string }> {
+  return apiFetch(
+    `${API_BASE}/${tribeId}/invitations/${invitationId}`,
+    { method: 'PATCH' }
+  );
+}
+
+/**
+ * Cancel a pending tribe invitation
+ */
+export async function cancelInvitation(
+  tribeId: string,
+  invitationId: string
+): Promise<{ success: boolean; message: string }> {
+  return apiFetch(
+    `${API_BASE}/${tribeId}/invitations/${invitationId}`,
+    { method: 'DELETE' }
+  );
 }
 
 // ============================================================================

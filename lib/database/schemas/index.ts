@@ -28,6 +28,11 @@ export {
   tribeMemberPreference,
 } from "@/lib/database/schemas/tribe";
 
+// Permission tables
+export {
+  tribeRolePermission,
+} from "@/lib/database/schemas/permissions";
+
 // Post tables
 export {
   post,

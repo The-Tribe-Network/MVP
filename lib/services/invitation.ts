@@ -121,6 +121,120 @@ export async function getInvitationById(id: string): Promise<TribeInvitation | n
 }
 
 /**
+ * Get all invitations for a tribe with inviter information
+ * OPTIMIZED: Single query with join (not N+1 queries)
+ */
+export async function getTribeInvitations(tribeId: string) {
+  const invitations = await db
+    .select({
+      id: tribeInvitation.id,
+      tribeId: tribeInvitation.tribeId,
+      email: tribeInvitation.email,
+      role: tribeInvitation.role,
+      status: tribeInvitation.status,
+      expiresAt: tribeInvitation.expiresAt,
+      createdAt: tribeInvitation.createdAt,
+      inviterName: user.name,
+      inviterEmail: user.email,
+      inviterId: user.id,
+    })
+    .from(tribeInvitation)
+    .innerJoin(user, eq(tribeInvitation.invitedBy, user.id))
+    .where(eq(tribeInvitation.tribeId, tribeId))
+    .orderBy(desc(tribeInvitation.createdAt));
+
+  return invitations;
+}
+
+/**
+ * Resend a tribe invitation
+ * Updates existing invitation record (status and expiry)
+ */
+export async function resendTribeInvitation(
+  invitationId: string,
+  tribeId: string,
+  userId: string
+): Promise<{ success: boolean; error?: string }> {
+  // Get invitation and validate
+  const invitation = await getInvitationById(invitationId);
+
+  if (!invitation) {
+    return { success: false, error: "Invitation not found" };
+  }
+
+  if (invitation.tribeId !== tribeId) {
+    return { success: false, error: "Invitation does not belong to this tribe" };
+  }
+
+  if (!['pending', 'expired'].includes(invitation.status)) {
+    return { success: false, error: "Can only resend pending or expired invitations" };
+  }
+
+  // Update status and expiry (7 days from now)
+  const expiresAt = new Date();
+  expiresAt.setDate(expiresAt.getDate() + 7);
+
+  await db
+    .update(tribeInvitation)
+    .set({ status: "pending", expiresAt })
+    .where(eq(tribeInvitation.id, invitationId));
+
+  // Fetch tribe and inviter info for email
+  const [tribeData, inviter] = await Promise.all([
+    db.select().from(tribe).where(eq(tribe.id, tribeId)).limit(1),
+    db.select().from(user).where(eq(user.id, userId)).limit(1),
+  ]);
+
+  // Resend email (non-blocking)
+  if (tribeData[0] && inviter[0]) {
+    try {
+      await sendTribeInvitationEmail({
+        to: invitation.email,
+        tribeName: tribeData[0].name,
+        inviterName: inviter[0].name || inviter[0].email || "Someone",
+        invitationId: invitation.id,
+      });
+    } catch (error) {
+      console.error(`Failed to resend invitation email:`, error);
+    }
+  }
+
+  return { success: true };
+}
+
+/**
+ * Cancel a pending tribe invitation
+ * Marks invitation as rejected
+ */
+export async function cancelTribeInvitation(
+  invitationId: string,
+  tribeId: string,
+  userId: string
+): Promise<{ success: boolean; error?: string }> {
+  const invitation = await getInvitationById(invitationId);
+
+  if (!invitation) {
+    return { success: false, error: "Invitation not found" };
+  }
+
+  if (invitation.tribeId !== tribeId) {
+    return { success: false, error: "Invitation does not belong to this tribe" };
+  }
+
+  if (invitation.status !== 'pending') {
+    return { success: false, error: "Can only cancel pending invitations" };
+  }
+
+  // Update status to rejected
+  await db
+    .update(tribeInvitation)
+    .set({ status: "rejected" })
+    .where(eq(tribeInvitation.id, invitationId));
+
+  return { success: true };
+}
+
+/**
  * Accept an invitation
  * OPTIMIZED: Reduces from 7 DB calls to 4 DB calls (with 2 in parallel)
  */

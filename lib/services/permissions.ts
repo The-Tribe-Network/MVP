@@ -79,7 +79,7 @@ export async function getUserTribeRole(
 
 /**
  * Check if a user can upload media to a tribe
- * OPTIMIZED: 1 DB call instead of 3
+ * Uses three-layer permission resolution
  * @param tribeId - The tribe ID
  * @param userId - The user ID
  * @returns true if user can upload media, false otherwise
@@ -88,23 +88,13 @@ export async function canUserUploadMedia(
   tribeId: string,
   userId: string
 ): Promise<boolean> {
-  // Get member and permissions in a single query
-  const memberData = await getMemberWithPermissions(tribeId, userId);
-  if (!memberData) return false;
-
-  // If permission override exists and is false, deny
-  if (memberData.permissions?.canUploadMedia === false) return false;
-
-  // If permission override exists and is true, allow
-  if (memberData.permissions?.canUploadMedia === true) return true;
-
-  // Default: allow all members to upload media
-  return true;
+  const { checkPermission } = await import("./role-permissions");
+  return checkPermission(tribeId, userId, "canUploadMedia");
 }
 
 /**
  * Check if a user can create albums in a tribe
- * OPTIMIZED: 1 DB call instead of 3
+ * Uses three-layer permission resolution
  * @param tribeId - The tribe ID
  * @param userId - The user ID
  * @returns true if user can create albums, false otherwise
@@ -113,23 +103,13 @@ export async function canUserCreateAlbums(
   tribeId: string,
   userId: string
 ): Promise<boolean> {
-  // Get member and permissions in a single query
-  const memberData = await getMemberWithPermissions(tribeId, userId);
-  if (!memberData) return false;
-
-  // If permission override exists and is false, deny
-  if (memberData.permissions?.canCreateAlbums === false) return false;
-
-  // If permission override exists and is true, allow
-  if (memberData.permissions?.canCreateAlbums === true) return true;
-
-  // Default: allow all members to create albums
-  return true;
+  const { checkPermission } = await import("./role-permissions");
+  return checkPermission(tribeId, userId, "canCreateAlbums");
 }
 
 /**
  * Check if a user can delete a specific media
- * OPTIMIZED: 2 DB calls instead of 5 (parallel queries)
+ * Uses three-layer permission resolution for permission checks
  * @param tribeId - The tribe ID
  * @param userId - The user ID
  * @param mediaId - The media ID
@@ -140,7 +120,9 @@ export async function canUserDeleteMedia(
   userId: string,
   mediaId: string
 ): Promise<boolean> {
-  // Fetch member+permissions and media in parallel (2 DB calls instead of 5)
+  const { checkPermission } = await import("./role-permissions");
+
+  // Fetch member+permissions and media in parallel
   const [memberData, mediaRecord] = await Promise.all([
     getMemberWithPermissions(tribeId, userId),
     db.select().from(media).where(eq(media.id, mediaId)).limit(1),
@@ -148,25 +130,21 @@ export async function canUserDeleteMedia(
 
   if (!memberData || !mediaRecord[0]) return false;
 
-  // Check if user is the uploader
   const isOwner = mediaRecord[0].uploadedBy === userId;
-
-  // Check if user has permission to delete any media (admin/mod)
-  if (memberData.permissions?.canDeleteAnyMedia === true) return true;
-
-  // Check role-based permissions for moderators and admins
   const role = memberData.member.role;
+
+  // Admins and owners can always delete
   if (role === "owner" || role === "admin") return true;
 
-  // If user is the owner of the media
+  // Check if user has permission to delete any media
+  const canDeleteAny = await checkPermission(tribeId, userId, "canDeleteAnyMedia");
+  if (canDeleteAny) return true;
+
+  // If user is the owner of the media, check canDeleteOwnMedia permission
   if (isOwner) {
-    // Check if canDeleteOwnMedia permission override is false
-    if (memberData.permissions?.canDeleteOwnMedia === false) return false;
-    // Default: allow users to delete their own media
-    return true;
+    return checkPermission(tribeId, userId, "canDeleteOwnMedia");
   }
 
-  // Not the owner and no special permissions
   return false;
 }
 

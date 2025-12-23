@@ -7,6 +7,9 @@ import {
   tribeInvitation,
 } from "./schemas/tribe";
 import {
+  tribeRolePermission,
+} from "./schemas/permissions";
+import {
   post,
   postLike,
   comment,
@@ -67,6 +70,8 @@ export type TribeMemberPreference = InferSelectModel<typeof tribeMemberPreferenc
 export type TribeMemberPreferenceInsert = InferInsertModel<typeof tribeMemberPreference>;
 export type TribeInvitation = InferSelectModel<typeof tribeInvitation>;
 export type TribeInvitationInsert = InferInsertModel<typeof tribeInvitation>;
+export type TribeRolePermission = InferSelectModel<typeof tribeRolePermission>;
+export type TribeRolePermissionInsert = InferInsertModel<typeof tribeRolePermission>;
 
 // ============================================
 // Post types
@@ -157,6 +162,64 @@ export type TribeWithMembers = TribeWithCreator & {
 // Tribe member extended types
 export type TribeMemberWithUser = TribeMember & {
   user: User;
+};
+
+export type TribeMemberWithPermissions = TribeMember & {
+  user: User;
+  permissions: TribeMemberPermission | null;
+};
+
+export type MemberListItem = Pick<TribeMember, 'id' | 'role' | 'joinedAt'> & {
+  user: UserBasic;
+  hasCustomPermissions: boolean;
+  restrictionReason: string | null;
+};
+
+// Invitation extended types
+export interface TribeInvitationWithInviter {
+  id: string;
+  tribeId: string;
+  email: string;
+  role: 'admin' | 'moderator' | 'member';
+  status: 'pending' | 'accepted' | 'rejected' | 'expired';
+  expiresAt: Date | null;
+  createdAt: Date;
+  inviterName: string | null;
+  inviterEmail: string;
+  inviterId: string;
+}
+
+export type PaginatedMembers = {
+  members: MemberListItem[];
+  total: number;
+  page: number;
+  pageSize: number;
+  hasMore: boolean;
+};
+
+// Permission system types
+export type PermissionSet = Record<string, boolean | null>;
+
+export type RolePermissionMatrix = {
+  role: 'owner' | 'admin' | 'moderator' | 'member';
+  permissions: PermissionSet;
+  isLocked: boolean;
+  memberCount?: number;
+};
+
+export type MemberPermissionDetail = {
+  member: TribeMember;
+  user: UserWithUsername;
+  individualOverrides: TribeMemberPermission | null;
+  roleDefaults: PermissionSet;
+  effectivePermissions: PermissionSet;
+  hasOverrides: boolean;
+};
+
+export type TribeMemberWithPermissionsExtended = TribeMember & {
+  permissions: TribeMemberPermission | null;
+  user: UserWithUsername;
+  hasOverrides: boolean;
 };
 
 // Post extended types

@@ -45,6 +45,7 @@
     "@react-email/render": "^1.4.0",
     "@tanstack/react-query": "latest",
     "@tanstack/react-query-devtools": "latest",
+    "@tanstack/react-table": "^8.21.3",
     "@types/react-joyride": "^2.0.5",
     "autoprefixer": "^10.4.20",
     "better-auth": "latest",

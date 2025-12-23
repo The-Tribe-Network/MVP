@@ -22,11 +22,26 @@ export const queryKeys = {
     generalSettings: (id: string) => ["tribes", "general-settings", id] as const,
     members: {
       all: (tribeId: string) => ["tribes", "members", tribeId] as const,
+      list: (tribeId: string, filters?: Record<string, unknown>) =>
+        ["tribes", "members", "list", tribeId, filters] as const,
       me: (tribeId: string) => ["tribes", "members", "me", tribeId] as const,
       admins: (tribeId: string) => ["tribes", "members", "admins", tribeId] as const,
     },
+    invitations: {
+      tribe: (tribeId: string) => ["tribes", "invitations", tribeId] as const,
+    },
+    roles: (tribeId: string) => ["tribes", "roles", tribeId] as const,
     // Legacy support - keep for backward compatibility
     tribe: (id: string | null | undefined) => ["tribe", id] as const,
+  },
+
+  // Permission queries
+  permissions: {
+    all: ["permissions"] as const,
+    members: (tribeId: string, filters?: Record<string, unknown>) =>
+      ["permissions", "members", tribeId, filters] as const,
+    memberDetail: (tribeId: string, userId: string) =>
+      ["permissions", "member-detail", tribeId, userId] as const,
   },
 
   // Post queries

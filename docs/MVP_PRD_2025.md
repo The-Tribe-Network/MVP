@@ -1,8 +1,8 @@
 # Product Requirements Document (PRD) - MVP
 ## Tribe - Community Organization Platform
 
-**Version:** MVP 2.0 - Expanded Target Segments
-**Last Updated:** December 21, 2024
+**Version:** MVP 2.1 - Diaspora Communities & Competitive Landscape
+**Last Updated:** December 23, 2024
 **Status:** Production-Ready MVP
 
 ---
@@ -11,13 +11,14 @@
 
 1. [Executive Summary](#executive-summary)
 2. [Product Vision](#product-vision)
-3. [Target Users](#target-users)
-4. [MVP Strategy](#mvp-strategy)
-5. [Core Features](#core-features)
-6. [Technical Architecture](#technical-architecture)
-7. [Success Metrics](#success-metrics)
-8. [What's NOT in MVP](#whats-not-in-mvp)
-9. [Future Roadmap](#future-roadmap)
+3. [Competitive Landscape](#competitive-landscape)
+4. [Target Users](#target-users)
+5. [MVP Strategy](#mvp-strategy)
+6. [Core Features](#core-features)
+7. [Technical Architecture](#technical-architecture)
+8. [Success Metrics](#success-metrics)
+9. [What's NOT in MVP](#whats-not-in-mvp)
+10. [Future Roadmap](#future-roadmap)
 
 ---
 
@@ -36,6 +37,7 @@
 4. **Sports Leagues & Rec Teams** - "The digital team locker room"
 5. **Country Clubs & Private Clubs** - "The members-only digital clubhouse"
 6. **Coworking Spaces** - "Your workspace community platform"
+7. **Diaspora & Cultural Communities** - "Your community's digital home"
 
 **What They All Share:**
 - Existing, high-density groups already meeting in person
@@ -71,6 +73,220 @@ Tribe provides exclusive groups with a **single digital hub** that facilitates r
 - **Privacy unlike Facebook**: Invite-only, no public discovery, complete control
 
 **We're not building a social network - we're building organizational infrastructure for groups that already exist.**
+
+---
+
+## Competitive Landscape
+
+### Why Existing Tools Fail Communities
+
+Our target communities are currently frustrated with fragmented tools. Here's why they'll switch to Tribe:
+
+#### Facebook Groups - The Incumbent We're Displacing
+
+**What they use it for:** General community coordination, event planning, photo sharing
+
+**Critical Pain Points:**
+
+1. **Algorithmic Feed Chaos**
+   - Important announcements get buried by Facebook's engagement algorithm
+   - No guarantee members see critical updates
+   - Community leaders can't ensure visibility for important posts
+
+2. **Zero Granular Permissions (Our Killer Feature)**
+   - Only "Admin" vs "Member" roles - no middle ground
+   - Can't make youth/children view-only
+   - Can't restrict event creation to community leaders
+   - Can't give elders moderation powers without full admin
+   - **Communities need multiple Facebook Groups to handle permission levels** (officers only, members only, etc.)
+
+3. **Photo Organization Disaster (The Vault Destroys Them)**
+   - Photos lost in chronological feed forever
+   - No event-based albums that are easy to navigate
+   - Search/archive is nearly impossible after a few months
+   - Can't organize by wedding, festival, or cultural event
+   - **Our "Vault" feature is 10x better than Facebook's photo chaos**
+
+4. **Privacy & Trust Issues**
+   - Data harvesting and targeted ads
+   - Forces connection to personal Facebook profile
+   - Many diaspora/immigrant communities distrust Meta
+   - No control over data or content ownership
+
+5. **Requires Facebook Account**
+   - Younger generation (Gen Z) abandoning Facebook
+   - Many community members don't have/want Facebook
+   - Privacy-conscious members avoid the platform
+
+6. **Spam, Ads, and Distractions**
+   - Facebook ads clutter the experience
+   - Platform designed for engagement, not utility
+   - Spam posts and irrelevant content
+   - Notification overload from unrelated Facebook activity
+
+7. **No Integrated Event Coordination**
+   - RSVP system is clunky and unreliable
+   - No polls integrated with events
+   - Can't track attendance properly
+   - Communities resort to spreadsheets and external tools
+
+**Why They'll Switch:** Privacy, RBAC, photo organization, and a purpose-built community tool vs. social network.
+
+#### WhatsApp/GroupMe - The Chaos We Replace
+
+**What they use it for:** Day-to-day coordination, quick announcements, casual chatter
+
+**Pain Points:**
+- Groups with 50+ members become unmanageable chaos
+- No photo organization - media gets lost in chat history
+- No event RSVP system - coordination is manual
+- No permissions - everyone can spam
+- Messages get buried in high-volume chats
+- No way to archive memories or cultural heritage
+- Search is terrible for finding old photos/info
+
+**Why They'll Switch:** Better organization, photo archiving, event coordination, and permission controls.
+
+#### Instagram - The Photo Archive That Isn't
+
+**What they use it for:** Sharing event photos, community moments
+
+**Pain Points:**
+- Photos lost in algorithmic feed
+- No community-based organization
+- Individual accounts mean fragmented photo collections
+- Can't archive by event or cultural celebration
+- No privacy controls for community-only content
+- Algorithmic feed buries important posts
+
+**Why They'll Switch:** The Vault provides organized, community-owned photo archives vs. Instagram's individual, chaotic feeds.
+
+#### Meetup - The Event App That Isn't a Community Hub
+
+**What they use it for:** Finding and organizing events, discovering new groups
+
+**Pain Points:**
+- No photo archiving or album organization
+- No granular permissions (can't restrict who posts or creates events)
+- Public/discovery-first platform (not designed for private, existing communities)
+- **Paid to organize** ($14.99-44.99/month for organizers)
+- No community management features (posts, timeline, discussions)
+- Events-only - no way to build community between gatherings
+- No RBAC for hierarchical communities
+
+**Why They'll Switch:** Meetup is for discovering NEW communities. Tribe is for organizing EXISTING communities with photo archiving, posts, and granular permissions.
+
+#### Discord - Complex and Overwhelming for Non-Tech Users
+
+**What they use it for:** Real-time chat, voice channels (popular with gaming communities)
+
+**Pain Points:**
+- **Overwhelming UI** for non-tech-savvy users (especially elders, parents in diaspora communities)
+- Voice-channel focused, not designed for real-world event coordination
+- No event RSVP system built-in
+- **Photo archiving is terrible** - just chat media that gets lost
+- Complex permission system that's hard for average users to configure
+- Ephemeral nature - hard to find old photos, announcements, or content
+- Not designed for communities that gather in-person
+- Notification overload from multiple channels
+
+**Why They'll Switch:** Discord is for gamers and tech communities. Tribe is for real-world communities (cultural groups, families, clubs) who need simplicity, photo archiving, and event coordination.
+
+#### Nextdoor - Neighborhood Noise, Not Private Communities
+
+**What they use it for:** Neighborhood announcements, local recommendations
+
+**Pain Points:**
+- **Public within neighborhood** - no private, invite-only groups
+- No granular permissions (everyone in neighborhood can post)
+- Spam, noise, and drama from random neighbors
+- No photo organization or albums
+- Not designed for organized communities (just geographic proximity)
+- No event coordination or RSVP features
+- Can't create exclusive communities (open to all neighbors)
+
+**Why They'll Switch:** Nextdoor is for open neighborhoods. Tribe is for private, exclusive communities with control over membership and permissions.
+
+#### Slack - Corporate Tool, Not a Community Platform
+
+**What they use it for:** Work team communication (some communities repurpose it)
+
+**Pain Points:**
+- **Too corporate and complex** for social/cultural communities
+- No photo archiving or album features
+- No event RSVP system
+- **Paid tiers required** for message history, integrations ($7.25-12.50/user/month)
+- Designed for work, not social gatherings or cultural events
+- No community features (posts, likes, comments, photo galleries)
+- Overwhelming for non-tech users
+
+**Why They'll Switch:** Slack is for work teams. Tribe is purpose-built for social, cultural, and recreational communities.
+
+#### Mighty Networks - Expensive and Complex
+
+**What they use it for:** Creators and coaches building paid communities
+
+**Pain Points:**
+- **Expensive**: $39-99+/month to run a community
+- Complex setup and management (not user-friendly)
+- Designed for creators monetizing communities, not organic social groups
+- Poor photo organization (no album features like The Vault)
+- Not mobile-friendly for everyday use
+- Overkill features for simple communities (courses, memberships, paywalls)
+
+**Why They'll Switch:** Mighty Networks is for paid creator communities. Tribe is free, simple, and designed for existing social/cultural communities.
+
+### Our Competitive Advantages
+
+**Comprehensive Comparison Table:**
+
+| Feature | Tribe | Facebook Groups | WhatsApp | Discord | Meetup | Slack | Mighty Networks |
+|---------|-------|----------------|----------|---------|--------|-------|-----------------|
+| **Granular RBAC** | ✅ 20+ permissions | ❌ Admin/Member only | ❌ None | ⚠️ Complex to configure | ❌ Basic only | ⚠️ Complex | ⚠️ Basic |
+| **Organized Photo Albums** | ✅ The Vault | ❌ Chronological chaos | ❌ Chat media | ❌ Chat media | ❌ None | ❌ None | ⚠️ Basic |
+| **Event RSVP + Polls** | ✅ Built-in | ⚠️ Clunky | ❌ Manual | ❌ External tools | ✅ Events only | ❌ None | ⚠️ Basic |
+| **Privacy-First** | ✅ No ads, no tracking | ❌ Data harvesting | ⚠️ Meta-owned | ✅ Private servers | ⚠️ Public discovery | ✅ Private | ✅ Private |
+| **Chronological Feed** | ✅ See everything | ❌ Algorithmic | ✅ Chronological | ✅ Chronological | N/A | ✅ Chronological | ⚠️ Mixed |
+| **User-Friendly for Non-Tech Users** | ✅ Simple & intuitive | ⚠️ Familiar but cluttered | ✅ Simple | ❌ Overwhelming | ⚠️ Moderate | ❌ Corporate UX | ❌ Complex |
+| **Free for Communities** | ✅ Free | ✅ Free | ✅ Free | ✅ Free | ❌ $15-45/mo for organizers | ❌ $7.25-12.50/user/mo | ❌ $39-99+/mo |
+| **Purpose-Built for Real-World Communities** | ✅ Utility-first | ❌ Social network | ⚠️ Chat tool | ❌ Gaming/online first | ⚠️ Discovery-focused | ❌ Work-focused | ⚠️ Creator-focused |
+| **Cultural Heritage Preservation** | ✅ The Vault + Albums | ❌ Impossible to archive | ❌ Lost in chat | ❌ Lost in chat | ❌ None | ❌ None | ⚠️ Poor organization |
+| **Community Posts & Timeline** | ✅ Built-in | ✅ Yes | ❌ Chat only | ⚠️ Forum-style | ❌ Events only | ⚠️ Channels only | ✅ Yes |
+| **Multi-Generational Accessible** | ✅ Simple for all ages | ⚠️ Gen Z abandoning | ✅ Widely used | ❌ Tech-savvy only | ⚠️ Moderate | ❌ Work-focused | ❌ Complex |
+
+### The Migration Path
+
+**Why communities will migrate to Tribe:**
+
+**From Facebook Groups:**
+1. **The Photo Archive Lock-In:** Once a community uploads 3-4 cultural events worth of photos organized in The Vault, they won't go back to Facebook's chaos
+2. **Permission Problems:** Facebook Groups splitting into multiple groups is unsustainable - Tribe solves this with RBAC
+3. **Trust & Privacy:** Diaspora communities increasingly distrust Meta - Tribe is privacy-first
+4. **Algorithmic Feed Frustration:** Community leaders are tired of important announcements getting buried
+5. **Youth Exodus from Facebook:** Younger generation isn't on Facebook - Tribe doesn't require it
+
+**From WhatsApp/GroupMe:**
+1. **Chaos of 50+ Member Chats:** High-volume groups become unmanageable - Tribe provides structure
+2. **Lost Photos:** Media gets buried in chat history - The Vault preserves memories permanently
+3. **No Event Coordination:** Manual RSVP tracking is painful - Tribe has built-in event management
+4. **No Permissions:** Everyone can spam - Tribe gives hierarchical control
+
+**From Discord:**
+1. **Overwhelming Complexity:** Non-tech users struggle with channels, roles, bots - Tribe is simple
+2. **Not for Real-World Communities:** Discord is gaming/online-first - Tribe is for in-person gatherings
+3. **Poor Photo Archiving:** Chat media gets lost - The Vault organizes by event and album
+4. **Multi-Generational Accessibility:** Elders can't navigate Discord - Tribe is intuitive for all ages
+
+**From Meetup:**
+1. **Paid Organizer Fees:** $15-45/month to run events - Tribe is free
+2. **Discovery-Focused, Not Community Management:** Meetup is for NEW groups - Tribe is for EXISTING communities
+3. **No Photo/Content Features:** Events-only platform - Tribe offers posts, albums, timeline, and community building
+
+**The Wedge (Especially for Diaspora Communities):**
+- **Phase 1:** Start with photo archiving ("Let's organize our wedding/Eid/Diwali photos properly")
+- **Phase 2:** Once locked in with cultural heritage photos, add event coordination (replace WhatsApp chaos)
+- **Phase 3:** Migrate full community management from Facebook Groups (replace algorithmic chaos + permission issues)
+- **Result:** Complete migration to Tribe as the single community hub
 
 ---
 
@@ -192,6 +408,31 @@ Tribe provides exclusive groups with a **single digital hub** that facilitates r
 - **The Hook**: "Your workspace community platform"
 - **Examples**: WeWork-style coworking, startup incubators, accelerator programs, makerspaces, innovation hubs, tech community spaces
 
+#### 7. Diaspora & Cultural Communities
+- **Demographics**: Ages 0-75+ (multi-generational), diaspora community organizers and members
+- **Pain Points**:
+  - WhatsApp/Facebook groups with 50+ members become chaotic and unmanageable
+  - Photos from cultural events, weddings, celebrations scattered across devices
+  - Coordinating community gatherings (potlucks, religious events, support networks) across multiple families
+  - No centralized community directory for emergencies, support, or connection
+  - Cultural heritage and memories not properly preserved for next generation
+  - Language barriers and cultural context lost in fragmented platforms
+  - Facebook Groups lack granular permissions for hierarchical community structures
+  - Important announcements buried by algorithmic feeds
+
+- **Use Cases**:
+  - Organize cultural celebrations, religious events, community gatherings with RSVP
+  - Archive photos from weddings, festivals, cultural events (the sticky feature - multi-generational heritage)
+  - Coordinate community support (childcare sharing, job networking, emergency assistance)
+  - Control permissions (elders/leaders admin, families post, youth restricted)
+  - Send announcements about community events, emergencies, cultural celebrations
+  - Manage community directory for networking and mutual support
+  - Preserve cultural traditions through organized photo albums and event histories
+  - Multi-language support for community members
+
+- **The Hook**: "Your community's digital home"
+- **Examples**: African diaspora communities, Middle Eastern communities (Lebanese, Syrian, Palestinian, Iranian), Hispanic/Latino communities (Mexican, Puerto Rican, Dominican), Asian communities (Chinese, Indian, Filipino, Vietnamese, Korean), refugee/immigrant support networks, mosque congregations, temple groups, church communities
+
 ### Secondary Opportunities (Post-MVP Expansion)
 
 The following segments fit the Tribe model but are lower priority for initial launch:
@@ -223,23 +464,91 @@ Our strategy: **Launch as a utility tool, not a social network.**
 
 #### Launch Strategy
 
-**Phase 1 - Initial Beachhead (Months 1-2):**
-- Target 5-10 fraternity/sorority chapters
-- Target 2-3 hospitality businesses with VIP lists
-- Target 2-3 fitness studios/gyms (CrossFit boxes ideal)
-- **Goal**: Validate utility value and photo archiving as sticky feature
+**Phase 1 - Initial Beachhead: Lead with Diaspora Communities (Months 1-2)**
 
-**Phase 2 - Horizontal Expansion (Months 3-4):**
+**Primary Focus - Diaspora & Cultural Communities:**
+- Target 4-6 diaspora/cultural communities (mosque congregations, African diaspora groups, Middle Eastern communities, Hispanic/Latino cultural associations, Asian community groups)
+- **Why lead here:**
+  - Most urgent pain point (WhatsApp chaos + Facebook distrust)
+  - Fastest word-of-mouth velocity (tight-knit, trust-based networks)
+  - Strongest photo archiving use case (cultural heritage preservation = irreplaceable)
+  - Multi-generational = higher lifetime value
+  - Larger addressable market (every city has multiple diaspora communities)
+
+**Secondary Focus - Validation Across Other Segments:**
+- Target 3-5 fraternity/sorority chapters (college campuses)
+- Target 2-3 fitness studios/gyms (CrossFit boxes, boutique studios)
+- Target 1-2 hospitality businesses with VIP lists
+
+**Phase 1 Goal:**
+- 10-16 active tribes total
+- Validate The Vault (photo archiving) as the killer feature that locks communities in
+- Prove RBAC solves hierarchical permission problems (elders/youth, pledges/actives, etc.)
+- Demonstrate migration path from Facebook Groups + WhatsApp
+
+**Phase 2 - Horizontal Expansion Within Diaspora + New Segments (Months 3-4):**
+- **Expand diaspora aggressively:** 6-10 additional cultural communities (word-of-mouth referrals)
 - Expand to sports leagues (2-3 teams/leagues)
 - Expand to country clubs (1-2 clubs)
 - Expand to coworking spaces (1-2 spaces)
-- **Goal**: Prove product-market fit across all 6 core segments
+- **Goal**: Prove product-market fit across all 7 core segments, with diaspora communities as primary driver
 
 **Phase 3 - Word-of-Mouth & Scale (Months 5-6):**
-- Organic growth within each vertical
-- Referral programs for each segment
-- Case studies and testimonials
-- **Goal**: Achieve 50+ active tribes across all segments
+- **Diaspora word-of-mouth explosion:** Community leaders refer other communities (viral growth)
+- Organic growth within fraternity, hospitality, fitness verticals
+- Referral programs tailored to each segment
+- Case studies and testimonials (focus on cultural heritage preservation stories)
+- **Goal**: Achieve 60-80+ active tribes across all segments (diaspora communities likely 40-50% of total)
+
+#### Why Diaspora Communities Are the Perfect Beachhead
+
+**Strategic Advantages of Leading with Diaspora Communities:**
+
+1. **Most Urgent Pain Point**
+   - Facebook Groups chaos is PAINFUL for 50-100 member communities
+   - WhatsApp groups are unmanageable at this scale
+   - Announcements get lost in algorithmic feeds (weddings, funerals, emergencies)
+   - Current solutions are actively failing them RIGHT NOW
+
+2. **Strongest Lock-In Feature (The Vault)**
+   - Cultural heritage preservation is irreplaceable (weddings, festivals, religious celebrations)
+   - Multi-generational photos (grandparents → parents → children) = emotional permanence
+   - Fraternity formal photos are replaceable; wedding photos are NOT
+   - Loss aversion: "We can't leave, our memories are here"
+
+3. **Fastest Word-of-Mouth Velocity**
+   - Tight-knit, trust-based networks (community leaders know each other)
+   - Cross-community referrals (mosque leaders talk to other mosque leaders)
+   - Cultural gatherings = natural opportunities to demo Tribe
+   - One successful community = 5-10 referrals to similar communities
+
+4. **Highest Trust in Privacy**
+   - Diaspora communities actively distrust Meta/Facebook (data harvesting, government surveillance concerns)
+   - Privacy-first positioning resonates strongly
+   - Invite-only, exclusive communities match cultural values
+
+5. **Multi-Generational = Higher Lifetime Value**
+   - Fraternities: 4-year churn (graduation)
+   - Diaspora communities: Lifetime membership (grandparents, parents, children)
+   - Sticky across decades, not semesters
+
+6. **Larger Addressable Market**
+   - Every city has multiple diaspora communities (African, Middle Eastern, Hispanic, Asian)
+   - Fraternities limited to ~5,000 college campuses
+   - Diaspora communities: Hundreds of thousands across US alone
+
+7. **RBAC Validates Perfectly**
+   - Hierarchical community structures (elders, families, youth) are REAL
+   - Facebook Groups can't handle this → communities are actively frustrated
+   - Tribe's granular permissions solve a painful, daily problem
+
+8. **Natural Migration Path**
+   - Start with one cultural event photo album (Eid, Christmas, Diwali wedding)
+   - Lock in with 3-4 events worth of photos
+   - Replace WhatsApp for event coordination
+   - Fully migrate from Facebook Groups within 3-6 months
+
+**The Bottom Line:** Diaspora communities have the most urgent pain, highest lock-in potential, fastest word-of-mouth, and largest addressable market. They're the perfect wedge to prove product-market fit before expanding to other segments.
 
 ---
 
@@ -612,32 +921,43 @@ Our strategy: **Launch as a utility tool, not a social network.**
 
 ### MVP Launch Metrics (First 30 Days)
 
-**Tribe Creation Targets by Segment:**
-- Fraternities/Sororities: 5-10 chapters
-- Hospitality VIP Lists: 2-3 businesses
+**Tribe Creation Targets by Segment (Diaspora-First Strategy):**
+- **Diaspora & Cultural Communities: 4-6 communities** (PRIMARY FOCUS - Phase 1)
+- Fraternities/Sororities: 3-5 chapters
 - Gyms & Fitness Studios: 2-3 studios
-- Sports Leagues: 2-3 teams/leagues
-- Country Clubs: 1-2 clubs
-- Coworking Spaces: 1-2 spaces
-- **Total Goal**: 15-25 active tribes across all segments
+- Hospitality VIP Lists: 1-2 businesses
+- Sports Leagues: 0-2 teams/leagues (Phase 2 focus)
+- Country Clubs: 0-1 clubs (Phase 2 focus)
+- Coworking Spaces: 0-1 spaces (Phase 2 focus)
+- **Total Goal Phase 1**: 10-16 active tribes (diaspora = 40-60% of total)
+- **Total Goal by Month 6**: 60-80 active tribes (diaspora = 40-50% of total)
 
 **Member Onboarding by Segment:**
+- **Diaspora/Cultural: 30-100 members per community** (multi-generational, multi-family) - **HIGHEST**
+- Country Clubs: 30-100 members per club
 - Fraternities/Sororities: 20-50 members per tribe
-- Hospitality: 10-30 members per VIP list
+- Coworking: 20-60 members per space
 - Gyms/Fitness: 15-40 members per studio
 - Sports Leagues: 10-25 members per team
-- Country Clubs: 30-100 members per club
-- Coworking: 20-60 members per space
-- **Activation**: % of invitees who accept and upload a profile picture
+- Hospitality: 10-30 members per VIP list
+- **Activation Target**: 60%+ of invitees accept and upload profile picture (diaspora communities may have higher activation due to trust networks)
 
 ### The "Sticky Feature" Metrics
 
-**Photo Organization (Critical):**
+**Photo Organization (Critical - Especially for Diaspora Communities):**
 - Target: Average 10+ photos uploaded per tribe in first 30 days
 - Target: 70%+ of photos organized in albums vs. standalone
 - Target: 1-2 albums created per tribe per month
+- **Diaspora-specific:** Average 20-30+ photos per cultural event (weddings, festivals)
+- **Diaspora-specific:** 3-5+ albums per community in first 60 days (Eid, Christmas, Diwali, weddings, potlucks)
 
 **Why this matters:** If groups build a photo archive in Tribe, they're locked in. They won't leave because their memories are here.
+
+**For diaspora communities, this is EVEN MORE CRITICAL:**
+- Cultural heritage preservation across generations (grandparents → grandchildren)
+- Irreplaceable wedding/festival photos = higher switching cost than fraternity formals
+- Multiple families contributing to same albums = network effect within community
+- Loss aversion: "We can't leave, all our memories are here"
 
 ### Utility Metrics
 
@@ -830,6 +1150,12 @@ Our strategy: **Launch as a utility tool, not a social network.**
 - **Events**: Workshops, demo days, networking events, skill shares
 - **RBAC Use Case**: Membership tier determines who can post and create events
 
+**7. Diaspora & Cultural Communities**
+- **Roles**: Community leaders/elders (admin), Family representatives (standard), Youth/children (view-only or limited), New members (restricted until vetted)
+- **The Vault**: Wedding ceremonies, cultural festivals (Eid, Diwali, Christmas, Lunar New Year), religious celebrations, community potlucks, multi-generational family photos, traditional cultural events
+- **Events**: Religious gatherings, cultural celebrations, community support events, potlucks, fundraisers
+- **RBAC Use Case**: Elders have admin powers, families can post and organize, youth are view-only or restricted, new members vetted before full access
+
 ---
 
 ## Implementation Status
@@ -851,8 +1177,8 @@ Our strategy: **Launch as a utility tool, not a social network.**
 ---
 
 **Document Status**: Active
-**Last Updated**: December 21, 2024
-**Version**: 2.0 - Expanded Target Segments
-**Next Review**: Post-Launch (after first 15-25 tribes across all segments)
+**Last Updated**: December 23, 2024
+**Version**: 2.1 - Diaspora Communities & Competitive Landscape
+**Next Review**: Post-Launch (after first 18-28 tribes across all segments)
 **Owner**: Product Team
 **Stakeholders**: Engineering, Design, Product Management
