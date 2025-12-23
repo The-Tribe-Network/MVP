@@ -5,6 +5,7 @@ import {
   tribeMemberPermission,
   tribeMemberPreference,
   tribeInvitation,
+  tribeSettings,
 } from "./schemas/tribe";
 import {
   tribeRolePermission,
@@ -72,6 +73,55 @@ export type TribeInvitation = InferSelectModel<typeof tribeInvitation>;
 export type TribeInvitationInsert = InferInsertModel<typeof tribeInvitation>;
 export type TribeRolePermission = InferSelectModel<typeof tribeRolePermission>;
 export type TribeRolePermissionInsert = InferInsertModel<typeof tribeRolePermission>;
+export type TribeSettings = InferSelectModel<typeof tribeSettings>;
+export type TribeSettingsInsert = InferInsertModel<typeof tribeSettings>;
+
+// Partial type for timeline settings only
+export type TimelineSettings = Pick<TribeSettings,
+  | 'postingPermissionLevel'
+  | 'commentingPermissionLevel'
+  | 'allowPostEditing'
+  | 'allowPostDeletion'
+  | 'enablePostLikes'
+  | 'enableCommentLikes'
+  | 'enableNestedReplies'
+  | 'enablePinnedPosts'
+>;
+
+// Partial type for events settings only
+export type EventsSettings = Pick<TribeSettings,
+  | 'eventsEnabled'
+  | 'eventCreationPermissionLevel'
+  | 'eventEditPermissionLevel'
+  | 'requireEventEndDate'
+  | 'requireEventLocation'
+  | 'enableRsvps'
+  | 'showAttendeeList'
+  | 'enableRsvpDeadline'
+  | 'enableCapacityLimit'
+  | 'enableWaitlist'
+  | 'enableEventPolls'
+  | 'pollCreationPermissionLevel'
+  | 'allowAnonymousPolls'
+  | 'pollResultsVisibility'
+  | 'enableEventReminders'
+  | 'reminderTimings'
+  | 'notifyOnRsvpChanges'
+  | 'enableCalendarExport'
+>;
+
+// Partial type for media settings only
+export type MediaSettings = Pick<TribeSettings,
+  | 'mediaUploadPermissionLevel'
+  | 'maxMediaFileSize'
+  | 'autoAddPostMediaToGallery'
+  | 'albumCreationPermissionLevel'
+  | 'defaultAlbumPrivacy'
+  | 'allowCollaborativeAlbums'
+  | 'autoCreateEventAlbums'
+  | 'enableMediaLikes'
+  | 'requireMediaApproval'
+>;
 
 // ============================================
 // Post types

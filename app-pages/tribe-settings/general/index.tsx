@@ -107,7 +107,7 @@ export function GeneralSettings({ tribeId }: GeneralSettingsProps) {
 
           <Separator />
 
-          <FeaturesSection control={form.control} />
+          <FeaturesSection tribeId={tribeId} />
 
           <Separator />
 

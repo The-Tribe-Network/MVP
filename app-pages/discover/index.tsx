@@ -10,8 +10,8 @@ import AllTribesSection from './components/all-tribes';
 import { DISCOVER_CATEGORIES, DEFAULT_FILTERS } from './lib/utils';
 
 export default function DiscoverPageContent() {
-  const [searchQuery, setSearchQuery] = useState(DEFAULT_FILTERS.search);
-  const [selectedCategory, setSelectedCategory] = useState(DEFAULT_FILTERS.category);
+  const [searchQuery, setSearchQuery] = useState<string>(DEFAULT_FILTERS.search);
+  const [selectedCategory, setSelectedCategory] = useState<string>(DEFAULT_FILTERS.category);
 
   const showFeatured = selectedCategory === 'all' && searchQuery === '';
 

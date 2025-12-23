@@ -31,6 +31,12 @@ export const queryKeys = {
       tribe: (tribeId: string) => ["tribes", "invitations", tribeId] as const,
     },
     roles: (tribeId: string) => ["tribes", "roles", tribeId] as const,
+    settings: {
+      all: (tribeId: string) => ["tribes", "settings", tribeId] as const,
+      events: (tribeId: string) => ["tribes", "settings", "events", tribeId] as const,
+      timeline: (tribeId: string) => ["tribes", "settings", "timeline", tribeId] as const,
+      media: (tribeId: string) => ["tribes", "settings", "media", tribeId] as const,
+    },
     // Legacy support - keep for backward compatibility
     tribe: (id: string | null | undefined) => ["tribe", id] as const,
   },
@@ -132,6 +138,11 @@ export const queryKeys = {
     tribes: (filters?: Record<string, unknown>) =>
       ["discover", "tribes", filters] as const,
     featured: () => ["discover", "featured"] as const,
+  },
+
+  // Waitlist queries
+  waitlist: {
+    all: ["waitlist"] as const,
   },
 } as const;
 

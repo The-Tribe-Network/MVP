@@ -17,6 +17,11 @@ export {
   eventStatus,
   messageType,
   albumPrivacy,
+  permissionLevel,
+  eventEditPermission,
+  attendeeListVisibility,
+  pollCreationPermission,
+  pollResultsVisibility,
 } from "@/lib/database/schemas/enums";
 
 // Tribe tables
@@ -26,6 +31,7 @@ export {
   tribeMemberPermission,
   tribeInvitation,
   tribeMemberPreference,
+  tribeSettings,
 } from "@/lib/database/schemas/tribe";
 
 // Permission tables
@@ -79,6 +85,11 @@ export {
   message,
   messageRead,
 } from "@/lib/database/schemas/message";
+
+// Waitlist table
+export {
+  waitlist,
+} from "@/lib/database/schemas/waitlist";
 
 // Relations
 export {

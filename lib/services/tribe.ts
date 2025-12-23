@@ -1,5 +1,5 @@
 import { db, getDbTransaction } from "@/lib/database/client";
-import { tribe, tribeMember, tribeMemberPermission } from "@/lib/database/schemas/tribe";
+import { tribe, tribeMember, tribeMemberPermission, tribeSettings } from "@/lib/database/schemas/tribe";
 import { user } from "@/lib/database/schemas/auth";
 import { media } from "@/lib/database/schemas/media";
 import { eq, count, and, inArray } from "drizzle-orm";
@@ -46,6 +46,12 @@ export async function createTribe(
       tribeId: newTribe.id,
       userId: userId,
       role: "owner",
+    } as any);
+
+    // Create default tribe settings
+    await tx.insert(tribeSettings).values({
+      tribeId: newTribe.id,
+      // All other fields use schema defaults
     } as any);
 
     return newTribe;

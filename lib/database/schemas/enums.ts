@@ -42,3 +42,35 @@ export const messageType = pgEnum("message_type", ["group", "direct"]);
 
 export const albumPrivacy = pgEnum("album_privacy", ["public", "private", "admin_only"]);
 
+export const permissionLevel = pgEnum("permission_level", [
+  "all_members",
+  "moderators",
+  "admins",
+  "owner_only",
+]);
+
+export const eventEditPermission = pgEnum("event_edit_permission", [
+  "creator_only",
+  "creator_and_admins",
+  "all_members",
+]);
+
+export const attendeeListVisibility = pgEnum("attendee_list_visibility", [
+  "all_members",
+  "count_only",
+  "hidden",
+]);
+
+export const pollCreationPermission = pgEnum("poll_creation_permission", [
+  "event_creator",
+  "moderators",
+  "admins",
+]);
+
+export const pollResultsVisibility = pgEnum("poll_results_visibility", [
+  "immediate",
+  "after_voting",
+  "after_close",
+  "hidden",
+]);
+
