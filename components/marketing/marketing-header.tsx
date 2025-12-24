@@ -3,12 +3,14 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useSession } from "@/lib/clients/auth-client";
-import { Menu, X } from "lucide-react";
+import { Menu, Moon, Sun, X } from "lucide-react";
 import { useState } from "react";
+import { useTheme } from "next-themes";
 
 export function MarketingHeader() {
   const { data: session } = useSession();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { setTheme, theme } = useTheme();
 
   const navLinks = [
     { href: "/features", label: "Features" },
@@ -38,7 +40,7 @@ export function MarketingHeader() {
           ))}
         </nav>
 
-        {/* Auth CTAs */}
+        {/* Auth CTAs and Theme Toggle */}
         <div className="hidden md:flex items-center gap-3">
           {session ? (
             <Link href="/dashboard">
@@ -54,6 +56,18 @@ export function MarketingHeader() {
               </Link>
             </>
           )}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+            aria-label="Toggle theme"
+          >
+            {theme === "light" ? (
+              <Moon className="h-5 w-5" />
+            ) : (
+              <Sun className="h-5 w-5" />
+            )}
+          </Button>
         </div>
 
         {/* Mobile Menu Button */}
@@ -85,6 +99,24 @@ export function MarketingHeader() {
               </Link>
             ))}
             <div className="pt-4 border-t space-y-3">
+              <Button
+                variant="ghost"
+                className="w-full justify-start"
+                onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+                aria-label="Toggle theme"
+              >
+                {theme === "light" ? (
+                  <>
+                    <Moon className="h-4 w-4 mr-2" />
+                    Dark Mode
+                  </>
+                ) : (
+                  <>
+                    <Sun className="h-4 w-4 mr-2" />
+                    Light Mode
+                  </>
+                )}
+              </Button>
               {session ? (
                 <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)}>
                   <Button variant="outline" className="w-full">
