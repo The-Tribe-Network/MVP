@@ -1,11 +1,19 @@
 "use client"
 
+import Link from "next/link"
+import { useParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { ArrowLeft, Calendar, Share2, Download } from "lucide-react"
-import Link from "next/link"
+import { Calendar, Share2, Download } from "lucide-react"
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb"
 import type { AlbumWithMedia } from "@/lib/database/types"
-import { useParams } from "next/navigation"
 
 interface AlbumHeaderProps {
   album: AlbumWithMedia
@@ -18,13 +26,25 @@ export function AlbumHeader({ album }: AlbumHeaderProps) {
 
   return (
     <div className="mb-8">
-      <Link
-        href={`/tribe/${tribeId}/media`}
-        className="inline-flex items-center text-muted-foreground hover:text-foreground mb-4 transition-colors"
-      >
-        <ArrowLeft className="h-4 w-4 mr-2" />
-        Back to Albums
-      </Link>
+      <Breadcrumb className="mb-4">
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild>
+              <Link href={`/tribe/${tribeId}`}>Dashboard</Link>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild>
+              <Link href={`/tribe/${tribeId}/media`}>Media</Link>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>{album.name}</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
 
       <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
         <div>

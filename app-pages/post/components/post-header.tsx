@@ -1,21 +1,34 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { ArrowLeft } from 'lucide-react'
+import Link from 'next/link'
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb'
 
-export function PostHeader() {
-  const router = useRouter()
+interface PostHeaderProps {
+  tribeId: string
+}
 
+export function PostHeader({ tribeId }: PostHeaderProps) {
   return (
-    <Button
-      variant="ghost"
-      onClick={() => router.back()}
-      className="gap-2"
-    >
-      <ArrowLeft className="h-4 w-4" />
-      Back
-    </Button>
+    <Breadcrumb>
+      <BreadcrumbList>
+        <BreadcrumbItem>
+          <BreadcrumbLink asChild>
+            <Link href={`/tribe/${tribeId}`}>Dashboard</Link>
+          </BreadcrumbLink>
+        </BreadcrumbItem>
+        <BreadcrumbSeparator />
+        <BreadcrumbItem>
+          <BreadcrumbPage>Post</BreadcrumbPage>
+        </BreadcrumbItem>
+      </BreadcrumbList>
+    </Breadcrumb>
   )
 }
 

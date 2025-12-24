@@ -5,6 +5,7 @@ import {
 } from '@tanstack/react-query';
 import { tribeDetailOptions } from '@/lib/query-options/tribes';
 import { SettingsNavigation } from '@/app-pages/tribe-settings/components/settings-navigation';
+import { SettingsHeader } from '@/app-pages/tribe-settings/components/settings-header';
 
 
 export default async function SettingsLayout({
@@ -19,9 +20,15 @@ export default async function SettingsLayout({
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <div className="flex gap-8">
-        <SettingsNavigation tribeId={tribe_id} />
-        <div className="flex-1">{children}</div>
+      <div className="flex flex-col">
+        <SettingsHeader tribeId={tribe_id} />
+
+        <div className="flex gap-8 mt-6">
+          <div className="sticky top-6 self-start">
+            <SettingsNavigation tribeId={tribe_id} />
+          </div>
+          <div className="flex-1 pb-12">{children}</div>
+        </div>
       </div>
     </HydrationBoundary>
   );

@@ -16,7 +16,7 @@ export function PostDetailContent({
     <div className="flex h-screen">
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-3xl mx-auto py-6 space-y-6">
-          <PostHeader />
+          <PostHeader tribeId={tribeId} />
 
           <PostDetailSection tribeId={tribeId} postId={postId} />
 
