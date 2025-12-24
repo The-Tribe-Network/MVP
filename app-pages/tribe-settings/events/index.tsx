@@ -16,7 +16,7 @@ import { RsvpSection } from './sections/rsvp-section';
 import { PollsSection } from './sections/polls-section';
 import { RemindersSection } from './sections/reminders-section';
 import { CalendarSection } from './sections/calendar-section';
-import { Skeleton } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface EventsSettingsProps {
   tribeId: string;
