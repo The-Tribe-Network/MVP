@@ -1,6 +1,7 @@
 import { queryOptions } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/constants/query-keys';
 import { fetchTribeMedia, fetchMediaById, fetchPublicMedia, type MediaFilters } from '@/lib/api/media';
+import { fetchFeaturedMedia } from '@/lib/api/tribes';
 
 // ============================================================================
 // Query Options
@@ -46,5 +47,28 @@ export function publicMediaOptions(
   return queryOptions({
     queryKey: queryKeys.media.tribe(tribeId, { public: true }),
     queryFn: () => fetchPublicMedia(tribeId, options),
+  });
+}
+
+/**
+ * Query options for fetching the featured media for a tribe
+ */
+export function featuredMediaOptions(tribeId: string) {
+  return queryOptions({
+    queryKey: queryKeys.media.featured(tribeId),
+    queryFn: () => fetchFeaturedMedia(tribeId),
+    staleTime: 1000 * 60, // 1 minute
+  });
+}
+
+/**
+ * Query options for fetching popular photos (top liked)
+ * Uses the same tribeMedia query but the component will sort by likes
+ */
+export function popularPhotosOptions(tribeId: string) {
+  return queryOptions({
+    queryKey: queryKeys.media.popular(tribeId),
+    queryFn: () => fetchTribeMedia(tribeId, { type: 'image' }),
+    staleTime: 1000 * 60, // 1 minute
   });
 }

@@ -6,23 +6,23 @@ import {
 
 import {
   tribeDetailOptions,
-  tribeAlbumsOptions,
-  tribeMediaOptions
+  popularAlbumsOptions,
+  featuredMediaOptions,
+  popularPhotosOptions,
 } from '@/lib/query-options';
-import { parsePaginationParams } from '@/lib/utils';
 
 import MediaPage from '@/app-pages/media';
 
-export default async function Page({ params, searchParams }: PageProps<'/tribe/[tribe_id]/media'>) {
+export default async function Page({ params }: PageProps<'/tribe/[tribe_id]/media'>) {
   const { tribe_id } = await params;
-  const { limit: limitParam = '50', offset: offsetParam = '0' } = await searchParams;
 
   const queryClient = new QueryClient();
 
   await Promise.all([
     queryClient.prefetchQuery(tribeDetailOptions(tribe_id)),
-    queryClient.prefetchQuery(tribeAlbumsOptions(tribe_id)),
-    queryClient.prefetchQuery(tribeMediaOptions(tribe_id, parsePaginationParams(limitParam, offsetParam))),
+    queryClient.prefetchQuery(featuredMediaOptions(tribe_id)),
+    queryClient.prefetchQuery(popularPhotosOptions(tribe_id)),
+    queryClient.prefetchQuery(popularAlbumsOptions(tribe_id)),
   ]);
 
   return (

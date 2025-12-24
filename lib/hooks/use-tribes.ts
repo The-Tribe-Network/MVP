@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { TribeWithCreator } from "@/lib/database/types";
 import { queryKeys } from "@/lib/constants/query-keys";
 import { useAuthUser } from "./use-auth";
-import { userTribesOptions, tribeDetailOptions, userInvitationsOptions } from "@/lib/query-options/tribes";
+import { userTribesOptions, tribeDetailOptions, userInvitationsOptions, memberWithPermissionsOptions } from "@/lib/query-options/tribes";
 import {
   createTribe,
   sendTribeInvitations,
@@ -127,4 +127,11 @@ export function useLeaveTribe() {
       queryClient.invalidateQueries({ queryKey: queryKeys.tribes.lists() });
     },
   });
+}
+
+/**
+ * Fetch current user's member data with permissions for a tribe
+ */
+export function useMemberWithPermissions(tribeId: string) {
+  return useQuery(memberWithPermissionsOptions(tribeId));
 }

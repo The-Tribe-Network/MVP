@@ -593,6 +593,62 @@ try {
 - `app-pages/` for page-level components
 - `components/` for shared UI components
 - `components/ui/` for shadcn/ui components (auto-generated, don't edit manually)
+- `components/shared/` for reusable shared components (e.g., `subpage-header.tsx`)
+
+### Navigation & Subpage Headers
+
+**IMPORTANT:** All tribe subpages use **breadcrumb navigation** instead of back buttons. This provides consistent, predictable navigation across the app.
+
+**📚 Comprehensive Guide:** `.claude/navigation-guide.md`
+
+**Key Components:**
+- `components/shared/subpage-header.tsx` - Reusable header with breadcrumbs, title, subtitle, and action slot
+- `components/ui/breadcrumb.tsx` - shadcn/ui breadcrumb components
+
+**Breadcrumb Hierarchy:**
+```
+Dashboard (tribe home)
+├── Events → Dashboard > Events
+│   └── Event Detail → Dashboard > Events > {Event Title}
+├── Media → Dashboard > Media
+│   ├── Browse → Dashboard > Media > Browse
+│   └── Album → Dashboard > Media > {Album Name}
+├── Post → Dashboard > Post
+└── Settings → Dashboard > Settings > {Section}
+```
+
+**Using SubpageHeader:**
+```typescript
+import { SubpageHeader } from '@/components/shared/subpage-header'
+
+<SubpageHeader
+  tribeId={tribeId}
+  breadcrumbs={[{ label: 'Events' }]}
+  title="Tribe Events"
+  subtitle="Plan and manage your tribe's events"
+  actions={<CreateEventButton />}
+/>
+```
+
+**For Nested Pages (multi-level breadcrumbs):**
+```typescript
+<SubpageHeader
+  tribeId={tribeId}
+  breadcrumbs={[
+    { label: 'Media', href: `/tribe/${tribeId}/media` },
+    { label: albumName }
+  ]}
+  title={albumName}
+  subtitle="View album photos"
+/>
+```
+
+**Critical Rules:**
+- ❌ Never use `router.back()` for navigation - it's unpredictable
+- ❌ Never use standalone back buttons/links - use breadcrumbs instead
+- ✅ Always start breadcrumbs with "Dashboard" (handled by SubpageHeader)
+- ✅ Always use SubpageHeader for tribe subpages
+- ✅ For nested pages, provide intermediate `href` values in breadcrumbs
 
 ### Import Aliases
 - `@/*` maps to project root

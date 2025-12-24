@@ -35,6 +35,7 @@ export const mockEvent: EventWithDetails = {
     updatedAt: new Date(),
     description: 'A tribe for summer fun activities',
     avatar: null,
+    featuredMediaId: null,
     privacy: 'public' as const,
     category: 'social' as const,
     isFeatured: false,

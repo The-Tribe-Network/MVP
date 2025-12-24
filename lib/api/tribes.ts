@@ -2,6 +2,7 @@ import { apiFetch } from './client';
 import type { TribeWithCreator, TribeWithMembers, TribeInvitationWithInviter } from '@/lib/database/types';
 import type { UpdateTribeInput, TransferOwnershipInput } from '@/lib/validations/tribe';
 import type { MemberWithPermissions } from '@/lib/services/permissions';
+import type { FeaturedMediaWithUploader } from '@/lib/services/tribe';
 
 const API_BASE = '/api/tribes';
 
@@ -262,6 +263,52 @@ export async function transferTribeOwnership(
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
+    }
+  );
+}
+
+// ============================================================================
+// Featured Media Functions
+// ============================================================================
+
+/**
+ * Fetch the featured media for a tribe
+ */
+export async function fetchFeaturedMedia(
+  tribeId: string
+): Promise<FeaturedMediaWithUploader | null> {
+  return apiFetch<FeaturedMediaWithUploader | null>(
+    `${API_BASE}/${tribeId}/featured-media`
+  );
+}
+
+/**
+ * Set the featured media for a tribe
+ */
+export async function updateFeaturedMedia(
+  tribeId: string,
+  mediaId: string
+): Promise<{ success: boolean }> {
+  return apiFetch<{ success: boolean }>(
+    `${API_BASE}/${tribeId}/featured-media`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mediaId }),
+    }
+  );
+}
+
+/**
+ * Clear the featured media for a tribe
+ */
+export async function clearFeaturedMedia(
+  tribeId: string
+): Promise<{ success: boolean }> {
+  return apiFetch<{ success: boolean }>(
+    `${API_BASE}/${tribeId}/featured-media`,
+    {
+      method: 'DELETE',
     }
   );
 }

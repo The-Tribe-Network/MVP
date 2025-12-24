@@ -4,6 +4,7 @@ import {
   fetchUserTribes,
   fetchTribeById,
   fetchUserInvitations,
+  fetchMemberWithPermissions,
 } from '@/lib/api/tribes';
 
 // ============================================================================
@@ -45,5 +46,15 @@ export function userInvitationsOptions() {
     queryKey: ['invitations', 'user'],
     queryFn: fetchUserInvitations,
     refetchInterval: 30000, // Refetch every 30 seconds
+  });
+}
+
+/**
+ * Query options for fetching current user's member data with permissions for a tribe
+ */
+export function memberWithPermissionsOptions(tribeId: string) {
+  return queryOptions({
+    queryKey: queryKeys.tribes.members.me(tribeId),
+    queryFn: () => fetchMemberWithPermissions(tribeId),
   });
 }

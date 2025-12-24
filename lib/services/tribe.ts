@@ -106,6 +106,7 @@ export async function getTribeById(id: string, includeAvatar: boolean = false): 
       category: tribe.category,
       isFeatured: tribe.isFeatured,
       isTrending: tribe.isTrending,
+      featuredMediaId: tribe.featuredMediaId,
       createdBy: tribe.createdBy,
       createdAt: tribe.createdAt,
       updatedAt: tribe.updatedAt,
@@ -383,5 +384,154 @@ export async function getTribeAdminMembers(tribeId: string): Promise<Array<{ id:
     .limit(50);
 
   return adminMembers;
+}
+
+/**
+ * Featured media type with uploader info
+ */
+export type FeaturedMediaWithUploader = {
+  id: string;
+  fileUrl: string;
+  altText: string | null;
+  likeCount: number;
+  createdAt: Date;
+  albumId: string | null;
+  albumName: string | null;
+  uploader: {
+    id: string;
+    name: string;
+    username: string | null;
+    image: string | null;
+  };
+};
+
+/**
+ * Get the featured media for a tribe
+ * Returns null if no featured media is set
+ */
+export async function getFeaturedMedia(tribeId: string): Promise<FeaturedMediaWithUploader | null> {
+  const { album, albumMedia, mediaLike } = await import("@/lib/database/schemas/media");
+
+  // First get the tribe's featured media ID
+  const [tribeData] = await db
+    .select({ featuredMediaId: tribe.featuredMediaId })
+    .from(tribe)
+    .where(eq(tribe.id, tribeId))
+    .limit(1);
+
+  if (!tribeData?.featuredMediaId) {
+    return null;
+  }
+
+  // Get media with uploader info
+  const [featuredMedia] = await db
+    .select({
+      id: media.id,
+      fileUrl: media.fileUrl,
+      altText: media.altText,
+      createdAt: media.createdAt,
+      uploader: {
+        id: user.id,
+        name: user.name,
+        username: user.username,
+        image: user.image,
+      },
+    })
+    .from(media)
+    .innerJoin(user, eq(media.uploadedBy, user.id))
+    .where(eq(media.id, tribeData.featuredMediaId))
+    .limit(1);
+
+  if (!featuredMedia) {
+    return null;
+  }
+
+  // Get album info through junction table (if any)
+  const [albumInfo] = await db
+    .select({
+      albumId: albumMedia.albumId,
+      albumName: album.name,
+    })
+    .from(albumMedia)
+    .leftJoin(album, eq(albumMedia.albumId, album.id))
+    .where(eq(albumMedia.mediaId, featuredMedia.id))
+    .limit(1);
+
+  // Get like count
+  const [likeCountResult] = await db
+    .select({ count: count() })
+    .from(mediaLike)
+    .where(eq(mediaLike.mediaId, featuredMedia.id));
+
+  return {
+    ...featuredMedia,
+    albumId: albumInfo?.albumId || null,
+    albumName: albumInfo?.albumName || null,
+    likeCount: likeCountResult?.count || 0,
+  };
+}
+
+/**
+ * Set the featured media for a tribe
+ * Requires admin permissions (owner, admin, or moderator)
+ */
+export async function setFeaturedMedia(
+  tribeId: string,
+  mediaId: string,
+  userId: string
+): Promise<void> {
+  // Check permissions - only admins can set featured media
+  const memberData = await getMemberWithPermissions(tribeId, userId);
+  if (!memberData) {
+    throw new Error("Not a member of this tribe");
+  }
+
+  const isAdmin = ["owner", "admin", "moderator"].includes(memberData.member.role);
+  if (!isAdmin) {
+    throw new Error("Only admins can set featured media");
+  }
+
+  // Verify the media exists and belongs to this tribe
+  const [mediaRecord] = await db
+    .select({ id: media.id })
+    .from(media)
+    .where(and(eq(media.id, mediaId), eq(media.tribeId, tribeId)))
+    .limit(1);
+
+  if (!mediaRecord) {
+    throw new Error("Media not found or does not belong to this tribe");
+  }
+
+  // Update the tribe's featured media
+  await db
+    .update(tribe)
+    .set({ featuredMediaId: mediaId })
+    .where(eq(tribe.id, tribeId));
+}
+
+/**
+ * Clear the featured media for a tribe
+ * Requires admin permissions (owner, admin, or moderator)
+ */
+export async function clearFeaturedMedia(
+  tribeId: string,
+  userId: string
+): Promise<void> {
+  // Check permissions - only admins can clear featured media
+  const memberData = await getMemberWithPermissions(tribeId, userId);
+  if (!memberData) {
+    throw new Error("Not a member of this tribe");
+  }
+
+  const isAdmin = ["owner", "admin", "moderator"].includes(memberData.member.role);
+  if (!isAdmin) {
+    throw new Error("Only admins can clear featured media");
+  }
+
+  // Clear the tribe's featured media
+  await db
+    .update(tribe)
+    .set({ featuredMediaId: null })
+    .where(eq(tribe.id, tribeId));
 }
 

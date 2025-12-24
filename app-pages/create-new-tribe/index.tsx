@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useForm, useFieldArray } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -11,32 +13,65 @@ import { BasicInfoStep } from './BasicInfoStep'
 import { LocationStep } from './LocationStep'
 import { PrivacyStep } from './PrivacyStep'
 import { InviteMembersStep } from './InviteMembersStep'
-import { InvitedMember, PrivacyType } from './types'
-import type { TribeCategory } from './types'
+import type { PrivacyType, TribeCategory } from './types'
 import { STEP_CONFIG, TOTAL_STEPS } from './stepConfig'
 import { useCreateTribe } from '@/lib/hooks/use-tribes'
 import { toast } from 'sonner'
-import { step1Schema, step2Schema, step3Schema, step4Schema } from '@/lib/validations/tribe'
-import { getLocationPlaceId } from '@/lib/utils/location'
+import {
+  createTribeFormSchema,
+  step1Fields,
+  step2Fields,
+  step3Fields,
+  type CreateTribeFormInput,
+} from '@/lib/validations/tribe'
 
 export default function CreateTribePage() {
   const router = useRouter()
   const [currentStep, setCurrentStep] = useState(1)
+  const [currentEmail, setCurrentEmail] = useState('')
   const createTribe = useCreateTribe()
 
-  // Form state
-  const [tribeName, setTribeName] = useState('')
-  const [description, setDescription] = useState('')
-  const [avatar, setAvatar] = useState('') // Media ID
-  const [avatarUrl, setAvatarUrl] = useState('') // Preview URL
-  const [category, setCategory] = useState<TribeCategory>('other')
-  const [location, setLocation] = useState('')
-  const [privacy, setPrivacy] = useState<PrivacyType>('private')
-  const [inviteEmails, setInviteEmails] = useState<InvitedMember[]>([])
-  const [currentEmail, setCurrentEmail] = useState('')
+  // Single form instance manages all state
+  const form = useForm<CreateTribeFormInput>({
+    resolver: zodResolver(createTribeFormSchema),
+    defaultValues: {
+      tribeName: '',
+      description: '',
+      avatar: '',
+      avatarUrl: '',
+      category: 'other',
+      location: '',
+      privacy: 'private',
+      invitations: [],
+    },
+    mode: 'onChange',
+  })
 
-  const handleNext = () => {
-    if (currentStep < TOTAL_STEPS) {
+  const { fields, append, remove, update } = useFieldArray({
+    control: form.control,
+    name: 'invitations',
+  })
+
+  // Watch form values for step components
+  const formValues = form.watch()
+
+  const handleNext = async () => {
+    let fieldsToValidate: readonly string[] = []
+
+    switch (currentStep) {
+      case 1:
+        fieldsToValidate = step1Fields
+        break
+      case 2:
+        fieldsToValidate = step2Fields
+        break
+      case 3:
+        fieldsToValidate = step3Fields
+        break
+    }
+
+    const isValid = await form.trigger(fieldsToValidate as (keyof CreateTribeFormInput)[])
+    if (isValid && currentStep < TOTAL_STEPS) {
       setCurrentStep(currentStep + 1)
     }
   }
@@ -49,36 +84,47 @@ export default function CreateTribePage() {
 
   const handleAddEmail = () => {
     if (currentEmail && currentEmail.includes('@')) {
-      setInviteEmails([...inviteEmails, { email: currentEmail, role: 'member' }])
+      // Check for duplicates
+      if (!fields.some((f) => f.email === currentEmail)) {
+        append({ email: currentEmail, role: 'member' })
+      }
       setCurrentEmail('')
     }
   }
 
   const handleRemoveEmail = (email: string) => {
-    setInviteEmails(inviteEmails.filter((m) => m.email !== email))
+    const index = fields.findIndex((f) => f.email === email)
+    if (index !== -1) {
+      remove(index)
+    }
   }
 
-  const handleUpdateRole = (email: string, newRole: InvitedMember['role']) => {
-    setInviteEmails(inviteEmails.map((m) => (m.email === email ? { ...m, role: newRole } : m)))
+  const handleUpdateRole = (email: string, newRole: 'admin' | 'moderator' | 'member') => {
+    const index = fields.findIndex((f) => f.email === email)
+    if (index !== -1) {
+      update(index, { ...fields[index], role: newRole })
+    }
   }
 
   const handleSubmit = async () => {
+    const data = form.getValues()
+
     try {
       const result = await createTribe.mutateAsync({
-        name: tribeName,
-        description: description || undefined,
-        avatar: avatar || undefined,
-        location: location || undefined,
-        privacy: privacy,
-        category: category,
-        invitations: inviteEmails.length > 0 ? inviteEmails : undefined,
+        name: data.tribeName,
+        description: data.description || undefined,
+        avatar: data.avatar || undefined,
+        location: data.location || undefined,
+        privacy: data.privacy,
+        category: data.category,
+        invitations: data.invitations && data.invitations.length > 0 ? data.invitations : undefined,
       })
 
       toast.success('Tribe created successfully!')
-      if (inviteEmails.length > 0) {
-        toast.success(`${inviteEmails.length} invitation(s) sent!`)
+      if (data.invitations && data.invitations.length > 0) {
+        toast.success(`${data.invitations.length} invitation(s) sent!`)
       }
-      // Redirect to the new tribe dashboard
+      form.reset()
       router.push(`/tribe/${result.id}`)
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to create tribe')
@@ -86,31 +132,18 @@ export default function CreateTribePage() {
   }
 
   const isStepValid = (): boolean => {
+    const { errors } = form.formState
+
     switch (currentStep) {
-      case 1: {
-        const result = step1Schema.safeParse({ tribeName, description })
-        return result.success
-      }
-      case 2: {
-        const result = step2Schema.safeParse({ location })
-
-        if (!result.success) {
-          return false
-        }
-
-        const validatedLocation = result.data.location
-
-        return getLocationPlaceId(validatedLocation) !== null
-      }
-      case 3: {
-        const result = step3Schema.safeParse({ privacy })
-        return result.success
-      }
-      case 4: {
-        // Invites are optional, so this step is always valid
-        const result = step4Schema.safeParse({})
-        return result.success
-      }
+      case 1:
+        return !errors.tribeName && !errors.description &&
+               formValues.tribeName.length >= 2 && formValues.description.length > 0
+      case 2:
+        return !errors.location && formValues.location.length > 0
+      case 3:
+        return !errors.privacy
+      case 4:
+        return true // Invites are optional
       default:
         return false
     }
@@ -151,30 +184,36 @@ export default function CreateTribePage() {
           <CardContent className="space-y-6">
             {currentStep === 1 && (
               <BasicInfoStep
-                tribeName={tribeName}
-                description={description}
-                avatar={avatar}
-                avatarUrl={avatarUrl}
-                category={category}
-                onTribeNameChange={setTribeName}
-                onDescriptionChange={setDescription}
-                onAvatarChange={setAvatar}
-                onAvatarUrlChange={setAvatarUrl}
-                onCategoryChange={setCategory}
+                tribeName={formValues.tribeName}
+                description={formValues.description}
+                avatar={formValues.avatar || ''}
+                avatarUrl={formValues.avatarUrl}
+                category={formValues.category as TribeCategory}
+                onTribeNameChange={(value) => form.setValue('tribeName', value, { shouldValidate: true })}
+                onDescriptionChange={(value) => form.setValue('description', value, { shouldValidate: true })}
+                onAvatarChange={(value) => form.setValue('avatar', value)}
+                onAvatarUrlChange={(value) => form.setValue('avatarUrl', value)}
+                onCategoryChange={(value) => form.setValue('category', value)}
               />
             )}
 
             {currentStep === 2 && (
-              <LocationStep location={location} onLocationChange={setLocation} />
+              <LocationStep
+                location={formValues.location}
+                onLocationChange={(value) => form.setValue('location', value, { shouldValidate: true })}
+              />
             )}
 
             {currentStep === 3 && (
-              <PrivacyStep privacy={privacy} onPrivacyChange={setPrivacy} />
+              <PrivacyStep
+                privacy={formValues.privacy as PrivacyType}
+                onPrivacyChange={(value) => form.setValue('privacy', value)}
+              />
             )}
 
             {currentStep === 4 && (
               <InviteMembersStep
-                inviteEmails={inviteEmails}
+                inviteEmails={fields.map((f) => ({ email: f.email, role: f.role }))}
                 currentEmail={currentEmail}
                 onEmailChange={setCurrentEmail}
                 onAddEmail={handleAddEmail}

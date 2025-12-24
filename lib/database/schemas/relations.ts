@@ -72,6 +72,11 @@ export const tribeRelations = relations(tribe, ({ one, many }) => ({
 		references: [media.id],
 		relationName: "tribe_avatar_media_id"
 	}),
+	media_featured: one(media, {
+		fields: [tribe.featuredMediaId],
+		references: [media.id],
+		relationName: "tribe_featuredMediaId_media_id"
+	}),
 	user: one(user, {
 		fields: [tribe.createdBy],
 		references: [user.id]
@@ -117,8 +122,11 @@ export const activityRelations = relations(activity, ({ one }) => ({
 
 export const mediaRelations = relations(media, ({ one, many }) => ({
 	activities: many(activity),
-	tribes: many(tribe, {
+	tribes_avatar: many(tribe, {
 		relationName: "tribe_avatar_media_id"
+	}),
+	tribes_featured: many(tribe, {
+		relationName: "tribe_featuredMediaId_media_id"
 	}),
 	post: one(post, {
 		fields: [media.postId],

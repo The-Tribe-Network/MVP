@@ -115,6 +115,62 @@ export const step3Schema = z.object({
 
 export const step4Schema = z.object({}).passthrough(); // Invites are optional, so this step is always valid
 
+// Unified schema for react-hook-form (4-step create tribe form)
+export const createTribeFormSchema = z.object({
+  // Step 1: Basic Info
+  tribeName: z
+    .string()
+    .min(1, "Tribe name is required")
+    .min(2, "Tribe name must be at least 2 characters")
+    .max(100, "Tribe name must be less than 100 characters")
+    .trim(),
+  description: z
+    .string()
+    .min(1, "Description is required")
+    .max(1000, "Description must be less than 1000 characters")
+    .trim(),
+  avatar: z.string().optional().default(""),
+  avatarUrl: z.string().optional().default(""), // For preview only
+  category: tribeCategorySchema.default("other"),
+
+  // Step 2: Location
+  location: z
+    .string()
+    .min(1, "Location is required")
+    .refine(
+      (val) => {
+        try {
+          const parsed = JSON.parse(val);
+          return parsed?.placeId != null && parsed?.displayName != null;
+        } catch {
+          return false;
+        }
+      },
+      { message: "Please select a location from the dropdown" }
+    ),
+
+  // Step 3: Privacy
+  privacy: privacyTypeSchema.default("private"),
+
+  // Step 4: Invitations (optional)
+  invitations: z
+    .array(
+      z.object({
+        email: z.string().email("Invalid email address"),
+        role: z.enum(["admin", "moderator", "member"]).default("member"),
+      })
+    )
+    .optional()
+    .default([]),
+});
+
+// Field arrays for step validation
+export const step1Fields = ["tribeName", "description"] as const;
+export const step2Fields = ["location"] as const;
+export const step3Fields = ["privacy"] as const;
+
+export type CreateTribeFormInput = z.infer<typeof createTribeFormSchema>;
+
 // Tribe role enum
 const tribeRoleSchema = z.enum(["admin", "moderator", "member"], {
   errorMap: () => ({

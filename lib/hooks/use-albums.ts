@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/constants/query-keys";
-import { tribeAlbumsOptions } from "@/lib/query-options/albums";
+import { tribeAlbumsOptions, popularAlbumsOptions } from "@/lib/query-options/albums";
 import { createAlbum, type CreateAlbumInput } from "@/lib/api/albums";
 
 // Re-export types for backwards compatibility
@@ -13,6 +13,14 @@ export type { CreateAlbumInput };
  */
 export function useTribeAlbums(tribeId: string, options?: { limit?: number; offset?: number }) {
   return useQuery(tribeAlbumsOptions(tribeId));
+}
+
+/**
+ * Fetch popular albums for a tribe (sorted by photo count)
+ * Returns all albums - component should sort by photoCount
+ */
+export function usePopularAlbums(tribeId: string) {
+  return useQuery(popularAlbumsOptions(tribeId));
 }
 
 /**

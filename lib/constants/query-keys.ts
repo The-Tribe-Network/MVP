@@ -88,6 +88,15 @@ export const queryKeys = {
     detail: (mediaId: string) => ["media", "detail", mediaId] as const,
     tribe: (tribeId: string, filters?: Record<string, unknown>) =>
       ["media", "tribes", tribeId, filters] as const,
+    featured: (tribeId: string) => ["media", "featured", tribeId] as const,
+    popular: (tribeId: string, limit?: number) =>
+      ["media", "popular", tribeId, limit] as const,
+  },
+
+  // Popular albums queries (for highlights page)
+  popularAlbums: {
+    tribe: (tribeId: string, limit?: number) =>
+      ["albums", "popular", tribeId, limit] as const,
   },
 
   // Preferences queries

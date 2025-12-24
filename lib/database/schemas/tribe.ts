@@ -13,7 +13,7 @@ import {
   albumPrivacy,
 } from "./enums";
 
-// Note: avatar references media.id, but we cannot add the .references() constraint here
+// Note: avatar and featuredMediaId reference media.id, but we cannot add the .references() constraint here
 // due to circular dependency (media.ts imports tribe). The relationship is enforced
 // through Drizzle relations in relations.ts and database-level foreign key constraints.
 export const tribe = pgTable("tribe", {
@@ -21,6 +21,7 @@ export const tribe = pgTable("tribe", {
   name: text("name").notNull(),
   description: text("description"),
   avatar: uuid("avatar"),
+  featuredMediaId: uuid("featured_media_id"), // References media.id - for tribe media highlights page
   location: text("location"),
   privacy: privacyType("privacy").notNull().default("private"),
   category: tribeCategory("category").notNull().default("other"),

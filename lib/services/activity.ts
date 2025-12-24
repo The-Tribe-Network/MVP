@@ -184,6 +184,7 @@ export async function getTribeActivities(
         category: tribe.category,
         isFeatured: tribe.isFeatured,
         isTrending: tribe.isTrending,
+        featuredMediaId: tribe.featuredMediaId,
         createdBy: tribe.createdBy,
       },
     })
@@ -257,6 +258,7 @@ export async function getUserTribesActivities(
         category: tribe.category,
         isFeatured: tribe.isFeatured,
         isTrending: tribe.isTrending,
+        featuredMediaId: tribe.featuredMediaId,
         createdBy: tribe.createdBy,
       },
     })
@@ -335,6 +337,7 @@ export async function getUserActivities(
         category: tribe.category,
         isFeatured: tribe.isFeatured,
         isTrending: tribe.isTrending,
+        featuredMediaId: tribe.featuredMediaId,
         createdBy: tribe.createdBy,
       },
     })

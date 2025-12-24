@@ -25,3 +25,15 @@ export function albumDetailOptions(tribeId: string, albumId: string) {
     queryFn: () => fetchAlbumById(tribeId, albumId),
   });
 }
+
+/**
+ * Query options for fetching popular albums (sorted by photo count)
+ * Uses the same tribeAlbums query but components will sort by photoCount
+ */
+export function popularAlbumsOptions(tribeId: string) {
+  return queryOptions({
+    queryKey: queryKeys.popularAlbums.tribe(tribeId),
+    queryFn: () => fetchTribeAlbums(tribeId),
+    staleTime: 1000 * 60, // 1 minute
+  });
+}
