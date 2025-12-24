@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowRight, Plus } from 'lucide-react'
+import { ArrowRight, ChevronDown, Plus, Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Breadcrumb,
@@ -11,13 +11,33 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
-import UploadMediaBtn from './upload-media-btn'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { useDialogStore } from '@/lib/stores/dialog-store'
+import { Separator } from '@/components/ui/separator'
+import { cn } from '@/lib/utils'
+import { useState } from 'react'
 
 interface MediaHighlightsHeaderProps {
   tribeId: string
 }
 
 export function MediaHighlightsHeader({ tribeId }: MediaHighlightsHeaderProps) {
+  const openDialog = useDialogStore((s) => s.openDialog)
+  const [isOpen, setIsOpen] = useState(false)
+
+  const handleToggle = () => {
+    setIsOpen(!isOpen)
+  }
+
+  const handleUploadMedia = () => {
+    openDialog('media-upload', { tribeId })
+  }
+
   return (
     <div className="mb-8">
       <Breadcrumb className="mb-4">
@@ -42,20 +62,34 @@ export function MediaHighlightsHeader({ tribeId }: MediaHighlightsHeaderProps) {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Link
-            href={`/tribe/${tribeId}/media/browse`}
-            className="flex items-center gap-1 text-sm font-medium text-accent hover:underline"
-          >
-            Browse all
-            <ArrowRight className="h-4 w-4" />
-          </Link>
-          <UploadMediaBtn tribeId={tribeId} />
-          <Link href={`/tribe/${tribeId}/media/album/new`}>
-            <Button className="bg-primary hover:bg-primary/90">
-              <Plus className="h-4 w-4 mr-2" />
-              Create Album
-            </Button>
-          </Link>
+          <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="border-l-2">
+                <Plus className="h-4 w-4 mr-2" />
+                Create
+                <Separator orientation="vertical" className="h-4 w-4 ml-2" />
+                <ChevronDown className={cn("h-4 w-4 ml-2 transition-transform duration-300", isOpen ? 'rotate-180' : '')} />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleUploadMedia}>
+                <Upload className="h-4 w-4 mr-2" />
+                Upload Media
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href={`/tribe/${tribeId}/media/album/new`}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Album
+                </Link>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button asChild>
+            <Link href={`/tribe/${tribeId}/media/browse`}>
+              Browse all
+              <ArrowRight className="h-4 w-4 ml-2" />
+            </Link>
+          </Button>
         </div>
       </div>
     </div>

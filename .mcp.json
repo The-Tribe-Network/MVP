@@ -7,7 +7,9 @@
         "-y",
         "@anthropic/postgres-mcp-server"
       ],
-      "env": {}
+      "env": {
+        "DATABASE_URL": "${DATABASE_URL}"
+      }
     },
     "github": {
       "type": "http",

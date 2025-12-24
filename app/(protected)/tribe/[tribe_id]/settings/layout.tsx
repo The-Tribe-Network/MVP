@@ -24,7 +24,7 @@ export default async function SettingsLayout({
         <SettingsHeader tribeId={tribe_id} />
 
         <div className="flex gap-8 mt-6">
-          <div className="sticky top-6 self-start">
+          <div className="sticky self-start top-[72px]">
             <SettingsNavigation tribeId={tribe_id} />
           </div>
           <div className="flex-1 pb-12">{children}</div>
