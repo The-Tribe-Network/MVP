@@ -36,6 +36,7 @@ export function GeneralSettings({ tribeId }: GeneralSettingsProps) {
       name: tribe?.name || '',
       description: tribe?.description || '',
       avatar: undefined,
+      banner: undefined,
       location: tribe?.location || undefined,
       category: tribe?.category || 'other',
       privacy: tribe?.privacy || 'private',
@@ -45,6 +46,7 @@ export function GeneralSettings({ tribeId }: GeneralSettingsProps) {
           name: tribe.name,
           description: tribe.description || undefined,
           avatar: typeof tribe.avatar === 'string' && tribe.avatar.startsWith('http') ? undefined : tribe.avatar || undefined,
+          banner: typeof tribe.banner === 'string' && tribe.banner.startsWith('http') ? undefined : tribe.banner || undefined,
           location: tribe.location || undefined,
           category: tribe.category,
           privacy: tribe.privacy,
@@ -83,9 +85,12 @@ export function GeneralSettings({ tribeId }: GeneralSettingsProps) {
     );
   }
 
-  // Get avatar URL for display
-  const avatarUrl = typeof tribe.avatar === 'string' && tribe.avatar.startsWith('http') 
-    ? tribe.avatar 
+  // Get avatar and banner URLs for display
+  const avatarUrl = typeof tribe.avatar === 'string' && tribe.avatar.startsWith('http')
+    ? tribe.avatar
+    : undefined;
+  const bannerUrl = typeof tribe.banner === 'string' && tribe.banner.startsWith('http')
+    ? tribe.banner
     : undefined;
 
   return (
@@ -99,9 +104,10 @@ export function GeneralSettings({ tribeId }: GeneralSettingsProps) {
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <TribeProfileSection 
-            control={form.control} 
+          <TribeProfileSection
+            control={form.control}
             avatarUrl={avatarUrl}
+            bannerUrl={bannerUrl}
             tribeName={tribe.name}
           />
 

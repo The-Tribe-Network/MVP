@@ -75,7 +75,6 @@ export default function PostCard({
   const avatarClassName = avatarSize === 'large' ? 'h-12 w-12' : ''
   const contentClassName = contentSize === 'base' ? 'text-base' : 'text-sm'
   const authorNameClassName = contentSize === 'base' ? 'font-semibold' : 'font-semibold text-sm'
-  const usernameClassName = contentSize === 'base' ? 'text-sm text-muted-foreground' : 'text-xs text-muted-foreground'
   const timestampClassName = contentSize === 'base' ? 'text-sm text-muted-foreground' : 'text-xs text-muted-foreground'
 
   // Format timestamp - PostWithStats has createdAt as Date
@@ -96,19 +95,10 @@ export default function PostCard({
             <AvatarFallback>{post.author.name?.[0] || 'U'}</AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col">
               <span className={authorNameClassName}>{post.author.name}</span>
-              <span className={usernameClassName}>@{post.author.name?.toLowerCase().replace(/\s+/g, '')}</span>
-              {contentSize === 'sm' && (
-                <>
-                  <span className="text-xs text-muted-foreground">·</span>
-                  <span className={timestampClassName}>{timestamp}</span>
-                </>
-              )}
-            </div>
-            {contentSize === 'base' && (
               <span className={timestampClassName}>{timestamp}</span>
-            )}
+            </div>
             <p className={cn("mt-2 leading-relaxed text-pretty", contentClassName)}>
               {post.content}
             </p>

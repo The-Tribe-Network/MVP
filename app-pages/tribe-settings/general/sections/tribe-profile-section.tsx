@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react';
 import { type Control, useWatch } from 'react-hook-form';
-import { Upload, Loader2 } from 'lucide-react';
+import { Upload, Loader2, ImageIcon, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -29,6 +29,7 @@ import { useFormContext } from 'react-hook-form';
 import type { UpdateTribeInput } from '@/lib/validations/tribe';
 import { LocationField } from './location-field';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 
 const CATEGORY_LABELS: Record<string, string> = {
   social: 'Social',
@@ -44,25 +45,32 @@ const CATEGORIES = ['social', 'gaming', 'family', 'work', 'hobbies', 'other'];
 interface TribeProfileSectionProps {
   control: Control<UpdateTribeInput>;
   avatarUrl?: string;
+  bannerUrl?: string;
   tribeName: string;
 }
 
 export function TribeProfileSection({
   control,
   avatarUrl,
+  bannerUrl,
   tribeName,
 }: TribeProfileSectionProps) {
   const { setValue } = useFormContext<UpdateTribeInput>();
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const avatarFileInputRef = useRef<HTMLInputElement>(null);
+  const bannerFileInputRef = useRef<HTMLInputElement>(null);
   const uploadAvatar = useUploadAvatar();
+  const uploadBanner = useUploadAvatar(); // Reuse avatar upload for banner
   const deleteMedia = useDeleteMedia();
-  const [isUploading, setIsUploading] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [isUploadingBanner, setIsUploadingBanner] = useState(false);
   const [currentAvatarUrl, setCurrentAvatarUrl] = useState<string | undefined>(avatarUrl);
+  const [currentBannerUrl, setCurrentBannerUrl] = useState<string | undefined>(bannerUrl);
 
   const watchedName = useWatch({ control, name: 'name' }) || tribeName;
   const watchedAvatar = useWatch({ control, name: 'avatar' });
+  const watchedBanner = useWatch({ control, name: 'banner' });
 
-  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -72,7 +80,7 @@ export function TribeProfileSection({
       return;
     }
 
-    setIsUploading(true);
+    setIsUploadingAvatar(true);
     try {
       const result = await uploadAvatar.mutateAsync(file);
       setValue('avatar', result.id);
@@ -81,20 +89,46 @@ export function TribeProfileSection({
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to upload avatar');
     } finally {
-      setIsUploading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+      setIsUploadingAvatar(false);
+      if (avatarFileInputRef.current) {
+        avatarFileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleBannerFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const validation = validateImageFile(file);
+    if (!validation.valid) {
+      toast.error(validation.error || 'Invalid file');
+      return;
+    }
+
+    setIsUploadingBanner(true);
+    try {
+      const result = await uploadBanner.mutateAsync(file);
+      setValue('banner', result.id);
+      setCurrentBannerUrl(result.url);
+      toast.success('Banner uploaded successfully!');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to upload banner');
+    } finally {
+      setIsUploadingBanner(false);
+      if (bannerFileInputRef.current) {
+        bannerFileInputRef.current.value = '';
       }
     }
   };
 
   const handleRemoveAvatar = async () => {
     const currentAvatar = watchedAvatar;
-    
+
     // Check if avatar is a media ID (UUID) that needs to be deleted
     // UUIDs are 36 characters with dashes, and don't start with 'http'
-    const isMediaId = currentAvatar && 
-      typeof currentAvatar === 'string' && 
+    const isMediaId = currentAvatar &&
+      typeof currentAvatar === 'string' &&
       !currentAvatar.startsWith('http') &&
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(currentAvatar);
 
@@ -115,8 +149,38 @@ export function TribeProfileSection({
     setCurrentAvatarUrl(undefined);
   };
 
-  const handleUploadClick = () => {
-    fileInputRef.current?.click();
+  const handleRemoveBanner = async () => {
+    const currentBanner = watchedBanner;
+
+    // Check if banner is a media ID (UUID) that needs to be deleted
+    const isMediaId = currentBanner &&
+      typeof currentBanner === 'string' &&
+      !currentBanner.startsWith('http') &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(currentBanner);
+
+    // If it's a media ID, delete it from Cloudinary and database
+    if (isMediaId) {
+      try {
+        await deleteMedia.mutateAsync(currentBanner);
+        toast.success('Banner removed successfully');
+      } catch (error) {
+        console.error('Failed to delete banner media:', error);
+        toast.error('Failed to delete banner. Please try again.');
+        return; // Don't clear the banner if deletion failed
+      }
+    }
+
+    // Set to empty string which will be transformed to null by the schema
+    setValue('banner', '');
+    setCurrentBannerUrl(undefined);
+  };
+
+  const handleAvatarUploadClick = () => {
+    avatarFileInputRef.current?.click();
+  };
+
+  const handleBannerUploadClick = () => {
+    bannerFileInputRef.current?.click();
   };
 
   return (
@@ -128,6 +192,81 @@ export function TribeProfileSection({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Banner Upload Section */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <ImageIcon className="h-4 w-4" />
+            <span>Banner Image</span>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            A 16:9 banner image that appears at the top of your tribe dashboard
+          </p>
+
+          {/* Hidden file input for banner */}
+          <input
+            ref={bannerFileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            onChange={handleBannerFileSelect}
+            className="hidden"
+          />
+
+          {currentBannerUrl ? (
+            /* Banner preview with 16:9 aspect ratio */
+            <div className="relative rounded-lg overflow-hidden border border-border">
+              <div className="aspect-video">
+                <img
+                  src={currentBannerUrl}
+                  alt="Banner preview"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="absolute top-2 right-2 h-8 w-8 bg-background/80 hover:bg-background"
+                onClick={handleRemoveBanner}
+                disabled={isUploadingBanner || deleteMedia.isPending}
+              >
+                {deleteMedia.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <X className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+          ) : (
+            /* Upload button/zone for banner */
+            <button
+              type="button"
+              onClick={handleBannerUploadClick}
+              disabled={isUploadingBanner}
+              className={cn(
+                'w-full aspect-video border-2 border-dashed rounded-lg',
+                'flex flex-col items-center justify-center gap-2',
+                'text-muted-foreground hover:text-foreground hover:border-foreground/50',
+                'transition-colors cursor-pointer',
+                isUploadingBanner && 'opacity-50 cursor-not-allowed'
+              )}
+            >
+              {isUploadingBanner ? (
+                <>
+                  <Loader2 className="h-8 w-8 animate-spin" />
+                  <span className="text-sm">Uploading...</span>
+                </>
+              ) : (
+                <>
+                  <ImageIcon className="h-8 w-8" />
+                  <span className="text-sm">Click to upload a banner image</span>
+                  <span className="text-xs">16:9 aspect ratio recommended • PNG, JPG, WebP up to 5MB</span>
+                </>
+              )}
+            </button>
+          )}
+        </div>
+
+        {/* Avatar Upload */}
         <div className="flex flex-col items-center gap-4">
           <Avatar className="w-24 h-24">
             <AvatarImage src={currentAvatarUrl || '/placeholder.svg?height=96&width=96'} />
@@ -136,10 +275,10 @@ export function TribeProfileSection({
             </AvatarFallback>
           </Avatar>
           <input
-            ref={fileInputRef}
+            ref={avatarFileInputRef}
             type="file"
             accept="image/jpeg,image/png,image/webp"
-            onChange={handleFileSelect}
+            onChange={handleAvatarFileSelect}
             className="hidden"
           />
           <div className="flex gap-2">
@@ -148,10 +287,10 @@ export function TribeProfileSection({
               variant="outline"
               size="sm"
               className="gap-2"
-              onClick={handleUploadClick}
-              disabled={isUploading}
+              onClick={handleAvatarUploadClick}
+              disabled={isUploadingAvatar}
             >
-              {isUploading ? (
+              {isUploadingAvatar ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
                   Uploading...
@@ -169,7 +308,7 @@ export function TribeProfileSection({
                 variant="outline"
                 size="sm"
                 onClick={handleRemoveAvatar}
-                disabled={isUploading || deleteMedia.isPending}
+                disabled={isUploadingAvatar || deleteMedia.isPending}
               >
                 {deleteMedia.isPending ? (
                   <>
