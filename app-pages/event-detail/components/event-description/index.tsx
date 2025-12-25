@@ -1,6 +1,5 @@
 'use client'
 
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import type { EventWithDetails } from '@/lib/database/types'
 import { EventDescriptionSkeleton } from './loading'
 
@@ -12,22 +11,19 @@ interface EventDescriptionProps {
 /**
  * Event Description Section
  *
- * Displays the full event description
+ * Displays the full event description without card wrapper
  */
 export function EventDescription({ event, isLoading }: EventDescriptionProps) {
   // Loading state
   if (isLoading) return <EventDescriptionSkeleton />
 
-  if (!event) return null
+  if (!event || !event.description) return null
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>About this event</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <p className="text-muted-foreground whitespace-pre-wrap">{event.description}</p>
-      </CardContent>
-    </Card>
+    <div className="space-y-2">
+      <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">
+        {event.description}
+      </p>
+    </div>
   )
 }

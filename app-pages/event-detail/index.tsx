@@ -1,7 +1,6 @@
 'use client'
 
 import Link from 'next/link'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -10,14 +9,18 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
+import { Separator } from '@/components/ui/separator'
 import { EventHeader } from './components/event-header'
-import { EventInfoCard } from './components/event-info-card'
+import { EventCoverImage } from './components/event-cover-image'
+import { EventDateDisplay } from './components/event-date-display'
+import { EventTitleSection } from './components/event-title-section'
+import { EventAttendeesInline } from './components/event-attendees-inline'
 import { EventDescription } from './components/event-description'
+import { EventTabs } from './components/event-tabs'
 import { EventCommentsSection } from './components/event-comments'
-import { EventAttachmentsSection } from './components/event-attachments'
+import { EventRsvpStats } from './components/event-rsvp-stats'
 import { EventLocationMap } from './components/event-location'
 import { EventPollsSection } from './components/event-polls'
-import { EventAttendeesSection } from './components/event-attendees'
 import { useEventDetail } from '@/lib/hooks/use-events'
 
 interface EventDetailContentProps {
@@ -28,13 +31,13 @@ interface EventDetailContentProps {
 /**
  * Event Detail Page - Root Component
  *
- * Thin wrapper that composes all event detail sections together.
- * Each section handles its own data fetching, loading, error, and empty states.
+ * Clean, content-focused layout inspired by Party Pipes UI reference.
+ * No card-heavy design - uses spacing and separators for sections.
  *
- * Architecture Pattern:
- * - Root component: Layout and section composition only
- * - Section components: Handle data fetching and state management
- * - State components: Loading, error, empty states
+ * Layout:
+ * - Header: Breadcrumbs + Action buttons (RSVP, Share, More)
+ * - Left Column: Cover image, date/time, title, attendees, description, tabs
+ * - Right Column: RSVP stats, location, polls
  */
 export function EventDetailContent({ tribeId, eventId }: EventDetailContentProps) {
   const { data: event, isLoading, error, isError, refetch } = useEventDetail(tribeId, eventId)
@@ -42,73 +45,95 @@ export function EventDetailContent({ tribeId, eventId }: EventDetailContentProps
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto p-6 space-y-6">
-        {/* Breadcrumb Navigation */}
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbLink asChild>
-                <Link href={`/tribe/${tribeId}`}>Dashboard</Link>
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbLink asChild>
-                <Link href={`/tribe/${tribeId}/events`}>Events</Link>
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbPage>{event?.title || 'Event'}</BreadcrumbPage>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
+        {/* Top Bar: Breadcrumb + Actions */}
+        <div className="flex items-center justify-between">
+          {/* Breadcrumb Navigation */}
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink asChild>
+                  <Link href={`/tribe/${tribeId}`}>Dashboard</Link>
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbLink asChild>
+                  <Link href={`/tribe/${tribeId}/events`}>Events</Link>
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage>{event?.title || 'Event'}</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
 
-        {/* Header */}
-        <EventHeader
-          event={event}
-          tribeId={tribeId}
-          isLoading={isLoading}
-          isError={isError}
-          error={error}
-          onRetry={() => refetch()}
-        />
+          {/* Action Buttons (simplified header) */}
+          <EventHeader
+            event={event}
+            tribeId={tribeId}
+            isLoading={isLoading}
+            isError={isError}
+            error={error}
+            onRetry={() => refetch()}
+          />
+        </div>
 
         {/* Only render content if event exists or is loading */}
         {(event || isLoading) && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left Column - Main Details */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Left Column - Main Content */}
             <div className="lg:col-span-2 space-y-6">
-              {/* Quick Info Card */}
-              <EventInfoCard event={event} isLoading={isLoading} />
+              {/* Cover Image (if exists) */}
+              <EventCoverImage
+                coverImageUrl={event?.coverImageUrl}
+                title={event?.title || 'Event'}
+                isLoading={isLoading}
+              />
+
+              {/* Date & Time Display */}
+              {event && (
+                <EventDateDisplay
+                  startDate={event.startDate}
+                  endDate={event.endDate}
+                  isLoading={isLoading}
+                />
+              )}
+
+              {/* Title, Host, Status Badges */}
+              <EventTitleSection event={event} isLoading={isLoading} />
+
+              {/* Inline Attendees */}
+              <EventAttendeesInline tribeId={tribeId} eventId={eventId} />
 
               {/* Description */}
               <EventDescription event={event} isLoading={isLoading} />
 
-              {/* Tabs for Comments and Attachments */}
-              <Tabs defaultValue="discussion" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="discussion">Discussion</TabsTrigger>
-                  <TabsTrigger value="attachments">Media & Links</TabsTrigger>
-                </TabsList>
-                <TabsContent value="discussion" className="mt-6">
-                  <EventCommentsSection tribeId={tribeId} eventId={eventId} />
-                </TabsContent>
-                <TabsContent value="attachments" className="mt-6">
-                  <EventAttachmentsSection eventId={eventId} />
-                </TabsContent>
-              </Tabs>
+              {/* Separator before tabs */}
+              <Separator />
+
+              {/* Underline Tabs: Discussion, Attachments, Timeline */}
+              <EventTabs>
+                <EventCommentsSection tribeId={tribeId} eventId={eventId} />
+              </EventTabs>
             </div>
 
-            {/* Right Column - Location, Polls, Attendees */}
+            {/* Right Column - Sidebar */}
             <div className="lg:col-span-1 space-y-6">
+              {/* RSVP Stats */}
+              <EventRsvpStats tribeId={tribeId} eventId={eventId} />
+
+              <Separator />
+
               {/* Location Map */}
-              {event?.location && <EventLocationMap location={event.location} isLoading={isLoading} />}
+              {event?.location && (
+                <EventLocationMap location={event.location} isLoading={isLoading} />
+              )}
+
+              {event?.location && <Separator />}
 
               {/* Polls Section */}
               <EventPollsSection tribeId={tribeId} eventId={eventId} />
-
-              {/* Attendees */}
-              <EventAttendeesSection tribeId={tribeId} eventId={eventId} />
             </div>
           </div>
         )}

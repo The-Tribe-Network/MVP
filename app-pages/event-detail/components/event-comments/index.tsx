@@ -1,10 +1,8 @@
 'use client'
 
 import { toast } from 'sonner'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
-import { MessageCircle } from 'lucide-react'
 import { CommentForm } from './comment-form'
 import { CommentItem } from './comment-item'
 import { EventCommentsSkeleton } from './loading'
@@ -40,6 +38,7 @@ function transformCommentToUI(comment: CommentWithStats): EventComment {
  * Event Comments Section
  *
  * Displays comments for the event with create/like functionality
+ * No card wrapper - designed for use within EventTabs
  */
 export function EventCommentsSection({ tribeId, eventId }: EventCommentsSectionProps) {
   const queryResult = useEventComments(tribeId, eventId)
@@ -91,32 +90,24 @@ export function EventCommentsSection({ tribeId, eventId }: EventCommentsSectionP
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg flex items-center gap-2">
-          <MessageCircle className="h-5 w-5" />
-          Discussion ({comments.length})
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Comment Form */}
-        <CommentForm onSubmit={handleSubmitComment} disabled={createCommentMutation.isPending} />
+    <div className="space-y-4">
+      {/* Comment Form */}
+      <CommentForm onSubmit={handleSubmitComment} disabled={createCommentMutation.isPending} />
 
-        <Separator />
+      <Separator />
 
-        {/* Comments List */}
-        {comments.length === 0 ? (
-          <EventCommentsEmpty />
-        ) : (
-          <ScrollArea className="h-[400px] pr-4">
-            <div className="space-y-4">
-              {comments.map((comment) => (
-                <CommentItem key={comment.id} comment={comment} onLike={handleLikeComment} />
-              ))}
-            </div>
-          </ScrollArea>
-        )}
-      </CardContent>
-    </Card>
+      {/* Comments List */}
+      {comments.length === 0 ? (
+        <EventCommentsEmpty />
+      ) : (
+        <ScrollArea className="h-[400px] pr-4">
+          <div className="space-y-4">
+            {comments.map((comment) => (
+              <CommentItem key={comment.id} comment={comment} onLike={handleLikeComment} />
+            ))}
+          </div>
+        </ScrollArea>
+      )}
+    </div>
   )
 }

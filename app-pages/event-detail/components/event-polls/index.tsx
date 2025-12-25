@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Vote, Plus } from 'lucide-react'
@@ -53,6 +52,7 @@ function transformPoll(poll: PollWithDetails): Poll {
  * Event Polls Section
  *
  * Displays polls for the event with voting functionality
+ * No card wrapper - uses section styling
  */
 export function EventPollsSection({ tribeId, eventId }: EventPollsSectionProps) {
   const { data: pollsData, isLoading, error, isError, refetch } = useEventPolls(tribeId, eventId)
@@ -133,33 +133,30 @@ export function EventPollsSection({ tribeId, eventId }: EventPollsSectionProps) 
 
   return (
     <>
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Vote className="h-5 w-5" />
-              Polls ({polls.length})
-            </CardTitle>
-            <Button size="sm" onClick={() => setIsCreateOpen(true)} className="h-8">
-              <Plus className="h-4 w-4 mr-1" />
-              New Poll
-            </Button>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Vote className="h-5 w-5 text-muted-foreground" />
+            <h3 className="font-semibold">Polls ({polls.length})</h3>
           </div>
-        </CardHeader>
-        <CardContent>
-          {polls.length === 0 ? (
-            <EventPollsEmpty onCreatePoll={() => setIsCreateOpen(true)} />
-          ) : (
-            <ScrollArea className="h-[400px] pr-2">
-              <div className="space-y-3">
-                {polls.map((poll) => (
-                  <PollCard key={poll.id} poll={poll} onVote={handleVote} />
-                ))}
-              </div>
-            </ScrollArea>
-          )}
-        </CardContent>
-      </Card>
+          <Button size="sm" onClick={() => setIsCreateOpen(true)} className="h-8">
+            <Plus className="h-4 w-4 mr-1" />
+            New Poll
+          </Button>
+        </div>
+
+        {polls.length === 0 ? (
+          <EventPollsEmpty onCreatePoll={() => setIsCreateOpen(true)} />
+        ) : (
+          <ScrollArea className="h-[400px] pr-2">
+            <div className="space-y-3">
+              {polls.map((poll) => (
+                <PollCard key={poll.id} poll={poll} onVote={handleVote} />
+              ))}
+            </div>
+          </ScrollArea>
+        )}
+      </div>
 
       <CreatePollSheet
         open={isCreateOpen}
