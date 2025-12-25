@@ -1,5 +1,3 @@
-export { BasicInfoStep } from "./basic-info-step"
-export { DateTimeStep } from "./date-time-step"
-export { LocationStep } from "./location-step"
+export { DetailsStep } from "./details-step"
 export { PollStep } from "./poll-step"
 export { ReviewStep } from "./review-step"

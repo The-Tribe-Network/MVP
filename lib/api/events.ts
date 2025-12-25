@@ -13,6 +13,7 @@ export interface CreateEventInput {
   startDate: Date;
   endDate?: Date;
   location?: string;
+  coverImageUrl?: string | null;
   poll?: {
     question: string;
     options: string[];

@@ -1,8 +1,7 @@
 "use client"
 
 import { Vote, Calendar as CalendarIcon } from "lucide-react"
-import { Control, useFieldArray } from "react-hook-form"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Control, useFieldArray, useWatch } from "react-hook-form"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
@@ -22,45 +21,22 @@ interface PollStepProps {
 }
 
 export function PollStep({ control }: PollStepProps) {
-  // Watch poll value to determine if poll is included
-  const pollValue = control._formValues.poll
-
-  const handleTogglePoll = (checked: boolean) => {
-    if (checked) {
-      // Initialize poll with default values
-      control._defaultValues.poll = {
-        question: "",
-        options: ["", ""],
-        allowMultiple: false,
-        isAnonymous: false,
-      }
-      // Use setValue from the field
-      const formControl = control as any
-      formControl._subjects.state.next({
-        name: 'poll',
-      })
-    } else {
-      // Remove poll
-      const formControl = control as any
-      formControl._subjects.state.next({
-        name: 'poll',
-      })
-    }
-  }
+  // Watch poll value to determine if poll is included (reactive)
+  const pollValue = useWatch({ control, name: "poll" })
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <div className="flex items-center gap-2 mb-1">
           <Vote className="h-5 w-5" />
-          Add a Poll
+          <h3 className="text-lg font-semibold">Add a Poll</h3>
           <Badge variant="outline" className="ml-2 font-normal">Optional</Badge>
-        </CardTitle>
-        <CardDescription>
+        </div>
+        <p className="text-sm text-muted-foreground">
           Create a poll to let attendees vote on event details
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
+        </p>
+      </div>
         {/* Toggle to include poll */}
         <FormField
           control={control}
@@ -225,8 +201,7 @@ export function PollStep({ control }: PollStepProps) {
             </div>
           </>
         )}
-      </CardContent>
-    </Card>
+    </div>
   )
 }
 

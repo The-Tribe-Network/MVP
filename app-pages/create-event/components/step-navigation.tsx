@@ -18,7 +18,7 @@ export function StepNavigation({
   isSubmitting,
   onPrevious,
   onNext,
-  onSubmit
+  onSubmit,
 }: StepNavigationProps) {
   const isFirstStep = currentStep === 1
   const isLastStep = currentStep === totalSteps
@@ -41,7 +41,7 @@ export function StepNavigation({
           <ArrowRight className="h-4 w-4 ml-2" />
         </Button>
       ) : (
-        <Button type="submit" disabled={isSubmitting} onClick={onSubmit}>
+        <Button type="button" disabled={isSubmitting} onClick={onSubmit}>
           {isSubmitting ? "Creating..." : "Create Event"}
           <Check className="h-4 w-4 ml-2" />
         </Button>

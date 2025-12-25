@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { Label } from '@/components/ui/label'
-import { LocationStep } from '@/app-pages/create-new-tribe/LocationStep'
+import { LocationField } from '@/app-pages/tribe-settings/general/sections/location-field'
 import { useProfileForm } from './use-profile-form'
 import { AvatarSection } from './avatar-section'
 import { UsernameField } from './username-field'
@@ -112,9 +112,9 @@ export function ProfileTab() {
           {/* Location */}
           <div className="space-y-2">
             <Label htmlFor="location">Location</Label>
-            <LocationStep
-              location={formData.location}
-              onLocationChange={(value) => updateField('location', value)}
+            <LocationField
+              value={formData.location}
+              onChange={(value: string) => updateField('location', value)}
             />
             <p className="text-xs text-muted-foreground">
               This helps members find local events and meetups

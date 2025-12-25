@@ -66,6 +66,32 @@ Specialized for building forms with react-hook-form:
 
 **Usage:** `@.claude/commands/form.md [your form task]`
 
+## Guides (Reference Documentation)
+
+### Navigation Guide
+Comprehensive guide for subpage headers and breadcrumb navigation:
+- SubpageHeader component usage
+- Breadcrumb patterns for all page types
+- Settings page layout with sticky navigation
+- Anti-patterns to avoid (never use back buttons)
+
+**Reference:** `.claude/navigation-guide.md`
+
+### TanStack Query Guide
+Deep-dive into data fetching patterns:
+- Query options and hooks architecture
+- Mutation and invalidation strategies
+- Server-side prefetching
+- Optimistic updates
+
+**Reference:** `.claude/tanstack-query-guide.md`
+
+### Form Guides
+Architecture and patterns for form development:
+- Quick reference: `.claude/form-quick-reference.md`
+- Architecture guide: `.claude/form-architecture-guide.md`
+- Guide index: `.claude/FORM_GUIDE_INDEX.md`
+
 ## Automatic Instructions
 
 The file `.claude/instructions.md` is automatically loaded by Cursor and provides general project guidance. You don't need to reference it manually.

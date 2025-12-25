@@ -2,7 +2,6 @@
 
 import { format } from "date-fns"
 import { Check, Vote } from "lucide-react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import type { CreateEventWithPollInput } from "@/lib/validations/event"
 
@@ -15,18 +14,32 @@ export function ReviewStep({ formData }: ReviewStepProps) {
   const includePoll = poll !== null && poll !== undefined
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <div className="flex items-center gap-2 mb-1">
           <Check className="h-5 w-5" />
-          Review & Submit
-        </CardTitle>
-        <CardDescription>
+          <h3 className="text-lg font-semibold">Review & Submit</h3>
+        </div>
+        <p className="text-sm text-muted-foreground">
           Review your event details before submitting
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
+        </p>
+      </div>
         <div className="space-y-4">
+          {/* Cover Image Preview */}
+          {formData.coverImageUrl && (
+            <div>
+              <h3 className="text-sm font-medium text-muted-foreground mb-1">
+                Cover Image
+              </h3>
+              <img
+                src={formData.coverImageUrl}
+                alt="Event cover"
+                className="w-full h-48 object-cover rounded-lg border"
+              />
+            </div>
+          )}
+
           <div>
             <h3 className="text-sm font-medium text-muted-foreground mb-1">
               Event Title
@@ -110,13 +123,12 @@ export function ReviewStep({ formData }: ReviewStepProps) {
           </div>
         </div>
 
-        <div className="p-4 bg-muted rounded-lg">
-          <p className="text-sm text-muted-foreground">
-            Once submitted, your event will be visible to all tribe members.
-            They can RSVP and see all the details you've provided.
-          </p>
-        </div>
-      </CardContent>
-    </Card>
+      <div className="p-4 bg-muted rounded-lg">
+        <p className="text-sm text-muted-foreground">
+          Once submitted, your event will be visible to all tribe members.
+          They can RSVP and see all the details you've provided.
+        </p>
+      </div>
+    </div>
   )
 }

@@ -7,6 +7,7 @@ When working on frontend tasks in this project:
 3. **Keep `/app` pages as Server Components** - no "use client" directive
 4. **Use the data fetching pattern** shown in `app/(protected)/tribe/[tribe_id]/page.tsx`
 5. **Follow PRD requirements** in docs/PRD.md and docs/MVP_PRD.md
+6. **Use breadcrumb navigation** for all tribe subpages (never back buttons)
 
 ## Specialized Commands
 
@@ -19,8 +20,21 @@ Use these commands for task-specific guidance:
 - **Data Fetching:** Use `@.claude/commands/tanstack-query.md` for TanStack Query
   - Comprehensive guide: `.claude/tanstack-query-guide.md`
 
+- **Navigation:** Use `.claude/navigation-guide.md` for subpage headers and breadcrumbs
+  - Key component: `components/shared/subpage-header.tsx`
+
 - **Frontend:** Use `@.claude/commands/frontend.md` for React/Next.js tasks
 - **Backend:** Use `@.claude/commands/backend.md` for API/service layer tasks
+
+## Navigation & Headers Rules
+
+When building tribe subpages:
+
+1. **ALWAYS use breadcrumb navigation** - Never use back buttons or `router.back()`
+2. **Use SubpageHeader component** - From `components/shared/subpage-header.tsx`
+3. **Start breadcrumbs with "Dashboard"** - This is handled automatically by SubpageHeader
+4. **Provide href for intermediate items** - Only the last breadcrumb item should be non-clickable
+5. **See navigation guide** for patterns and examples
 
 ## Form Development Rules
 

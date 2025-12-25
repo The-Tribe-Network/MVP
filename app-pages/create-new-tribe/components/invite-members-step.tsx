@@ -1,3 +1,7 @@
+'use client'
+
+import { useState } from 'react'
+import { useFieldArray, type Control } from 'react-hook-form'
 import { UserPlus, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -9,25 +13,38 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { InvitedMember } from './types'
+import type { CreateTribeFormInput } from '@/lib/validations/tribe'
 
 interface InviteMembersStepProps {
-  inviteEmails: InvitedMember[]
-  currentEmail: string
-  onEmailChange: (value: string) => void
-  onAddEmail: () => void
-  onRemoveEmail: (email: string) => void
-  onUpdateRole: (email: string, role: 'admin' | 'moderator' | 'member') => void
+  control: Control<CreateTribeFormInput>
 }
 
-export function InviteMembersStep({
-  inviteEmails,
-  currentEmail,
-  onEmailChange,
-  onAddEmail,
-  onRemoveEmail,
-  onUpdateRole,
-}: InviteMembersStepProps) {
+export function InviteMembersStep({ control }: InviteMembersStepProps) {
+  const [currentEmail, setCurrentEmail] = useState('')
+
+  const { fields, append, remove, update } = useFieldArray({
+    control,
+    name: 'invitations',
+  })
+
+  const handleAddEmail = () => {
+    if (currentEmail && currentEmail.includes('@')) {
+      // Check for duplicates
+      if (!fields.some((f) => f.email === currentEmail)) {
+        append({ email: currentEmail, role: 'member' })
+      }
+      setCurrentEmail('')
+    }
+  }
+
+  const handleRemoveEmail = (index: number) => {
+    remove(index)
+  }
+
+  const handleUpdateRole = (index: number, newRole: 'admin' | 'moderator' | 'member') => {
+    update(index, { ...fields[index], role: newRole })
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-center py-8">
@@ -44,16 +61,16 @@ export function InviteMembersStep({
             type="email"
             placeholder="friend@example.com"
             value={currentEmail}
-            onChange={(e) => onEmailChange(e.target.value)}
+            onChange={(e) => setCurrentEmail(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault()
-                onAddEmail()
+                handleAddEmail()
               }
             }}
             className="bg-white/5 border-zinc-700"
           />
-          <Button onClick={onAddEmail} type="button">
+          <Button type="button" onClick={handleAddEmail}>
             Add
           </Button>
         </div>
@@ -62,20 +79,20 @@ export function InviteMembersStep({
         </p>
       </div>
 
-      {inviteEmails.length > 0 && (
+      {fields.length > 0 && (
         <div className="space-y-2">
-          <Label>Invited Members ({inviteEmails.length})</Label>
+          <Label>Invited Members ({fields.length})</Label>
           <div className="space-y-2">
-            {inviteEmails.map((member) => (
+            {fields.map((field, index) => (
               <div
-                key={member.email}
+                key={field.id}
                 className="flex items-center justify-between gap-3 p-3 bg-zinc-800/50 rounded-lg"
               >
-                <span className="text-sm flex-1">{member.email}</span>
+                <span className="text-sm flex-1">{field.email}</span>
                 <Select
-                  value={member.role}
+                  value={field.role}
                   onValueChange={(value: 'admin' | 'moderator' | 'member') =>
-                    onUpdateRole(member.email, value)
+                    handleUpdateRole(index, value)
                   }
                 >
                   <SelectTrigger className="w-[140px] h-8 bg-zinc-700/50 border-zinc-600">
@@ -88,9 +105,10 @@ export function InviteMembersStep({
                   </SelectContent>
                 </Select>
                 <Button
+                  type="button"
                   variant="ghost"
                   size="sm"
-                  onClick={() => onRemoveEmail(member.email)}
+                  onClick={() => handleRemoveEmail(index)}
                   className="h-8 w-8 p-0"
                 >
                   <X className="h-4 w-4" />
@@ -101,7 +119,7 @@ export function InviteMembersStep({
         </div>
       )}
 
-      {inviteEmails.length === 0 && (
+      {fields.length === 0 && (
         <div className="text-center py-8">
           <p className="text-sm text-muted-foreground">
             No members invited yet. You can always invite members later!
@@ -111,4 +129,3 @@ export function InviteMembersStep({
     </div>
   )
 }
-

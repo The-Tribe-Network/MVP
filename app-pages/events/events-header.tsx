@@ -15,6 +15,7 @@ export function EventsHeader({ tribeId }: EventsHeaderProps) {
       title="Tribe Events"
       subtitle="Plan and manage your tribe's events"
       actions={<CreateEventDialog />}
+      className="mb-8"
     />
   )
 }

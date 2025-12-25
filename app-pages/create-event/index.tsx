@@ -5,14 +5,17 @@ import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Form } from "@/components/ui/form"
-import { createEventWithPollSchema, type CreateEventWithPollInput } from "@/lib/validations/event"
+import { Separator } from "@/components/ui/separator"
+import {
+  createEventWithPollSchema,
+  type CreateEventWithPollInput,
+} from "@/lib/validations/event"
 import { toast } from "sonner"
 import { useCreateEvent } from "@/lib/hooks/use-events"
-import { EventCreationStepper } from "./components/event-creation-stepper"
+import { SubpageHeader } from "@/components/shared/subpage-header"
+import { StepSidebar } from "./components/step-sidebar"
 import { StepNavigation } from "./components/step-navigation"
-import { BasicInfoStep } from "./steps/basic-info-step"
-import { DateTimeStep } from "./steps/date-time-step"
-import { LocationStep } from "./steps/location-step"
+import { DetailsStep } from "./steps/details-step"
 import { PollStep } from "./steps/poll-step"
 import { ReviewStep } from "./steps/review-step"
 
@@ -21,12 +24,24 @@ interface CreateEventPageProps {
 }
 
 const STEPS = [
-  { id: 1, name: "Basic Info", description: "Event title and description" },
-  { id: 2, name: "Date & Time", description: "When is your event?" },
-  { id: 3, name: "Location", description: "Where will it take place?" },
-  { id: 4, name: "Poll", description: "Add an optional poll" },
-  { id: 5, name: "Review", description: "Review and submit" },
+  { id: 1, name: "Details" },
+  { id: 2, name: "Poll" },
+  { id: 3, name: "Review" },
 ]
+
+// Map step to fields for validation
+const getStepFields = (step: number): (keyof CreateEventWithPollInput)[] => {
+  switch (step) {
+    case 1:
+      return ["title", "description", "startDate", "endDate", "location"]
+    case 2:
+      return ["poll"]
+    case 3:
+      return [] // Review step - full validation on submit
+    default:
+      return []
+  }
+}
 
 export function CreateEventPage({ tribeId }: CreateEventPageProps) {
   const router = useRouter()
@@ -41,35 +56,16 @@ export function CreateEventPage({ tribeId }: CreateEventPageProps) {
       location: "",
       startDate: undefined,
       endDate: undefined,
+      coverImageId: null,
+      coverImageUrl: null,
       poll: null,
     },
   })
 
-  // Watch poll value to determine if poll is included
-  const pollValue = form.watch('poll')
-  const includePoll = pollValue !== null && pollValue !== undefined
-
   const nextStep = async () => {
-    let fieldsToValidate: (keyof CreateEventWithPollInput)[] = []
-
-    switch (currentStep) {
-      case 1:
-        fieldsToValidate = ["title", "description"]
-        break
-      case 2:
-        fieldsToValidate = ["startDate", "endDate"]
-        break
-      case 3:
-        fieldsToValidate = ["location"]
-        break
-      case 4:
-        fieldsToValidate = ["poll"]
-        break
-    }
-
-    const isValid = fieldsToValidate.length > 0
-      ? await form.trigger(fieldsToValidate)
-      : true
+    const fieldsToValidate = getStepFields(currentStep)
+    const isValid =
+      fieldsToValidate.length > 0 ? await form.trigger(fieldsToValidate) : true
 
     if (isValid && currentStep < STEPS.length) {
       setCurrentStep(currentStep + 1)
@@ -82,14 +78,44 @@ export function CreateEventPage({ tribeId }: CreateEventPageProps) {
     }
   }
 
-  const onSubmit = async (data: CreateEventWithPollInput) => {
+  const goToStep = async (targetStep: number) => {
+    // Allow going backward without validation
+    if (targetStep < currentStep) {
+      setCurrentStep(targetStep)
+      return
+    }
+
+    // Validate current step before going forward
+    const fieldsToValidate = getStepFields(currentStep)
+    const isValid =
+      fieldsToValidate.length > 0 ? await form.trigger(fieldsToValidate) : true
+
+    if (isValid) {
+      setCurrentStep(targetStep)
+    }
+  }
+
+  const handleSubmit = async () => {
+    // Only allow submission on the review step
+    if (currentStep !== STEPS.length) {
+      return
+    }
+
+    // Validate entire form before submitting
+    const isValid = await form.trigger()
+    if (!isValid) {
+      toast.error("Please fix the errors before submitting")
+      return
+    }
+
+    const data = form.getValues()
     createEvent(
       { tribeId, data },
       {
-        onSuccess: (data) => {
+        onSuccess: (result) => {
           toast.success("Event created successfully!")
           form.reset()
-          router.push(`/tribe/${tribeId}/events/${data.id}`)
+          router.push(`/tribe/${tribeId}/events/${result.id}`)
         },
         onError: (error) => {
           console.error("Failed to create event:", error)
@@ -102,14 +128,10 @@ export function CreateEventPage({ tribeId }: CreateEventPageProps) {
   const renderStep = () => {
     switch (currentStep) {
       case 1:
-        return <BasicInfoStep control={form.control} />
+        return <DetailsStep control={form.control} tribeId={tribeId} />
       case 2:
-        return <DateTimeStep control={form.control} />
-      case 3:
-        return <LocationStep control={form.control} />
-      case 4:
         return <PollStep control={form.control} />
-      case 5:
+      case 3:
         return <ReviewStep formData={form.getValues()} />
       default:
         return null
@@ -117,29 +139,56 @@ export function CreateEventPage({ tribeId }: CreateEventPageProps) {
   }
 
   return (
-    <div className="container max-w-3xl pt-16 pb-8 mx-auto">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Create New Event</h1>
-        <p className="text-muted-foreground">
-          Fill in the details to create an event for your tribe
-        </p>
-      </div>
-
-      <EventCreationStepper currentStep={currentStep} steps={STEPS} />
+    <div className="container max-w-4xl pt-8 pb-8 mx-auto">
+      <SubpageHeader
+        tribeId={tribeId}
+        breadcrumbs={[
+          { label: "Events", href: `/tribe/${tribeId}/events` },
+          { label: "Create New Event" },
+        ]}
+        title="Create New Event"
+        subtitle="Fill in the details to create an event for your tribe"
+        className="mb-8"
+      />
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
-          {renderStep()}
+        {/* No native form - prevents accidental submission */}
+        <div
+          onKeyDown={(e) => {
+            // Prevent Enter key from doing anything unexpected
+            if (e.key === "Enter" && e.target instanceof HTMLInputElement) {
+              e.preventDefault()
+            }
+          }}
+        >
+          <div className="flex gap-6">
+            {/* Left: Sticky Step Navigation (hidden on mobile) */}
+            <StepSidebar
+              steps={STEPS}
+              currentStep={currentStep}
+              onStepClick={goToStep}
+              className="hidden lg:block sticky self-start top-[72px]"
+            />
 
-          <StepNavigation
-            currentStep={currentStep}
-            totalSteps={STEPS.length}
-            isSubmitting={isSubmitting}
-            onPrevious={prevStep}
-            onNext={nextStep}
-            onSubmit={() => {}}
-          />
-        </form>
+            {/* Vertical Separator (hidden on mobile) */}
+            <Separator orientation="vertical" className="hidden lg:block h-auto" />
+
+            {/* Right: Form Content */}
+            <div className="flex-1 min-w-0">
+              {renderStep()}
+
+              {/* Bottom Navigation (always visible) */}
+              <StepNavigation
+                currentStep={currentStep}
+                totalSteps={STEPS.length}
+                isSubmitting={isSubmitting}
+                onPrevious={prevStep}
+                onNext={nextStep}
+                onSubmit={handleSubmit}
+              />
+            </div>
+          </div>
+        </div>
       </Form>
     </div>
   )

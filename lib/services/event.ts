@@ -35,11 +35,12 @@ export async function createEvent(
     startDate: Date;
     endDate?: Date;
     location?: string;
+    coverImageUrl?: string | null;
     poll?: CreateEventPollData;
   }
 ): Promise<EventWithCreator> {
   const dbTx = getDbTransaction();
-  
+
   // Use transaction for event + poll creation
   return await dbTx.transaction(async (tx) => {
     // 1. Create event
@@ -53,6 +54,7 @@ export async function createEvent(
         startDate: data.startDate,
         endDate: data.endDate || null,
         location: data.location || null,
+        coverImageUrl: data.coverImageUrl || null,
         status: "upcoming",
       })
       .returning();
@@ -180,6 +182,7 @@ export async function getTribeEvents(
       startDate: event.startDate,
       endDate: event.endDate,
       location: event.location,
+      coverImageUrl: event.coverImageUrl,
       status: event.status,
       createdBy: event.createdBy,
       createdAt: event.createdAt,
@@ -285,6 +288,7 @@ export async function getEventById(
         startDate: event.startDate,
         endDate: event.endDate,
         location: event.location,
+        coverImageUrl: event.coverImageUrl,
         status: event.status,
         createdBy: event.createdBy,
         createdAt: event.createdAt,

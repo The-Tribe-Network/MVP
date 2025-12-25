@@ -63,6 +63,8 @@ export const createEventWithPollSchema = z.object({
     invalid_type_error: "Start date must be a valid date",
   }),
   endDate: z.coerce.date().optional(),
+  coverImageId: z.string().uuid().optional().nullable(),
+  coverImageUrl: z.string().url().optional().nullable(),
   poll: pollDataSchema.optional().nullable(),
 }).refine(
   (data) => {

@@ -11,6 +11,7 @@ export const mockEvent: EventWithDetails = {
   description:
     "Join us for a fun summer BBQ with great food, games, and amazing company! We'll have burgers, hot dogs, vegetarian options, and plenty of drinks. Bring your friends and family for a day of celebration.",
   location: 'Central Park, New York, NY',
+  coverImageUrl: null,
   startDate: new Date('2024-07-15T18:00:00'),
   endDate: new Date('2024-07-15T22:00:00'),
   status: 'upcoming' as const,

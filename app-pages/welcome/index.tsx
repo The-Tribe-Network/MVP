@@ -7,7 +7,7 @@ import { ProgressBar } from './ProgressBar'
 import { NavigationButtons } from './NavigationButtons'
 import { ProfileInfoStep } from './ProfileInfoStep'
 import { UsernameStep } from './UsernameStep'
-import { LocationStep } from '../create-new-tribe/LocationStep'
+import { LocationField } from '@/app-pages/tribe-settings/general/sections/location-field'
 import { STEP_CONFIG, TOTAL_STEPS } from './stepConfig'
 import { useCompleteProfile } from '@/lib/hooks/use-profile'
 import { toast } from 'sonner'
@@ -122,7 +122,7 @@ export default function WelcomePage() {
             )}
 
             {currentStep === 3 && (
-              <LocationStep location={location} onLocationChange={setLocation} />
+              <LocationField value={location} onChange={setLocation} />
             )}
 
             <NavigationButtons

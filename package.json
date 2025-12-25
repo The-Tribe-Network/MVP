@@ -10,7 +10,10 @@
     "migrate-auth": "npx @better-auth/cli migrate --config lib/clients/auth.ts",
     "generate-auth": "npx @better-auth/cli generate --config lib/clients/auth.ts --output ./lib/database/schemas/auth.ts",
     "push-db": "drizzle-kit push",
-    "migrate-avatar": "npx tsx lib/database/migrations/run-migration.ts"
+    "migrate-avatar": "npx tsx lib/database/migrations/run-migration.ts",
+    "seed": "npx tsx lib/database/seeds/index.ts",
+    "seed:force": "npx tsx lib/database/seeds/index.ts --force",
+    "seed:clean": "npx tsx lib/database/seeds/clean.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

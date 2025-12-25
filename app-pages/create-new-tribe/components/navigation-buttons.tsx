@@ -23,6 +23,7 @@ export function NavigationButtons({
   return (
     <div className="flex justify-between pt-6">
       <Button
+        type="button"
         variant="outline"
         onClick={onBack}
         disabled={currentStep === 1 || isSubmitting}
@@ -33,12 +34,12 @@ export function NavigationButtons({
       </Button>
 
       {currentStep < totalSteps ? (
-        <Button onClick={onNext} disabled={!isStepValid || isSubmitting} className="gap-2">
+        <Button type="button" onClick={onNext} disabled={!isStepValid || isSubmitting} className="gap-2">
           Next
           <ArrowRight className="h-4 w-4" />
         </Button>
       ) : (
-        <Button onClick={onSubmit} disabled={!isStepValid || isSubmitting} className="gap-2">
+        <Button type="submit" onClick={onSubmit} disabled={!isStepValid || isSubmitting} className="gap-2">
           {isSubmitting ? 'Creating...' : 'Create Tribe'}
           {!isSubmitting && <Check className="h-4 w-4" />}
         </Button>
@@ -46,4 +47,3 @@ export function NavigationButtons({
     </div>
   )
 }
-
