@@ -1,6 +1,7 @@
 'use client'
 
 import { cn } from '@/lib/utils'
+import { Skeleton } from '@/components/ui/skeleton'
 
 interface TribeBannerProps {
   bannerUrl: string | null
@@ -37,5 +38,16 @@ export function TribeBanner({ bannerUrl, tribeName, className }: TribeBannerProp
         className="w-full h-full object-cover"
       />
     </div>
+  )
+}
+
+export function TribeBannerSkeleton({ className }: { className?: string }) {
+  return (
+    <Skeleton
+      className={cn(
+        "w-full aspect-[3/1] lg:aspect-[4/1] rounded-lg",
+        className
+      )}
+    />
   )
 }

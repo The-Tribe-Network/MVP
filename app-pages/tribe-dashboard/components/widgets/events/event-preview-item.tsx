@@ -20,11 +20,8 @@ export default function EventPreviewItem({ event }: EventPreviewItemProps) {
   })
 
   return (
-    <Link href={`/tribe/${event.tribe.id}/events/${event.id}`}>
-    <div
-      key={event.id}
-      className="p-3 rounded-lg border border-border hover:bg-muted/50 cursor-pointer transition-colors space-y-2"
-    >
+    <Link href={`/tribe/${event.tribe.id}/events/${event.id}`} className="block">
+      <div className="p-3 rounded-lg border border-border hover:bg-muted/50 cursor-pointer transition-colors space-y-2">
       <div className="flex items-start justify-between">
         <h3 className="font-semibold text-sm">{event.title}</h3>
         <Badge variant="secondary" className="text-xs">
@@ -45,7 +42,7 @@ export default function EventPreviewItem({ event }: EventPreviewItemProps) {
           <span>{event.location || 'TBD'}</span>
         </div>
       </div>
-    </div>
+      </div>
     </Link>
   )
 }
