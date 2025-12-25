@@ -10,7 +10,9 @@ export type GlobalDialogType =
   | "media-upload"
   | "delete-post"
   | "delete-comment"
-  | "photo-carousel";
+  | "photo-carousel"
+  | "tribe-info-mobile"
+  | "quick-post";
 
 // Photo type for carousel dialog
 export interface CarouselPhoto {
@@ -40,6 +42,8 @@ export type DialogPayloadMap = {
     photos: CarouselPhoto[];
     initialIndex: number;
   };
+  "tribe-info-mobile": { tribeId: string };
+  "quick-post": { tribeId: string };
 };
 
 export interface DialogState {

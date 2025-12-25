@@ -8,6 +8,7 @@ import UploadMediaDialog from "@/components/dialogs/upload-media";
 import { DeletePostDialog } from "@/components/dialogs/delete-post";
 import { DeleteCommentDialog } from "@/components/dialogs/delete-comment";
 import { PhotoCarouselDialog } from "@/components/dialogs/photo-carousel";
+import { TribeInfoDialog } from "@/components/dialogs/tribe-info-dialog";
 
 export function GlobalDialogContainer() {
   const isDialogOpen = useDialogStore((s) => s.isDialogOpen);
@@ -98,6 +99,11 @@ export function GlobalDialogContainer() {
         />
       );
     }
+    case "tribe-info-mobile":
+      return <TribeInfoDialog />;
+    case "quick-post":
+      // TODO: Implement quick post dialog when available
+      return null;
     default:
       return null;
   }

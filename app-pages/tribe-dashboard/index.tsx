@@ -1,3 +1,7 @@
+'use client'
+
+import { useQuery } from "@tanstack/react-query";
+import { tribeDetailOptions } from "@/lib/query-options";
 import {
   TribeInfoWidget,
   MediaWidget,
@@ -6,6 +10,7 @@ import {
   TimelineWidget,
   trendingWidgetMockData
 } from "@/app-pages/tribe-dashboard/components/widgets";
+import { TribeBanner } from "./components/tribe-banner";
 
 interface TribeDashboardPageProps {
   tribeId: string;
@@ -14,10 +19,21 @@ interface TribeDashboardPageProps {
 export function TribeDashboardPage({
   tribeId,
 }: TribeDashboardPageProps) {
+  const { data: tribe } = useQuery(tribeDetailOptions(tribeId));
 
   return (
     <div className="h-full bg-background">
-      <div className="mb-8 pt-6 hidden lg:block">
+      {/* Banner - spans full width */}
+      {tribe && (
+        <div className="mb-6">
+          <TribeBanner
+            bannerUrl={tribe.banner}
+            tribeName={tribe.name}
+          />
+        </div>
+      )}
+
+      <div className="mb-8 hidden lg:block">
         <h1 className="text-4xl font-bold mb-2">Dashboard</h1>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">

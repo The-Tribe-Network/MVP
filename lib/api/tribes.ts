@@ -14,6 +14,7 @@ export interface CreateTribeParams {
   name: string;
   description?: string;
   avatar?: string;
+  banner?: string;
   location?: string;
   privacy?: 'private' | 'public';
   category?: 'social' | 'gaming' | 'family' | 'work' | 'hobbies' | 'other';

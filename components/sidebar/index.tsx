@@ -31,21 +31,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 import TribeList from "./tribe-list";
 import { useUserTribes } from "@/lib/hooks/use-tribes";
 import { cn } from "@/lib/utils";
-import TribeSidebar from "./tribe-nav";
 
 export default function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { user } = useAuthUser();
   const pathname = usePathname();
   const { setOpen } = useSidebar();
 
-  const isTribeDashboard = pathname.startsWith("/tribe/");
-
-  // Collapse the outer sidebar when the second sidebar is not visible
+  // Keep sidebar collapsed (icon mode only)
   useEffect(() => {
-    if (!isTribeDashboard) {
-      setOpen(false);
-    }
-  }, [isTribeDashboard, setOpen]);
+    setOpen(false);
+  }, [setOpen]);
 
   // Fetch user's tribes
   const { data: userTribes = [], isLoading: isLoadingTribes } = useUserTribes();
@@ -192,10 +187,6 @@ export default function AppSidebar({ ...props }: React.ComponentProps<typeof Sid
           </div>
         </SidebarFooter>
       </Sidebar>
-
-      {/* This is the second sidebar, it will act a navigation for within a tribe  */}
-      {/* We disable collapsible and let it fill remaining space */}
-      {isTribeDashboard === true && <TribeSidebar />}
     </Sidebar>
   );
 }

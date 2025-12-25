@@ -1,57 +1,33 @@
 'use client'
 
-import { Bell, MessageSquare, Megaphone, User, Search, PlusIcon, Mail, Badge } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Input } from '@/components/ui/input'
+import { Bell, MessageSquare, Megaphone, Menu } from 'lucide-react'
 import { usePathname, useParams } from 'next/navigation'
+import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { SidebarTrigger } from './ui/sidebar'
 import { Separator } from './ui/separator'
 import { ViewInvitesDropdown } from './dropdowns/view-invites'
 import { TooltipButton } from './ui/tooltip-button'
-import { useState } from 'react'
 import { NotificationsDrawer } from '@/components/notifications-drawer'
+import { TribeHeaderNav } from '@/components/tribe-header-nav'
+import { TribeMobileDrawer } from '@/components/tribe-mobile-drawer'
+import { tribeDetailOptions } from '@/lib/query-options'
 
 export function TribeDashboardToolbar() {
   const [isNotificationsDrawerOpen, setIsNotificationsDrawerOpen] = useState(false)
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false)
 
   const pathname = usePathname()
-  const { tribe_id, post_id } = useParams<{ tribe_id: string, post_id?: string }>();
+  const { tribe_id } = useParams<{ tribe_id: string }>();
 
-  const getTitle = () => {
-    switch (pathname) {
-      case `/tribe/${tribe_id}`:
-        return 'Dashboard';
-      case `/tribe/${tribe_id}/media`:
-        return 'Media';
-      case `/tribe/${tribe_id}/settings`:
-        return 'Settings';
-      case `/tribe/${tribe_id}/post/${post_id}`:
-        return 'Post';
-      case `/tribe/${tribe_id}/events`:
-        return 'Events';
-      case `/new`:
-        return 'Create New Tribe';
-      case `/discover`:
-        return 'Discover';
-      case `/dashboard`:
-        return 'Dashboard';
-      case `/profile`:
-        return 'Profile';
-      case `/settings`:
-        return 'Settings';
-      case `/help`:
-        return 'Help';
-      default:
-        return 'Dashboard';
-    }
-  }
+  // Fetch tribe data for the header nav
+  const { data: tribe } = useQuery({
+    ...tribeDetailOptions(tribe_id),
+    enabled: !!tribe_id,
+  })
+
+  // Check if we're in a tribe context
+  const isTribeContext = pathname.startsWith('/tribe/') && tribe_id
 
   return (
     <div
@@ -68,29 +44,29 @@ export function TribeDashboardToolbar() {
               orientation="vertical"
               className="data-[orientation=vertical]:h-4"
             />
-            <h1 className="text-xl font-semibold">Tribe</h1>
+            <h1 className="text-xl font-semibold truncate max-w-[120px] lg:max-w-none">
+              {tribe?.name || 'Tribe'}
+            </h1>
           </div>
 
-          <div className="hidden md:flex flex-1 max-w-md">
-            <div className="relative w-full">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Search in tribe..."
-                className="w-full pl-10 bg-white/95 dark:bg-white/10 border-white/20"
-              />
-            </div>
-          </div>
+          {/* Center - Navigation tabs (desktop only, tribe context only) */}
+          {isTribeContext && (
+            <TribeHeaderNav
+              tribeId={tribe_id}
+              tribeName={tribe?.name}
+              className="hidden lg:flex"
+            />
+          )}
 
           {/* Right side - Icons and User Menu */}
           <div data-tour="toolbar-buttons" className="flex items-center gap-2">
             <ViewInvitesDropdown />
 
-            <TooltipButton message="Announcements" variant="ghost" size="icon">
+            <TooltipButton message="Announcements" variant="ghost" size="icon" className="hidden sm:inline-flex">
               <Megaphone className="h-5 w-5" />
             </TooltipButton>
 
-            <TooltipButton message="Messages" variant="ghost" size="icon" className="relative">
+            <TooltipButton message="Messages" variant="ghost" size="icon" className="relative hidden sm:inline-flex">
               <MessageSquare className="h-5 w-5" />
               <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-primary" />
             </TooltipButton>
@@ -99,9 +75,31 @@ export function TribeDashboardToolbar() {
               <Bell className="h-5 w-5" />
               <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-primary" />
             </TooltipButton>
+
+            {/* Mobile menu trigger (tribe context only) */}
+            {isTribeContext && (
+              <TooltipButton
+                message="Menu"
+                variant="ghost"
+                size="icon"
+                className="lg:hidden"
+                onClick={() => setIsMobileDrawerOpen(true)}
+              >
+                <Menu className="h-5 w-5" />
+              </TooltipButton>
+            )}
           </div>
         </div>
       </div>
+
+      {/* Mobile drawer */}
+      {isTribeContext && tribe_id && (
+        <TribeMobileDrawer
+          open={isMobileDrawerOpen}
+          onOpenChange={setIsMobileDrawerOpen}
+          tribeId={tribe_id}
+        />
+      )}
     </div>
   )
 }

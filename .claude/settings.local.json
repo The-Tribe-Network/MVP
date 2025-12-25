@@ -10,7 +10,9 @@
       "WebFetch(domain:tanstack.com)",
       "Bash(wc:*)",
       "Bash(head:*)",
-      "Bash(xargs cat:*)"
+      "Bash(xargs cat:*)",
+      "mcp__notion__notion-search",
+      "mcp__notion__notion-fetch"
     ],
     "deny": [],
     "ask": []

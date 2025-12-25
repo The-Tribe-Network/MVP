@@ -4,18 +4,14 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm, FormProvider } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { ArrowLeft } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import {
-  BasicInfoStep,
-  LocationStep,
-  PrivacyStep,
-  InviteMembersStep,
-  ProgressBar,
-  NavigationButtons,
-} from './components'
-import { STEP_CONFIG, TOTAL_STEPS } from './stepConfig'
+import { Form } from '@/components/ui/form'
+import { Separator } from '@/components/ui/separator'
+import { StepSidebar } from './components/step-sidebar'
+import { StepNavigation } from './components/step-navigation'
+import { BasicInfoStep } from './components/basic-info-step'
+import { LocationStep } from './components/location-step'
+import { PrivacyStep } from './components/privacy-step'
+import { InviteMembersStep } from './components/invite-members-step'
 import { useCreateTribe } from '@/lib/hooks/use-tribes'
 import { toast } from 'sonner'
 import {
@@ -26,10 +22,33 @@ import {
   type CreateTribeFormInput,
 } from '@/lib/validations/tribe'
 
+const STEPS = [
+  { id: 1, name: 'Basic Info' },
+  { id: 2, name: 'Location' },
+  { id: 3, name: 'Privacy' },
+  { id: 4, name: 'Invite' },
+]
+
+// Map step to fields for validation
+const getStepFields = (step: number): (keyof CreateTribeFormInput)[] => {
+  switch (step) {
+    case 1:
+      return [...step1Fields] as (keyof CreateTribeFormInput)[]
+    case 2:
+      return [...step2Fields] as (keyof CreateTribeFormInput)[]
+    case 3:
+      return [...step3Fields] as (keyof CreateTribeFormInput)[]
+    case 4:
+      return [] // Invites are optional
+    default:
+      return []
+  }
+}
+
 export default function CreateTribePage() {
   const router = useRouter()
   const [currentStep, setCurrentStep] = useState(1)
-  const { mutate: createTribe, isPending } = useCreateTribe()
+  const { mutate: createTribe, isPending: isSubmitting } = useCreateTribe()
 
   const form = useForm<CreateTribeFormInput>({
     resolver: zodResolver(createTribeFormSchema),
@@ -38,6 +57,8 @@ export default function CreateTribePage() {
       description: '',
       avatar: '',
       avatarUrl: '',
+      banner: '',
+      bannerUrl: '',
       category: 'other',
       location: '',
       privacy: 'private',
@@ -46,39 +67,61 @@ export default function CreateTribePage() {
     mode: 'onChange',
   })
 
-  const handleNext = async () => {
-    let fieldsToValidate: readonly string[] = []
+  const nextStep = async () => {
+    const fieldsToValidate = getStepFields(currentStep)
+    const isValid = fieldsToValidate.length > 0
+      ? await form.trigger(fieldsToValidate)
+      : true
 
-    switch (currentStep) {
-      case 1:
-        fieldsToValidate = step1Fields
-        break
-      case 2:
-        fieldsToValidate = step2Fields
-        break
-      case 3:
-        fieldsToValidate = step3Fields
-        break
-    }
-
-    const isValid = await form.trigger(fieldsToValidate as (keyof CreateTribeFormInput)[])
-    if (isValid && currentStep < TOTAL_STEPS) {
+    if (isValid && currentStep < STEPS.length) {
       setCurrentStep(currentStep + 1)
     }
   }
 
-  const handleBack = () => {
+  const prevStep = () => {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1)
     }
   }
 
-  const onSubmit = (data: CreateTribeFormInput) => {
+  const goToStep = async (targetStep: number) => {
+    // Allow going backward without validation
+    if (targetStep < currentStep) {
+      setCurrentStep(targetStep)
+      return
+    }
+
+    // Validate current step before going forward
+    const fieldsToValidate = getStepFields(currentStep)
+    const isValid = fieldsToValidate.length > 0
+      ? await form.trigger(fieldsToValidate)
+      : true
+
+    if (isValid) {
+      setCurrentStep(targetStep)
+    }
+  }
+
+  const handleSubmit = async () => {
+    // Only allow submission on the last step
+    if (currentStep !== STEPS.length) {
+      return
+    }
+
+    // Validate entire form before submitting
+    const isValid = await form.trigger()
+    if (!isValid) {
+      toast.error('Please fix the errors before submitting')
+      return
+    }
+
+    const data = form.getValues()
     createTribe(
       {
         name: data.tribeName,
         description: data.description || undefined,
         avatar: data.avatar || undefined,
+        banner: data.banner || undefined,
         location: data.location || undefined,
         privacy: data.privacy,
         category: data.category,
@@ -100,80 +143,71 @@ export default function CreateTribePage() {
     )
   }
 
-  const isStepValid = (): boolean => {
-    const { errors } = form.formState
-    const values = form.getValues()
-
+  const renderStep = () => {
     switch (currentStep) {
       case 1:
-        return !errors.tribeName && !errors.description &&
-               values.tribeName.length >= 2 && values.description.length > 0
+        return <BasicInfoStep control={form.control} />
       case 2:
-        return !errors.location && values.location.length > 0
+        return <LocationStep control={form.control} />
       case 3:
-        return !errors.privacy
+        return <PrivacyStep control={form.control} />
       case 4:
-        return true // Invites are optional
+        return <InviteMembersStep control={form.control} />
       default:
-        return false
+        return null
     }
   }
 
-  const currentStepConfig = STEP_CONFIG[currentStep as keyof typeof STEP_CONFIG]
-
   return (
-    <div className="flex overflow-auto bg-background items-center justify-center h-full">
-      <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-8">
-        <div className="mb-8 text-center">
-          <h1 className="text-4xl font-bold mb-2">Create a New Tribe</h1>
-          <p className="text-muted-foreground">Tell us about your tribe and we&apos;ll help you get started</p>
-        </div>
-        <Card className="w-full max-w-2xl bg-card border-zinc-700">
-          <CardHeader>
-            <div className="flex items-center justify-between mb-4">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => router.back()}
-                className="text-muted-foreground hover:text-foreground"
-              >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Cancel
-              </Button>
-              <div className="text-sm text-muted-foreground">
-                Step {currentStep} of {TOTAL_STEPS}
+    <div className="container max-w-4xl pt-8 pb-8 mx-auto">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold">Create a New Tribe</h1>
+        <p className="text-muted-foreground mt-1">
+          Tell us about your tribe and we'll help you get started
+        </p>
+      </div>
+
+      <FormProvider {...form}>
+        <Form {...form}>
+          {/* Prevent accidental form submission */}
+          <div
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && e.target instanceof HTMLInputElement) {
+                e.preventDefault()
+              }
+            }}
+          >
+            <div className="flex gap-6">
+              {/* Left: Sticky Step Navigation (hidden on mobile) */}
+              <StepSidebar
+                steps={STEPS}
+                currentStep={currentStep}
+                onStepClick={goToStep}
+                className="hidden lg:block sticky self-start top-[72px]"
+              />
+
+              {/* Vertical Separator (hidden on mobile) */}
+              <Separator orientation="vertical" className="hidden lg:block h-auto" />
+
+              {/* Right: Form Content */}
+              <div className="flex-1 min-w-0">
+                {renderStep()}
+
+                {/* Bottom Navigation (always visible) */}
+                <StepNavigation
+                  currentStep={currentStep}
+                  totalSteps={STEPS.length}
+                  isSubmitting={isSubmitting}
+                  onPrevious={prevStep}
+                  onNext={nextStep}
+                  onSubmit={handleSubmit}
+                />
               </div>
             </div>
-
-            <ProgressBar currentStep={currentStep} totalSteps={TOTAL_STEPS} />
-
-            <CardTitle className="text-2xl">{currentStepConfig.title}</CardTitle>
-            <CardDescription>{currentStepConfig.description}</CardDescription>
-          </CardHeader>
-
-          <CardContent className="space-y-6">
-            <FormProvider {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)}>
-                {currentStep === 1 && <BasicInfoStep control={form.control} />}
-                {currentStep === 2 && <LocationStep control={form.control} />}
-                {currentStep === 3 && <PrivacyStep control={form.control} />}
-                {currentStep === 4 && <InviteMembersStep control={form.control} />}
-
-                <NavigationButtons
-                  currentStep={currentStep}
-                  totalSteps={TOTAL_STEPS}
-                  isStepValid={isStepValid()}
-                  onBack={handleBack}
-                  onNext={handleNext}
-                  onSubmit={form.handleSubmit(onSubmit)}
-                  isSubmitting={isPending}
-                />
-              </form>
-            </FormProvider>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </Form>
+      </FormProvider>
     </div>
   )
 }

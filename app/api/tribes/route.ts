@@ -56,6 +56,7 @@ export async function POST(request: NextRequest) {
         name: validation.data.name,
         description: validation.data.description || undefined,
         avatar: validation.data.avatar || undefined,
+        banner: validation.data.banner || undefined,
         location: validation.data.location || undefined,
         privacy: validation.data.privacy,
         category: validation.data.category,

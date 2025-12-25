@@ -36,6 +36,10 @@ export const createTribeSchema = z.object({
     .union([uuidSchema, z.literal("")])
     .transform((val) => (val === "" ? undefined : val))
     .optional(),
+  banner: z
+    .union([uuidSchema, z.literal("")])
+    .transform((val) => (val === "" ? undefined : val))
+    .optional(),
   location: z
     .string()
     .max(200, "Location must be less than 200 characters")
@@ -61,6 +65,10 @@ export const updateTribeSchema = z.object({
     .transform((val) => (val === "" ? undefined : val))
     .optional(),
   avatar: z
+    .union([uuidSchema, z.literal(""), z.null()])
+    .transform((val) => (val === "" ? null : val))
+    .optional(),
+  banner: z
     .union([uuidSchema, z.literal(""), z.null()])
     .transform((val) => (val === "" ? null : val))
     .optional(),
@@ -131,6 +139,8 @@ export const createTribeFormSchema = z.object({
     .trim(),
   avatar: z.string().optional().default(""),
   avatarUrl: z.string().optional().default(""), // For preview only
+  banner: z.string().optional().default(""),
+  bannerUrl: z.string().optional().default(""), // For preview only
   category: tribeCategorySchema.default("other"),
 
   // Step 2: Location

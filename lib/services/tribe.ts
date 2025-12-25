@@ -2,7 +2,7 @@ import { db, getDbTransaction } from "@/lib/database/client";
 import { tribe, tribeMember, tribeMemberPermission, tribeSettings } from "@/lib/database/schemas/tribe";
 import { user } from "@/lib/database/schemas/auth";
 import { media } from "@/lib/database/schemas/media";
-import { eq, count, and, inArray } from "drizzle-orm";
+import { eq, count, and, inArray, aliasedTable } from "drizzle-orm";
 import type { TribeInsert, TribeWithCreator, TribeWithMembers, Tribe } from "@/lib/database/types";
 import { getMemberWithPermissions } from "./permissions";
 import type { UpdateTribeInput } from "@/lib/validations/tribe";
@@ -16,6 +16,7 @@ export async function createTribe(
     name: string;
     description?: string;
     avatar?: string;
+    banner?: string;
     location?: string;
     privacy?: "private" | "public";
     category?: "social" | "gaming" | "family" | "work" | "hobbies" | "other";
@@ -34,6 +35,7 @@ export async function createTribe(
         name: data.name,
         description: data.description || null,
         avatar: data.avatar || null,
+        banner: data.banner || null,
         location: data.location || null,
         privacy: data.privacy || "private",
         category: data.category || "other",
@@ -91,16 +93,21 @@ export async function createTribe(
 /**
  * Get tribe by ID with creator information and member count
  * OPTIMIZED: 2 DB calls instead of 3 (tribe+creator join, then member count in parallel)
- * Resolves avatar ID to URL if avatar exists
+ * Resolves avatar and banner IDs to URLs if they exist
  */
 export async function getTribeById(id: string, includeAvatar: boolean = false): Promise<TribeWithMembers | null> {
-  // Fetch tribe with avatar URL and creator in a single query with joins
+  // Create aliases for media table to join twice (avatar and banner)
+  const avatarMedia = aliasedTable(media, "avatar_media");
+  const bannerMedia = aliasedTable(media, "banner_media");
+
+  // Fetch tribe with avatar/banner URLs and creator in a single query with joins
   const [tribeData] = await db
     .select({
       id: tribe.id,
       name: tribe.name,
       description: tribe.description,
       avatar: tribe.avatar,
+      banner: tribe.banner,
       location: tribe.location,
       privacy: tribe.privacy,
       category: tribe.category,
@@ -110,7 +117,8 @@ export async function getTribeById(id: string, includeAvatar: boolean = false): 
       createdBy: tribe.createdBy,
       createdAt: tribe.createdAt,
       updatedAt: tribe.updatedAt,
-      avatarUrl: media.fileUrl,
+      avatarUrl: avatarMedia.fileUrl,
+      bannerUrl: bannerMedia.fileUrl,
       creator: {
         id: user.id,
         name: user.name,
@@ -127,7 +135,8 @@ export async function getTribeById(id: string, includeAvatar: boolean = false): 
       },
     })
     .from(tribe)
-    .leftJoin(media, eq(tribe.avatar, media.id))
+    .leftJoin(avatarMedia, eq(tribe.avatar, avatarMedia.id))
+    .leftJoin(bannerMedia, eq(tribe.banner, bannerMedia.id))
     .innerJoin(user, eq(tribe.createdBy, user.id))
     .where(eq(tribe.id, id))
     .limit(1);
@@ -142,12 +151,13 @@ export async function getTribeById(id: string, includeAvatar: boolean = false): 
     .from(tribeMember)
     .where(eq(tribeMember.tribeId, id));
 
-  // Replace avatar ID with URL if available
-  const { avatarUrl, creator, ...tribeFields } = tribeData;
+  // Replace avatar/banner IDs with URLs if available
+  const { avatarUrl, bannerUrl, creator, ...tribeFields } = tribeData;
 
   return {
     ...tribeFields,
     avatar: avatarUrl || tribeData.avatar, // Use URL if available, otherwise keep original (null or ID)
+    banner: bannerUrl || tribeData.banner, // Use URL if available, otherwise keep original (null or ID)
     creator,
     memberCount: memberCountResult?.count || 0,
   };
@@ -246,6 +256,7 @@ export async function updateTribe(
   if (data.name !== undefined) updateData.name = data.name;
   if (data.description !== undefined) updateData.description = data.description || null;
   if (data.avatar !== undefined) updateData.avatar = data.avatar ?? null;
+  if (data.banner !== undefined) updateData.banner = data.banner ?? null;
   if (data.location !== undefined) updateData.location = data.location || null;
   if (data.category !== undefined) updateData.category = data.category;
   if (data.privacy !== undefined) updateData.privacy = data.privacy;

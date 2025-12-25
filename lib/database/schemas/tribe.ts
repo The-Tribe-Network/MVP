@@ -21,6 +21,7 @@ export const tribe = pgTable("tribe", {
   name: text("name").notNull(),
   description: text("description"),
   avatar: uuid("avatar"),
+  banner: uuid("banner"), // 16:9 aspect ratio banner image - references media.id
   featuredMediaId: uuid("featured_media_id"), // References media.id - for tribe media highlights page
   location: text("location"),
   privacy: privacyType("privacy").notNull().default("private"),
