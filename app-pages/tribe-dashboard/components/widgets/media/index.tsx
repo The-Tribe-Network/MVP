@@ -30,15 +30,9 @@ export default function MediaWidget({ tribeId }: MediaWidgetProps) {
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <Link href={`/tribe/${tribeId}/media`} className="flex items-center hover:cursor-pointer gap-2">
             <AlbumIcon className="h-5 w-5 text-primary" />
             <CardTitle className="text-lg">Media</CardTitle>
-          </div>
-
-          <Link href={`/tribe/${tribeId}/media`} className="flex items-center">
-            <Button variant="ghost" size="sm" className="h-auto p-0 hover:text-primary/80 hover:cursor-pointer space-x-2">
-              View all
-            </Button>
           </Link>
         </div>
       </CardHeader>

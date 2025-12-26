@@ -13,15 +13,11 @@ export default function EventsWidget({ tribeId }: EventWidgetProps) {
     <Card>
       <CardHeader className="flex items-center justify-between">
         <CardTitle className="text-lg flex items-center gap-2">
-          <Calendar className="h-5 w-5 text-primary" />
-          Upcoming Events
+          <Link href={`/tribe/${tribeId}/events`} className="flex items-center hover:cursor-pointer gap-2">
+            <Calendar className="h-5 w-5 text-primary" />
+            <span>Upcoming Events</span>
+          </Link>
         </CardTitle>
-
-        <Link href={`/tribe/${tribeId}/events`} className="flex items-center">
-          <Button variant="ghost" size="sm" className="h-auto p-0 hover:text-primary/80 hover:cursor-pointer space-x-2">
-            View all
-          </Button>
-        </Link>
       </CardHeader>
       <EventsWidgetContent tribeId={tribeId} />
     </Card>

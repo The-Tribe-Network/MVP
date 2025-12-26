@@ -8,7 +8,6 @@ import { QueryProvider } from "@/lib/providers/query-provider";
 
 import "./globals.css";
 
-
 const geist = Geist({
   subsets: ["latin"],
   display: "swap",

@@ -225,7 +225,7 @@ export default function PostCard({
                 size="sm"
                 className={cn(
                   "gap-2 transition-colors",
-                  post.isLiked ? 'text-accent hover:text-accent/80' : 'text-muted-foreground',
+                  post.isLiked ? 'text-red-500 hover:text-red-500/80' : 'text-muted-foreground',
                   isLiking && "opacity-50 cursor-not-allowed"
                 )}
                 onClick={(e) => {
@@ -250,7 +250,7 @@ export default function PostCard({
                 size="sm"
                 className={cn(
                   "gap-2 transition-colors",
-                  post.isLiked ? 'text-accent hover:text-accent/80' : 'text-muted-foreground'
+                  post.isLiked ? 'text-red-500 hover:text-red-500/80' : 'text-muted-foreground'
                 )}
                 disabled
               >
