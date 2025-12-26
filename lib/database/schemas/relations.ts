@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { user, account, event, tribe, activity, media, post, comment, commentLike, eventAttendee, message, messageRead, notification, hashtag, postHashtag, postLike, session, tribeInvitation, tribeMember, tribeMemberPermission, album, mediaLike, tribeMemberPreference, albumMedia, poll, pollOption, pollVote } from "@/lib/database/schemas";
+import { user, account, event, tribe, activity, media, post, comment, commentLike, eventAttendee, eventSettings, eventCoHost, eventLink, message, messageRead, notification, hashtag, postHashtag, postLike, session, tribeInvitation, tribeMember, tribeMemberPermission, album, mediaLike, tribeMemberPreference, albumMedia, poll, pollOption, pollVote } from "@/lib/database/schemas";
 
 export const accountRelations = relations(account, ({ one }) => ({
 	user: one(user, {
@@ -22,6 +22,13 @@ export const userRelations = relations(user, ({ many }) => ({
 	comments: many(comment),
 	commentLikes: many(commentLike),
 	eventAttendees: many(eventAttendee),
+	eventCoHosts_userId: many(eventCoHost, {
+		relationName: "eventCoHost_userId_user_id"
+	}),
+	eventCoHosts_addedBy: many(eventCoHost, {
+		relationName: "eventCoHost_addedBy_user_id"
+	}),
+	eventLinks: many(eventLink),
 	messages_recipientId: many(message, {
 		relationName: "message_recipientId_user_id"
 	}),
@@ -61,6 +68,48 @@ export const eventRelations = relations(event, ({ one, many }) => ({
 	activities: many(activity),
 	eventAttendees: many(eventAttendee),
 	polls: many(poll),
+	eventSettings: one(eventSettings),
+	eventCoHosts: many(eventCoHost),
+	eventLinks: many(eventLink),
+}));
+
+export const eventSettingsRelations = relations(eventSettings, ({ one }) => ({
+	event: one(event, {
+		fields: [eventSettings.eventId],
+		references: [event.id]
+	}),
+	linkedAlbum: one(album, {
+		fields: [eventSettings.linkedAlbumId],
+		references: [album.id]
+	}),
+}));
+
+export const eventCoHostRelations = relations(eventCoHost, ({ one }) => ({
+	event: one(event, {
+		fields: [eventCoHost.eventId],
+		references: [event.id]
+	}),
+	user: one(user, {
+		fields: [eventCoHost.userId],
+		references: [user.id],
+		relationName: "eventCoHost_userId_user_id"
+	}),
+	addedByUser: one(user, {
+		fields: [eventCoHost.addedBy],
+		references: [user.id],
+		relationName: "eventCoHost_addedBy_user_id"
+	}),
+}));
+
+export const eventLinkRelations = relations(eventLink, ({ one }) => ({
+	event: one(event, {
+		fields: [eventLink.eventId],
+		references: [event.id]
+	}),
+	createdByUser: one(user, {
+		fields: [eventLink.createdBy],
+		references: [user.id]
+	}),
 }));
 
 export const tribeRelations = relations(tribe, ({ one, many }) => ({

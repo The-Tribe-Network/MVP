@@ -4,13 +4,19 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/constants/query-keys';
 import {
   uploadAvatar,
+  uploadTribeAvatar,
   uploadPostImage,
   uploadAlbumCover,
+  uploadEventCover,
+  uploadTribeBanner,
   uploadTribeMedia,
   deleteMedia,
   type UploadResponse,
   type UploadPostImageParams,
   type UploadAlbumCoverParams,
+  type UploadEventCoverParams,
+  type UploadTribeBannerParams,
+  type UploadTribeAvatarParams,
   type UploadTribeMediaParams,
 } from '@/lib/api/upload';
 
@@ -19,11 +25,20 @@ export type UploadAvatarResponse = UploadResponse;
 export type { UploadResponse };
 
 /**
- * Hook for uploading avatar images
+ * Hook for uploading avatar images (user profile)
  */
 export function useUploadAvatar() {
   return useMutation({
     mutationFn: (file: File) => uploadAvatar(file),
+  });
+}
+
+/**
+ * Hook for uploading tribe avatar images (does not update user profile)
+ */
+export function useUploadTribeAvatar() {
+  return useMutation({
+    mutationFn: (params: UploadTribeAvatarParams) => uploadTribeAvatar(params),
   });
 }
 
@@ -51,6 +66,24 @@ export function useDeleteMedia() {
 export function useUploadAlbumCover() {
   return useMutation({
     mutationFn: (params: UploadAlbumCoverParams) => uploadAlbumCover(params),
+  });
+}
+
+/**
+ * Hook for uploading event cover images
+ */
+export function useUploadEventCover() {
+  return useMutation({
+    mutationFn: (params: UploadEventCoverParams) => uploadEventCover(params),
+  });
+}
+
+/**
+ * Hook for uploading tribe banner images
+ */
+export function useUploadTribeBanner() {
+  return useMutation({
+    mutationFn: (params: UploadTribeBannerParams) => uploadTribeBanner(params),
   });
 }
 

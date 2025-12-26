@@ -26,6 +26,19 @@ export interface UploadAlbumCoverParams {
   tribeId: string;
 }
 
+export interface UploadEventCoverParams {
+  file: File;
+  tribeId: string;
+}
+
+export interface UploadTribeBannerParams {
+  file: File;
+}
+
+export interface UploadTribeAvatarParams {
+  file: File;
+}
+
 export interface UploadTribeMediaParams {
   tribeId: string;
   file: File;
@@ -38,7 +51,7 @@ export interface UploadTribeMediaParams {
 // ============================================================================
 
 /**
- * Upload an avatar image
+ * Upload an avatar image (for user profile)
  */
 export async function uploadAvatar(file: File): Promise<UploadResponse> {
   const formData = new FormData();
@@ -52,6 +65,29 @@ export async function uploadAvatar(file: File): Promise<UploadResponse> {
   if (!response.ok) {
     const error = await response.json();
     throw new Error(error.error || 'Failed to upload avatar');
+  }
+
+  return response.json();
+}
+
+/**
+ * Upload a tribe avatar image (does not update user profile)
+ */
+export async function uploadTribeAvatar(
+  params: UploadTribeAvatarParams
+): Promise<UploadResponse> {
+  const { file } = params;
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const response = await fetch('/api/upload/tribe-avatar', {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to upload tribe avatar');
   }
 
   return response.json();
@@ -102,6 +138,53 @@ export async function uploadAlbumCover(
   if (!response.ok) {
     const error = await response.json();
     throw new Error(error.error || 'Failed to upload album cover');
+  }
+
+  return response.json();
+}
+
+/**
+ * Upload an event cover image
+ */
+export async function uploadEventCover(
+  params: UploadEventCoverParams
+): Promise<UploadResponse> {
+  const { file, tribeId } = params;
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('tribeId', tribeId);
+
+  const response = await fetch('/api/upload/event-cover', {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to upload event cover');
+  }
+
+  return response.json();
+}
+
+/**
+ * Upload a tribe banner image
+ */
+export async function uploadTribeBanner(
+  params: UploadTribeBannerParams
+): Promise<UploadResponse> {
+  const { file } = params;
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const response = await fetch('/api/upload/tribe-banner', {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to upload tribe banner');
   }
 
   return response.json();

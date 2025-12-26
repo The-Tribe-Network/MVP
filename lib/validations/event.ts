@@ -39,6 +39,36 @@ export const updateEventSchema = eventBaseSchema.partial().refine(
 export type CreateEventInput = z.infer<typeof createEventSchema>;
 export type UpdateEventInput = z.infer<typeof updateEventSchema>;
 
+/**
+ * Schema for updating event details from settings page
+ * Accepts string dates from form inputs and coerces to Date
+ */
+export const updateEventDetailsSchema = z.object({
+  title: z.string().min(1, "Event title is required").max(200, "Title is too long"),
+  description: z.string().max(5000, "Description is too long").optional().nullable(),
+  location: z.string().max(500, "Location is too long").optional().nullable(),
+  coverImageUrl: z.string().url("Invalid image URL").optional().nullable(),
+  startDate: z.coerce.date({
+    required_error: "Start date is required",
+    invalid_type_error: "Invalid start date",
+  }),
+  endDate: z.coerce.date().optional().nullable(),
+  status: z.enum(["upcoming", "ongoing", "completed", "cancelled"]),
+}).refine(
+  (data) => {
+    if (data.endDate && data.startDate) {
+      return data.endDate >= data.startDate;
+    }
+    return true;
+  },
+  {
+    message: "End date must be after start date",
+    path: ["endDate"],
+  }
+);
+
+export type UpdateEventDetailsInput = z.infer<typeof updateEventDetailsSchema>;
+
 // Poll validation schema
 export const pollDataSchema = z.object({
   question: z.string().min(1, "Poll question is required").max(500),

@@ -59,6 +59,9 @@ export {
 export {
   event,
   eventAttendee,
+  eventSettings,
+  eventCoHost,
+  eventLink,
 } from "@/lib/database/schemas/event";
 
 // Poll tables
@@ -96,6 +99,9 @@ export {
   accountRelations,
   userRelations,
   eventRelations,
+  eventSettingsRelations,
+  eventCoHostRelations,
+  eventLinkRelations,
   tribeRelations,
   activityRelations,
   mediaRelations,

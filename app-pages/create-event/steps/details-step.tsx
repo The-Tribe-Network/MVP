@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/form"
 import { cn } from "@/lib/utils"
 import { validateImageFile } from "@/lib/utils/image"
-import { useUploadPostImage, useDeleteMedia } from "@/lib/hooks/use-upload"
+import { useUploadEventCover, useDeleteMedia } from "@/lib/hooks/use-upload"
 import { toast } from "sonner"
 import { type Control, useFormContext, useWatch } from "react-hook-form"
 import type { CreateEventWithPollInput } from "@/lib/validations/event"
@@ -37,7 +37,7 @@ export function DetailsStep({ control, tribeId }: DetailsStepProps) {
   const coverImageUrl = useWatch({ control, name: "coverImageUrl" })
   const coverImageId = useWatch({ control, name: "coverImageId" })
 
-  const uploadImageMutation = useUploadPostImage()
+  const uploadImageMutation = useUploadEventCover()
   const deleteMediaMutation = useDeleteMedia()
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -64,7 +64,6 @@ export function DetailsStep({ control, tribeId }: DetailsStepProps) {
       const result = await uploadImageMutation.mutateAsync({
         file,
         tribeId,
-        postId: null,
       })
       setValue("coverImageId", result.id)
       setValue("coverImageUrl", result.url)

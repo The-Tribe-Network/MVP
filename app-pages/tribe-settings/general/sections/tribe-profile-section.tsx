@@ -22,7 +22,7 @@ import {
   FormMessage,
   FormDescription,
 } from '@/components/ui/form';
-import { useUploadAvatar, useDeleteMedia } from '@/lib/hooks/use-upload';
+import { useUploadTribeAvatar, useUploadTribeBanner, useDeleteMedia } from '@/lib/hooks/use-upload';
 import { validateImageFile } from '@/lib/utils/image';
 import { toast } from 'sonner';
 import { useFormContext } from 'react-hook-form';
@@ -58,8 +58,8 @@ export function TribeProfileSection({
   const { setValue } = useFormContext<UpdateTribeInput>();
   const avatarFileInputRef = useRef<HTMLInputElement>(null);
   const bannerFileInputRef = useRef<HTMLInputElement>(null);
-  const uploadAvatar = useUploadAvatar();
-  const uploadBanner = useUploadAvatar(); // Reuse avatar upload for banner
+  const uploadAvatar = useUploadTribeAvatar();
+  const uploadBanner = useUploadTribeBanner();
   const deleteMedia = useDeleteMedia();
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isUploadingBanner, setIsUploadingBanner] = useState(false);
@@ -82,7 +82,7 @@ export function TribeProfileSection({
 
     setIsUploadingAvatar(true);
     try {
-      const result = await uploadAvatar.mutateAsync(file);
+      const result = await uploadAvatar.mutateAsync({ file });
       setValue('avatar', result.id);
       setCurrentAvatarUrl(result.url);
       toast.success('Avatar uploaded successfully!');
@@ -108,7 +108,7 @@ export function TribeProfileSection({
 
     setIsUploadingBanner(true);
     try {
-      const result = await uploadBanner.mutateAsync(file);
+      const result = await uploadBanner.mutateAsync({ file });
       setValue('banner', result.id);
       setCurrentBannerUrl(result.url);
       toast.success('Banner uploaded successfully!');

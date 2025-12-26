@@ -22,7 +22,7 @@ import {
   FormMessage,
   FormDescription,
 } from '@/components/ui/form'
-import { useUploadAvatar } from '@/lib/hooks/use-upload'
+import { useUploadTribeAvatar, useUploadTribeBanner } from '@/lib/hooks/use-upload'
 import { validateImageFile } from '@/lib/utils/image'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
@@ -45,8 +45,8 @@ export function BasicInfoStep({ control }: BasicInfoStepProps) {
   const { setValue } = useFormContext<CreateTribeFormInput>()
   const avatarFileInputRef = useRef<HTMLInputElement>(null)
   const bannerFileInputRef = useRef<HTMLInputElement>(null)
-  const uploadAvatar = useUploadAvatar()
-  const uploadBanner = useUploadAvatar() // Reuse avatar upload for banner
+  const uploadAvatar = useUploadTribeAvatar()
+  const uploadBanner = useUploadTribeBanner()
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
   const [isUploadingBanner, setIsUploadingBanner] = useState(false)
 
@@ -66,7 +66,7 @@ export function BasicInfoStep({ control }: BasicInfoStepProps) {
 
     setIsUploadingAvatar(true)
     try {
-      const result = await uploadAvatar.mutateAsync(file)
+      const result = await uploadAvatar.mutateAsync({ file })
       setValue('avatar', result.id)
       setValue('avatarUrl', result.url)
       toast.success('Avatar uploaded successfully!')
@@ -92,7 +92,7 @@ export function BasicInfoStep({ control }: BasicInfoStepProps) {
 
     setIsUploadingBanner(true)
     try {
-      const result = await uploadBanner.mutateAsync(file)
+      const result = await uploadBanner.mutateAsync({ file })
       setValue('banner', result.id)
       setValue('bannerUrl', result.url)
       toast.success('Banner uploaded successfully!')

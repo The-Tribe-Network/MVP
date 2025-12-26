@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
 import { getEventById, updateEvent, deleteEvent } from "@/lib/services/event";
 import { getMemberWithPermissions } from "@/lib/services/permissions";
-import { updateEventSchema } from "@/lib/validations/event";
+import { updateEventDetailsSchema } from "@/lib/validations/event";
 
 type Context = RouteContext<'/api/tribes/[tribe_id]/events/[event_id]'>;
 
@@ -77,11 +77,11 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const validation = updateEventSchema.safeParse(body);
+    const validation = updateEventDetailsSchema.safeParse(body);
 
     if (!validation.success) {
       return NextResponse.json(
-        { error: "Validation failed", details: validation.error },
+        { error: "Validation failed", details: validation.error.flatten() },
         { status: 400 }
       );
     }

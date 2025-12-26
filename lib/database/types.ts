@@ -24,6 +24,9 @@ import {
 import {
   event,
   eventAttendee,
+  eventSettings,
+  eventCoHost,
+  eventLink,
 } from "./schemas/event";
 import {
   poll,
@@ -152,6 +155,12 @@ export type Event = InferSelectModel<typeof event>;
 export type EventInsert = InferInsertModel<typeof event>;
 export type EventAttendee = InferSelectModel<typeof eventAttendee>;
 export type EventAttendeeInsert = InferInsertModel<typeof eventAttendee>;
+export type EventSettings = InferSelectModel<typeof eventSettings>;
+export type EventSettingsInsert = InferInsertModel<typeof eventSettings>;
+export type EventCoHost = InferSelectModel<typeof eventCoHost>;
+export type EventCoHostInsert = InferInsertModel<typeof eventCoHost>;
+export type EventLink = InferSelectModel<typeof eventLink>;
+export type EventLinkInsert = InferInsertModel<typeof eventLink>;
 
 // ============================================
 // Poll types
@@ -312,6 +321,29 @@ export type EventWithAttendees = EventWithCreator & {
 export type EventWithDetails = EventWithAttendees & {
   attendeeCount: number;
   isUserAttending?: boolean;
+};
+
+// Event settings extended types
+export type EventCoHostWithUser = EventCoHost & {
+  user: UserPreview;
+  addedByUser: UserPreview;
+};
+
+export type EventLinkWithCreator = EventLink & {
+  createdByUser: UserPreview;
+};
+
+export type EventSettingsWithRelations = EventSettings & {
+  linkedAlbum?: Pick<Album, 'id' | 'name'> & { coverUrl: string | null } | null;
+};
+
+export type EventWithSettings = EventWithDetails & {
+  settings: EventSettingsWithRelations | null;
+  coHosts: EventCoHostWithUser[];
+  links: EventLinkWithCreator[];
+  isUserCreator: boolean;
+  isUserCoHost: boolean;
+  canUserEdit: boolean;
 };
 
 // Poll extended types

@@ -1,11 +1,20 @@
 'use client'
 
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { CheckCircle2, X, Share2, MoreVertical } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { CheckCircle2, X, Share2, MoreVertical, Settings, Copy, Calendar, Flag } from 'lucide-react'
 import type { EventWithDetails } from '@/lib/database/types'
 import { EventHeaderSkeleton } from './loading'
 import { EventHeaderError } from './error'
 import { useAddEventAttendee, useRemoveEventAttendee } from '@/lib/hooks/use-events'
+import { toast } from 'sonner'
 
 interface EventHeaderProps {
   event: EventWithDetails | undefined
@@ -37,8 +46,29 @@ export function EventHeader({ event, tribeId, isLoading, isError, error, onRetry
   }
 
   const handleShare = () => {
-    // TODO: Implement share functionality
-    console.log('Share event:', event?.id)
+    if (!event) return
+
+    const url = `${window.location.origin}/tribe/${tribeId}/events/${event.id}`
+    navigator.clipboard.writeText(url)
+    toast.success('Event link copied to clipboard')
+  }
+
+  const handleCopyLink = () => {
+    if (!event) return
+
+    const url = `${window.location.origin}/tribe/${tribeId}/events/${event.id}`
+    navigator.clipboard.writeText(url)
+    toast.success('Link copied to clipboard')
+  }
+
+  const handleAddToCalendar = () => {
+    // TODO: Implement calendar export
+    toast.info('Calendar export coming soon')
+  }
+
+  const handleReport = () => {
+    // TODO: Implement report functionality
+    toast.info('Report functionality coming soon')
   }
 
   const isRSVPLoading = isAddingAttendee || isRemovingAttendee
@@ -68,9 +98,36 @@ export function EventHeader({ event, tribeId, isLoading, isError, error, onRetry
         <Share2 className="h-4 w-4 mr-2" />
         Share
       </Button>
-      <Button variant="ghost" size="icon">
-        <MoreVertical className="h-4 w-4" />
-      </Button>
+
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon">
+            <MoreVertical className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuItem asChild>
+            <Link href={`/tribe/${tribeId}/events/${event.id}/settings`}>
+              <Settings className="h-4 w-4 mr-2" />
+              Event Settings
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={handleCopyLink}>
+            <Copy className="h-4 w-4 mr-2" />
+            Copy Link
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={handleAddToCalendar}>
+            <Calendar className="h-4 w-4 mr-2" />
+            Add to Calendar
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={handleReport} className="text-destructive focus:text-destructive">
+            <Flag className="h-4 w-4 mr-2" />
+            Report Event
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   )
 }

@@ -26,7 +26,7 @@ export function EventRsvpStats({ tribeId, eventId }: EventRsvpStatsProps) {
         <h3 className="font-semibold">RSVP</h3>
       </div>
 
-      <div className="space-y-3">
+      <div className="flex flex-row gap-3">
         <div className="flex items-center gap-3">
           <div className="flex items-center justify-center h-8 w-8 rounded-full bg-green-500/10">
             <CheckCircle2 className="h-4 w-4 text-green-500" />
@@ -57,7 +57,7 @@ function EventRsvpStatsSkeleton() {
         <Skeleton className="h-5 w-12" />
       </div>
 
-      <div className="space-y-3">
+      <div className="flex flex-row gap-3">
         <div className="flex items-center gap-3">
           <Skeleton className="h-8 w-8 rounded-full" />
           <Skeleton className="h-4 w-20" />

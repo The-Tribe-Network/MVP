@@ -48,6 +48,8 @@ export const CLOUDINARY_FOLDERS = {
   TRIBE_MEDIA: 'tribes/media',
   TRIBE_POSTS: 'tribes/posts',
   TRIBE_AVATARS: 'tribes/avatars',
+  TRIBE_EVENTS: 'tribes/events',
+  TRIBE_BANNERS: 'tribes/banners',
 } as const
 
 // Media privacy settings (for future use)

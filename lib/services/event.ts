@@ -365,10 +365,11 @@ export async function updateEvent(
   userId: string,
   data: Partial<{
     title: string;
-    description: string;
+    description: string | null;
     startDate: Date;
-    endDate: Date;
-    location: string;
+    endDate: Date | null;
+    location: string | null;
+    coverImageUrl: string | null;
     status: "upcoming" | "ongoing" | "completed" | "cancelled";
   }>
 ): Promise<EventWithCreator | null> {

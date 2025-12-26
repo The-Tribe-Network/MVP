@@ -9,11 +9,12 @@ const API_BASE = '/api/tribes';
 
 export interface CreateEventInput {
   title: string;
-  description?: string;
+  description?: string | null;
   startDate: Date;
-  endDate?: Date;
-  location?: string;
+  endDate?: Date | null;
+  location?: string | null;
   coverImageUrl?: string | null;
+  status?: 'upcoming' | 'ongoing' | 'completed' | 'cancelled';
   poll?: {
     question: string;
     options: string[];
