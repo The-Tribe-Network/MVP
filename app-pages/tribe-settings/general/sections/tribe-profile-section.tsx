@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { type Control, useWatch } from 'react-hook-form';
 import { Upload, Loader2, ImageIcon, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -29,6 +29,7 @@ import { useFormContext } from 'react-hook-form';
 import type { UpdateTribeInput } from '@/lib/validations/tribe';
 import { LocationField } from './location-field';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -55,7 +56,7 @@ export function TribeProfileSection({
   bannerUrl,
   tribeName,
 }: TribeProfileSectionProps) {
-  const { setValue } = useFormContext<UpdateTribeInput>();
+  const { setValue, formState } = useFormContext<UpdateTribeInput>();
   const avatarFileInputRef = useRef<HTMLInputElement>(null);
   const bannerFileInputRef = useRef<HTMLInputElement>(null);
   const uploadAvatar = useUploadTribeAvatar();
@@ -65,6 +66,27 @@ export function TribeProfileSection({
   const [isUploadingBanner, setIsUploadingBanner] = useState(false);
   const [currentAvatarUrl, setCurrentAvatarUrl] = useState<string | undefined>(avatarUrl);
   const [currentBannerUrl, setCurrentBannerUrl] = useState<string | undefined>(bannerUrl);
+
+  // Track pending banner upload for cleanup if user leaves without saving
+  const pendingBannerRef = useRef<string | null>(null);
+
+  // Clear pending ref when form is successfully submitted
+  useEffect(() => {
+    if (formState.isSubmitSuccessful) {
+      pendingBannerRef.current = null;
+    }
+  }, [formState.isSubmitSuccessful]);
+
+  // Cleanup pending banner upload on unmount if form wasn't saved
+  useEffect(() => {
+    return () => {
+      const pendingId = pendingBannerRef.current;
+      if (pendingId) {
+        // Fire and forget - delete the orphaned upload
+        fetch(`/api/media/${pendingId}`, { method: 'DELETE' }).catch(console.error);
+      }
+    };
+  }, []);
 
   const watchedName = useWatch({ control, name: 'name' }) || tribeName;
   const watchedAvatar = useWatch({ control, name: 'avatar' });
@@ -109,6 +131,8 @@ export function TribeProfileSection({
     setIsUploadingBanner(true);
     try {
       const result = await uploadBanner.mutateAsync({ file });
+      // Track as pending upload for cleanup if user leaves without saving
+      pendingBannerRef.current = result.id;
       setValue('banner', result.id);
       setCurrentBannerUrl(result.url);
       toast.success('Banner uploaded successfully!');
@@ -221,20 +245,49 @@ export function TribeProfileSection({
                   className="w-full h-full object-cover"
                 />
               </div>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="absolute top-2 right-2 h-8 w-8 bg-background/80 hover:bg-background"
-                onClick={handleRemoveBanner}
-                disabled={isUploadingBanner || deleteMedia.isPending}
-              >
-                {deleteMedia.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <X className="h-4 w-4" />
-                )}
-              </Button>
+              {/* Button container - top right */}
+              <div className="absolute top-2 right-2 flex gap-1">
+                {/* Replace button */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 bg-background/80 hover:bg-background"
+                      onClick={handleBannerUploadClick}
+                      disabled={isUploadingBanner || deleteMedia.isPending}
+                    >
+                      {isUploadingBanner ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Upload className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Replace banner</TooltipContent>
+                </Tooltip>
+                {/* Remove button */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 bg-background/80 hover:bg-background"
+                      onClick={handleRemoveBanner}
+                      disabled={isUploadingBanner || deleteMedia.isPending}
+                    >
+                      {deleteMedia.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <X className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Remove banner</TooltipContent>
+                </Tooltip>
+              </div>
             </div>
           ) : (
             /* Upload button/zone for banner */

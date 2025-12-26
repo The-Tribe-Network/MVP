@@ -187,7 +187,7 @@ export default function PostCard({
                   </div>
                 )}
               </div>
-              
+
               {/* Album Details */}
               <div className="flex flex-col justify-center min-w-0 flex-1">
                 <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-0.5">
@@ -293,7 +293,7 @@ export default function PostCard({
   )
 
   const transparentCardClassName = [
-    "bg-transparent transition-colors border-y-0 border-x-0 rounded-none hover:bg-card/80 hover:rounded-lg",
+    "bg-transparent transition-colors border-y-0 border-x-0 rounded-none hover:bg-card/80 hover:rounded-lg shadow-none",
     pathname === `/tribe/${tribeId}/post/${post.id}` ? "rounded-lg hover:bg-transparent" : "",
   ];
 

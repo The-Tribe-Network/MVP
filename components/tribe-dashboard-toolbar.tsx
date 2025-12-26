@@ -50,13 +50,13 @@ export function TribeDashboardToolbar() {
           </div>
 
           {/* Center - Navigation tabs (desktop only, tribe context only) */}
-          {isTribeContext && (
+          {/* {isTribeContext && (
             <TribeHeaderNav
               tribeId={tribe_id}
               tribeName={tribe?.name}
               className="hidden lg:flex"
             />
-          )}
+          )} */}
 
           {/* Right side - Icons and User Menu */}
           <div data-tour="toolbar-buttons" className="flex items-center gap-2">

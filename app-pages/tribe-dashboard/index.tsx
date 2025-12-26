@@ -11,6 +11,7 @@ import {
   trendingWidgetMockData
 } from "@/app-pages/tribe-dashboard/components/widgets";
 import { TribeBanner, TribeBannerSkeleton } from "./components/tribe-banner";
+import { TribeHeaderNav } from "@/components/tribe-header-nav";
 
 interface TribeDashboardPageProps {
   tribeId: string;
@@ -35,8 +36,14 @@ export function TribeDashboardPage({
         ) : null}
       </div>
 
-      <div className="mb-8 hidden lg:block">
+      <div className="mb-8 hidden lg:flex flex-row items-center justify-between">
         <h1 className="text-4xl font-bold mb-2">Dashboard</h1>
+
+        <TribeHeaderNav
+          tribeId={tribeId}
+          tribeName={tribe?.name}
+          className="hidden lg:flex"
+        />
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Column - Tribe Info */}

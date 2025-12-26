@@ -67,7 +67,7 @@ export function TribeHeaderNav({ tribeId, tribeName, className }: TribeHeaderNav
       </div>
 
       {/* Quick Create Dropdown */}
-      <DropdownMenu>
+      {/* <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="default" size="sm" className="gap-1.5 ml-2">
             <Plus className="h-4 w-4" />
@@ -92,7 +92,7 @@ export function TribeHeaderNav({ tribeId, tribeName, className }: TribeHeaderNav
             <span>Invite Members</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
-      </DropdownMenu>
+      </DropdownMenu> */}
     </nav>
   )
 }
