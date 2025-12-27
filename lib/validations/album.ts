@@ -19,40 +19,50 @@ export const updateAlbumSchema = z.object({
 export type CreateAlbumInput = z.infer<typeof createAlbumSchema>;
 export type UpdateAlbumInput = z.infer<typeof updateAlbumSchema>;
 
-// Step-by-step validation schemas for multi-step form
+// ============================================
+// Multi-step form schemas (3 steps)
+// ============================================
 
 /**
- * Step 1: Basic Info validation (name, description, privacy)
+ * Full form schema for useForm (Step 1 fields only - media tracked separately)
+ */
+export const createAlbumFormSchema = z.object({
+  name: z.string().min(1, "Album name is required").max(100, "Album name must be 100 characters or less"),
+  description: z.string().max(500, "Description must be 500 characters or less").optional().default(''),
+  privacy: z.enum(["public", "private", "admin_only"]).default('public'),
+  coverId: z.string().uuid().nullable().optional(),
+  isNewCover: z.boolean().default(false),
+});
+
+export type CreateAlbumFormInput = z.infer<typeof createAlbumFormSchema>;
+
+/**
+ * Step 1: Album Details validation (name, description, privacy, cover photo)
  */
 export const albumStep1Schema = z.object({
-  name: z.string().min(1, "Album name is required").max(100),
-  description: z.string().max(500).optional(),
-  privacy: z.enum(["public", "private", "admin_only"]),
+  name: z.string().min(1, "Album name is required").max(100, "Album name must be 100 characters or less"),
+  description: z.string().max(500, "Description must be 500 characters or less").optional().default(''),
+  privacy: z.enum(["public", "private", "admin_only"]).default('public'),
+  coverId: z.string().uuid().nullable().optional(),
+  isNewCover: z.boolean().optional().default(false),
 });
 
 /**
- * Step 2: Cover photo validation (optional)
+ * Step 2: Upload media validation (max 20 images)
  */
 export const albumStep2Schema = z.object({
-  coverId: z.string().uuid().optional(),
+  uploadedMediaIds: z.array(z.string().uuid()).max(20, "Maximum 20 images can be uploaded").optional(),
 });
 
 /**
- * Step 3: Upload media validation (max 20 images)
+ * Step 3: Select existing media validation
  */
 export const albumStep3Schema = z.object({
-  uploadedMediaIds: z.array(z.string().uuid()).max(20).optional(),
-});
-
-/**
- * Step 4: Select existing media validation
- */
-export const albumStep4Schema = z.object({
   selectedMediaIds: z.array(z.string().uuid()).optional(),
 });
 
 /**
- * Cross-validation for Steps 3 & 4
+ * Cross-validation for Steps 2 & 3
  * At least one media item must be uploaded OR selected
  */
 export const albumMediaValidation = z.object({

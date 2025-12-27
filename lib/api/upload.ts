@@ -46,6 +46,20 @@ export interface UploadTribeMediaParams {
   addToAlbum?: boolean;
 }
 
+export interface UploadTribeMediaBatchParams {
+  tribeId: string;
+  files: File[];
+  albumId?: string | null;
+  addToAlbum?: boolean;
+}
+
+export interface BatchUploadResult {
+  successful: UploadResponse[];
+  failed: { index: number; error: string; name?: string }[];
+  totalUploaded: number;
+  totalFailed: number;
+}
+
 // ============================================================================
 // Upload Functions
 // ============================================================================
@@ -232,4 +246,38 @@ export async function deleteMedia(mediaId: string): Promise<void> {
     const error = await response.json();
     throw new Error(error.error || 'Failed to delete media');
   }
+}
+
+/**
+ * Batch upload multiple media files to a tribe
+ */
+export async function uploadTribeMediaBatch(
+  params: UploadTribeMediaBatchParams
+): Promise<BatchUploadResult> {
+  const { tribeId, files, albumId, addToAlbum } = params;
+  const formData = new FormData();
+
+  // Append all files with the same key 'files'
+  for (const file of files) {
+    formData.append('files', file);
+  }
+
+  if (addToAlbum !== undefined) {
+    formData.append('addToAlbum', addToAlbum.toString());
+  }
+  if (albumId) {
+    formData.append('albumId', albumId);
+  }
+
+  const response = await fetch(`/api/tribes/${tribeId}/media/batch`, {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to upload media');
+  }
+
+  return response.json();
 }

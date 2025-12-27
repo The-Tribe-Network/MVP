@@ -10,6 +10,7 @@ import {
   uploadEventCover,
   uploadTribeBanner,
   uploadTribeMedia,
+  uploadTribeMediaBatch,
   deleteMedia,
   type UploadResponse,
   type UploadPostImageParams,
@@ -18,6 +19,7 @@ import {
   type UploadTribeBannerParams,
   type UploadTribeAvatarParams,
   type UploadTribeMediaParams,
+  type BatchUploadResult,
 } from '@/lib/api/upload';
 
 // Re-export types for backwards compatibility
@@ -107,3 +109,27 @@ export function useUploadTribeMedia(tribeId: string) {
     },
   });
 }
+
+/**
+ * Batch upload multiple media files to a tribe with automatic query invalidation
+ */
+export function useUploadTribeMediaBatch(tribeId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (params: { files: File[]; albumId?: string | null; addToAlbum?: boolean }) =>
+      uploadTribeMediaBatch({ tribeId, ...params }),
+    onSuccess: () => {
+      // Invalidate both media and album queries to trigger refetch
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.media.tribe(tribeId)
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.albums.tribe(tribeId)
+      });
+    },
+  });
+}
+
+// Re-export BatchUploadResult type for consumers
+export type { BatchUploadResult };

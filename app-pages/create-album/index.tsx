@@ -2,24 +2,33 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft } from 'lucide-react'
+import Link from 'next/link'
+import { useForm, useWatch } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { ProgressBar } from './ProgressBar'
-import { NavigationButtons } from './NavigationButtons'
-import { BasicInfoStep } from './BasicInfoStep'
-import { CoverPhotoStep } from './CoverPhotoStep'
-import { UploadMediaStep } from './UploadMediaStep'
-import { SelectMediaStep } from './SelectMediaStep'
-import { STEP_CONFIG, TOTAL_STEPS } from './stepConfig'
+import { Form } from '@/components/ui/form'
+import { CreateAlbumNavigation, type CreateAlbumStep } from './components/create-album-navigation'
+import { CreateAlbumHeader } from './components/create-album-header'
+import { AlbumDetailsSection } from './album-details'
+import { UploadMediaSection } from './upload-media'
+import { SelectMediaSection } from './select-media'
 import { useCreateAlbum } from '@/lib/hooks/use-albums'
-import { useDeleteMedia } from '@/lib/hooks/use-upload'
+import { useUploadAlbumCover, useDeleteMedia } from '@/lib/hooks/use-upload'
 import { toast } from 'sonner'
 import {
+  createAlbumFormSchema,
   albumStep1Schema,
   albumMediaValidation,
+  type CreateAlbumFormInput,
 } from '@/lib/validations/album'
-import type { PrivacyType, CoverMode } from './types'
 
 interface CreateAlbumPageProps {
   tribeId: string
@@ -27,28 +36,38 @@ interface CreateAlbumPageProps {
 
 export default function CreateAlbumPage({ tribeId }: CreateAlbumPageProps) {
   const router = useRouter()
-  const [currentStep, setCurrentStep] = useState(1)
+  const [activeStep, setActiveStep] = useState<CreateAlbumStep>('album-details')
+  const [completedSteps, setCompletedSteps] = useState<Set<CreateAlbumStep>>(new Set())
   const formSubmittedSuccessfully = useRef(false)
 
-  // Step 1 - Basic Info
-  const [name, setName] = useState('')
-  const [description, setDescription] = useState('')
-  const [privacy, setPrivacy] = useState<PrivacyType>('public')
-
-  // Step 2 - Cover Photo
-  const [coverMode, setCoverMode] = useState<CoverMode>('none')
+  // Cover photo state (managed outside form for preview URL)
+  const [coverPreviewUrl, setCoverPreviewUrl] = useState<string | null>(null)
+  const [isUploadingCover, setIsUploadingCover] = useState(false)
   const [uploadedCoverId, setUploadedCoverId] = useState<string | null>(null)
-  const [selectedCoverId, setSelectedCoverId] = useState<string | null>(null)
 
-  // Step 3 - Upload Media
+  // Media IDs (managed outside form for upload & select steps)
   const [uploadedMediaIds, setUploadedMediaIds] = useState<string[]>([])
-
-  // Step 4 - Select Media
   const [selectedMediaIds, setSelectedMediaIds] = useState<Set<string>>(new Set())
+
+  // Form setup with react-hook-form
+  const form = useForm<CreateAlbumFormInput>({
+    resolver: zodResolver(createAlbumFormSchema),
+    defaultValues: {
+      name: '',
+      description: '',
+      privacy: 'public',
+      coverId: null,
+      isNewCover: false,
+    },
+  })
 
   // Hooks
   const createAlbum = useCreateAlbum(tribeId)
+  const uploadCover = useUploadAlbumCover()
   const deleteMedia = useDeleteMedia()
+
+  // Watch form fields for validation
+  const watchedName = useWatch({ control: form.control, name: 'name' })
 
   // Cleanup on unmount (if form wasn't submitted)
   useEffect(() => {
@@ -62,16 +81,102 @@ export default function CreateAlbumPage({ tribeId }: CreateAlbumPageProps) {
     }
   }, [])
 
-  const handleNext = () => {
-    if (currentStep < TOTAL_STEPS) {
-      setCurrentStep(currentStep + 1)
+  // Track completed steps based on validation
+  useEffect(() => {
+    const formData = form.getValues()
+    const newCompleted = new Set<CreateAlbumStep>()
+
+    // Check album-details step
+    const step1Valid = albumStep1Schema.safeParse(formData).success
+    if (step1Valid) {
+      newCompleted.add('album-details')
+    }
+
+    // Upload media step is always "valid" (optional)
+    if (uploadedMediaIds.length > 0) {
+      newCompleted.add('upload-media')
+    }
+
+    // Select media step is always "valid" (optional)
+    if (selectedMediaIds.size > 0) {
+      newCompleted.add('select-media')
+    }
+
+    setCompletedSteps(newCompleted)
+  }, [watchedName, uploadedMediaIds, selectedMediaIds])
+
+  // Cover photo handlers
+  const handleCoverUpload = async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select a valid image file')
+      return
+    }
+
+    setIsUploadingCover(true)
+
+    // Create local preview first
+    const previewUrl = URL.createObjectURL(file)
+    setCoverPreviewUrl(previewUrl)
+
+    try {
+      const result = await uploadCover.mutateAsync({ file, tribeId })
+
+      // Clean up old uploaded cover if exists
+      if (uploadedCoverId) {
+        deleteMedia.mutate(uploadedCoverId)
+      }
+
+      setUploadedCoverId(result.id)
+      setCoverPreviewUrl(result.url)
+      form.setValue('coverId', result.id)
+      form.setValue('isNewCover', true)
+      toast.success('Cover uploaded successfully')
+    } catch (error) {
+      console.error('Failed to upload cover:', error)
+      toast.error('Failed to upload cover')
+      setCoverPreviewUrl(null)
+    } finally {
+      setIsUploadingCover(false)
+      // Revoke the blob URL
+      if (previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(previewUrl)
+      }
     }
   }
 
-  const handleBack = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1)
+  const handleCoverSelect = (mediaId: string, url: string) => {
+    // Clean up uploaded cover if exists (since we're selecting existing media)
+    if (uploadedCoverId) {
+      deleteMedia.mutate(uploadedCoverId)
+      setUploadedCoverId(null)
     }
+
+    setCoverPreviewUrl(url)
+    form.setValue('coverId', mediaId)
+    form.setValue('isNewCover', false)
+  }
+
+  const handleCoverRemove = async () => {
+    // Delete uploaded cover from server if it was uploaded
+    if (uploadedCoverId) {
+      try {
+        await deleteMedia.mutateAsync(uploadedCoverId)
+        setUploadedCoverId(null)
+      } catch (error) {
+        console.error('Failed to delete cover:', error)
+        toast.error('Failed to remove cover')
+        return
+      }
+    }
+
+    // Clean up preview URL
+    if (coverPreviewUrl && coverPreviewUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(coverPreviewUrl)
+    }
+
+    setCoverPreviewUrl(null)
+    form.setValue('coverId', null)
+    form.setValue('isNewCover', false)
   }
 
   const handleCancel = async () => {
@@ -85,21 +190,38 @@ export default function CreateAlbumPage({ tribeId }: CreateAlbumPageProps) {
       }
     }
 
-    router.back()
+    router.push(`/tribe/${tribeId}/media`)
   }
 
   const handleSubmit = async () => {
-    try {
-      const finalCoverId = uploadedCoverId || selectedCoverId || undefined
-      const allMediaIds = [...uploadedMediaIds, ...Array.from(selectedMediaIds)]
+    // Validate step 1 first
+    const formData = form.getValues()
+    const step1Result = albumStep1Schema.safeParse(formData)
+    if (!step1Result.success) {
+      toast.error('Please complete the album details first')
+      setActiveStep('album-details')
+      return
+    }
 
+    // Validate media requirement
+    const allMediaIds = [...uploadedMediaIds, ...Array.from(selectedMediaIds)]
+    const mediaResult = albumMediaValidation.safeParse({
+      uploadedMediaIds,
+      selectedMediaIds: Array.from(selectedMediaIds),
+    })
+    if (!mediaResult.success) {
+      toast.error('Please add at least one photo to the album')
+      return
+    }
+
+    try {
       await createAlbum.mutateAsync({
-        name,
-        description: description || undefined,
-        privacy,
-        coverId: finalCoverId,
+        name: formData.name,
+        description: formData.description || undefined,
+        privacy: formData.privacy,
+        coverId: formData.coverId || undefined,
         mediaIds: allMediaIds.length > 0 ? allMediaIds : undefined,
-        isNewCover: uploadedCoverId !== null,
+        isNewCover: formData.isNewCover,
       })
 
       formSubmittedSuccessfully.current = true
@@ -111,135 +233,144 @@ export default function CreateAlbumPage({ tribeId }: CreateAlbumPageProps) {
     }
   }
 
-  const isStepValid = (): boolean => {
-    switch (currentStep) {
-      case 1: {
-        // Step 1: Basic Info validation
-        const result = albumStep1Schema.safeParse({ name, description, privacy })
-        return result.success
-      }
-      case 2: {
-        // Step 2: Cover is always optional
-        return true
-      }
-      case 3: {
-        // Step 3: Upload media is optional (but validate max 20)
-        return uploadedMediaIds.length <= 20
-      }
-      case 4: {
-        // Step 4: Cross-validate with Step 3 - at least one must have media
-        const result = albumMediaValidation.safeParse({
-          uploadedMediaIds,
-          selectedMediaIds: Array.from(selectedMediaIds),
-        })
-        return result.success
-      }
+  const canNavigateToStep = (step: CreateAlbumStep): boolean => {
+    // Can always navigate to album-details
+    if (step === 'album-details') return true
+
+    // For other steps, album-details must be valid
+    const formData = form.getValues()
+    const step1Valid = albumStep1Schema.safeParse(formData).success
+    return step1Valid
+  }
+
+  const renderActiveSection = () => {
+    switch (activeStep) {
+      case 'album-details':
+        return (
+          <AlbumDetailsSection
+            control={form.control}
+            tribeId={tribeId}
+            coverPreviewUrl={coverPreviewUrl}
+            onCoverUpload={handleCoverUpload}
+            onCoverSelect={handleCoverSelect}
+            onCoverRemove={handleCoverRemove}
+            isUploadingCover={isUploadingCover}
+          />
+        )
+      case 'upload-media':
+        return (
+          <UploadMediaSection
+            tribeId={tribeId}
+            uploadedMediaIds={uploadedMediaIds}
+            onUploadedMediaChange={setUploadedMediaIds}
+          />
+        )
+      case 'select-media':
+        return (
+          <SelectMediaSection
+            tribeId={tribeId}
+            selectedMediaIds={selectedMediaIds}
+            onSelectedMediaChange={setSelectedMediaIds}
+          />
+        )
       default:
-        return false
+        return (
+          <AlbumDetailsSection
+            control={form.control}
+            tribeId={tribeId}
+            coverPreviewUrl={coverPreviewUrl}
+            onCoverUpload={handleCoverUpload}
+            onCoverSelect={handleCoverSelect}
+            onCoverRemove={handleCoverRemove}
+            isUploadingCover={isUploadingCover}
+          />
+        )
     }
   }
 
-  const currentStepConfig = STEP_CONFIG[currentStep as keyof typeof STEP_CONFIG]
+  const totalMediaCount = uploadedMediaIds.length + selectedMediaIds.size
 
   return (
-    <div className="flex overflow-auto bg-background items-center justify-center min-h-screen p-4 md:p-8">
-      <div className="w-full max-w-4xl">
-        <div className="mb-8 text-center">
-          <h1 className="text-4xl font-bold mb-2">Create a New Album</h1>
-          <p className="text-muted-foreground">
-            Organize and share your tribe's photos and memories
-          </p>
+    <div className="min-h-screen bg-background">
+      <div className="max-w-6xl mx-auto p-6">
+        {/* Breadcrumb Navigation */}
+        <Breadcrumb className="mb-6">
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link href={`/tribe/${tribeId}`}>Dashboard</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link href={`/tribe/${tribeId}/media`}>Media</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>Create Album</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+
+        {/* Header */}
+        <CreateAlbumHeader />
+
+        {/* Main Content with Sidebar */}
+        <div className="flex gap-8 mt-8">
+          {/* Sidebar Navigation */}
+          <CreateAlbumNavigation
+            activeStep={activeStep}
+            onStepChange={setActiveStep}
+            completedSteps={completedSteps}
+            canNavigateToStep={canNavigateToStep}
+          />
+
+          {/* Content Area */}
+          <div className="flex-1 min-w-0">
+            <Form {...form}>
+              <form onSubmit={(e) => e.preventDefault()}>
+                {renderActiveSection()}
+
+                {/* Error Display */}
+                {createAlbum.error && (
+                  <div className="mt-6 p-3 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-md">
+                    {createAlbum.error instanceof Error
+                      ? createAlbum.error.message
+                      : 'Failed to create album'}
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="flex items-center justify-between mt-8 pt-6 border-t">
+                  <div className="text-sm text-muted-foreground">
+                    {totalMediaCount === 0
+                      ? 'No media added yet'
+                      : `${totalMediaCount} ${totalMediaCount === 1 ? 'photo' : 'photos'} will be added to the album`}
+                  </div>
+                  <div className="flex gap-3">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleCancel}
+                      disabled={createAlbum.isPending}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={handleSubmit}
+                      disabled={createAlbum.isPending || totalMediaCount === 0}
+                    >
+                      {createAlbum.isPending ? 'Creating...' : 'Create Album'}
+                    </Button>
+                  </div>
+                </div>
+              </form>
+            </Form>
+          </div>
         </div>
-
-        <Card className="w-full bg-card border-zinc-700">
-          <CardHeader>
-            <div className="flex items-center justify-between mb-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleCancel}
-                className="text-muted-foreground hover:text-foreground"
-                disabled={createAlbum.isPending}
-              >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Cancel
-              </Button>
-              <div className="text-sm text-muted-foreground">
-                Step {currentStep} of {TOTAL_STEPS}
-              </div>
-            </div>
-
-            <ProgressBar currentStep={currentStep} totalSteps={TOTAL_STEPS} />
-
-            <CardTitle className="text-2xl">{currentStepConfig.title}</CardTitle>
-            <CardDescription>{currentStepConfig.description}</CardDescription>
-          </CardHeader>
-
-          <CardContent className="space-y-6">
-            {/* Step 1: Basic Info */}
-            {currentStep === 1 && (
-              <BasicInfoStep
-                name={name}
-                description={description}
-                privacy={privacy}
-                onNameChange={setName}
-                onDescriptionChange={setDescription}
-                onPrivacyChange={setPrivacy}
-              />
-            )}
-
-            {/* Step 2: Cover Photo */}
-            {currentStep === 2 && (
-              <CoverPhotoStep
-                tribeId={tribeId}
-                coverMode={coverMode}
-                uploadedCoverId={uploadedCoverId}
-                selectedCoverId={selectedCoverId}
-                onCoverModeChange={setCoverMode}
-                onUploadedCoverChange={setUploadedCoverId}
-                onSelectedCoverChange={setSelectedCoverId}
-              />
-            )}
-
-            {/* Step 3: Upload Media */}
-            {currentStep === 3 && (
-              <UploadMediaStep
-                tribeId={tribeId}
-                uploadedMediaIds={uploadedMediaIds}
-                onUploadedMediaChange={setUploadedMediaIds}
-              />
-            )}
-
-            {/* Step 4: Select Media */}
-            {currentStep === 4 && (
-              <SelectMediaStep
-                tribeId={tribeId}
-                selectedMediaIds={selectedMediaIds}
-                onSelectedMediaChange={setSelectedMediaIds}
-              />
-            )}
-
-            {/* Error Display */}
-            {createAlbum.error && (
-              <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
-                {createAlbum.error instanceof Error
-                  ? createAlbum.error.message
-                  : 'Failed to create album'}
-              </div>
-            )}
-
-            {/* Navigation Buttons */}
-            <NavigationButtons
-              currentStep={currentStep}
-              totalSteps={TOTAL_STEPS}
-              isStepValid={isStepValid()}
-              onBack={handleBack}
-              onNext={handleNext}
-              onSubmit={handleSubmit}
-              isSubmitting={createAlbum.isPending}
-            />
-          </CardContent>
-        </Card>
       </div>
     </div>
   )
