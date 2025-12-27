@@ -146,7 +146,12 @@ export function MediaGrid({ tribeId }: MediaGridProps) {
       {/* Albums Section */}
       {showAlbums && sortedAlbums.length > 0 && (
         <section className="mb-12">
-          <h2 className="mb-6 text-lg font-semibold text-foreground">Albums</h2>
+          <h2 className="mb-6 text-lg font-semibold text-foreground flex items-center gap-2">
+            Albums
+            <span className="rounded-full bg-muted px-2 py-0.5 text-sm font-medium text-muted-foreground">
+              {sortedAlbums.length}
+            </span>
+          </h2>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {sortedAlbums.map((album) => (
               <Link
@@ -189,7 +194,12 @@ export function MediaGrid({ tribeId }: MediaGridProps) {
       {/* Photos Section */}
       {showPhotos && sortedPhotos.length > 0 && (
         <section>
-          <h2 className="mb-6 text-lg font-semibold text-foreground">Photos</h2>
+          <h2 className="mb-6 text-lg font-semibold text-foreground flex items-center gap-2">
+            Photos
+            <span className="rounded-full bg-muted px-2 py-0.5 text-sm font-medium text-muted-foreground">
+              {sortedPhotos.length}
+            </span>
+          </h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {sortedPhotos.map((photo, index) => (
               <div

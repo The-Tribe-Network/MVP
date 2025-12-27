@@ -157,6 +157,102 @@ export function DetailsSection({ tribeId, eventId, event }: DetailsSectionProps)
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+
+          {/* Cover Image Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <ImageIcon className="h-4 w-4" />
+                Cover Image
+              </CardTitle>
+              <CardDescription>
+                A visual banner for your event (16:9 aspect ratio recommended)
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Hidden file input */}
+              <input
+                ref={coverFileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handleCoverFileSelect}
+                className="hidden"
+              />
+
+              {currentCoverUrl ? (
+                /* Cover preview with change button */
+                <div className="space-y-3">
+                  <div className="relative rounded-lg overflow-hidden border border-border">
+                    <div className="aspect-video">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={currentCoverUrl}
+                        alt="Cover preview"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute top-2 right-2 h-8 w-8 bg-background/80 hover:bg-background"
+                      onClick={handleRemoveCover}
+                      disabled={isUploadingCover}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="gap-2"
+                    onClick={() => coverFileInputRef.current?.click()}
+                    disabled={isUploadingCover}
+                  >
+                    {isUploadingCover ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Uploading...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="h-4 w-4" />
+                        Change Cover
+                      </>
+                    )}
+                  </Button>
+                </div>
+              ) : (
+                /* Upload zone when no cover */
+                <button
+                  type="button"
+                  onClick={() => coverFileInputRef.current?.click()}
+                  disabled={isUploadingCover}
+                  className={cn(
+                    'w-full aspect-video border-2 border-dashed rounded-lg',
+                    'flex flex-col items-center justify-center gap-2',
+                    'text-muted-foreground hover:text-foreground hover:border-foreground/50',
+                    'transition-colors cursor-pointer',
+                    isUploadingCover && 'opacity-50 cursor-not-allowed'
+                  )}
+                >
+                  {isUploadingCover ? (
+                    <>
+                      <Loader2 className="h-8 w-8 animate-spin" />
+                      <span className="text-sm">Uploading...</span>
+                    </>
+                  ) : (
+                    <>
+                      <ImageIcon className="h-8 w-8" />
+                      <span className="text-sm">Click to upload a cover image</span>
+                      <span className="text-xs">PNG, JPG, WebP up to 5MB</span>
+                    </>
+                  )}
+                </button>
+              )}
+            </CardContent>
+          </Card>
+          
           {/* Basic Info Card */}
           <Card>
             <CardHeader>
@@ -335,100 +431,7 @@ export function DetailsSection({ tribeId, eventId, event }: DetailsSectionProps)
             </CardContent>
           </Card>
 
-          {/* Cover Image Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
-                <ImageIcon className="h-4 w-4" />
-                Cover Image
-              </CardTitle>
-              <CardDescription>
-                A visual banner for your event (16:9 aspect ratio recommended)
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Hidden file input */}
-              <input
-                ref={coverFileInputRef}
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                onChange={handleCoverFileSelect}
-                className="hidden"
-              />
-
-              {currentCoverUrl ? (
-                /* Cover preview with change button */
-                <div className="space-y-3">
-                  <div className="relative rounded-lg overflow-hidden border border-border">
-                    <div className="aspect-video">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={currentCoverUrl}
-                        alt="Cover preview"
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="absolute top-2 right-2 h-8 w-8 bg-background/80 hover:bg-background"
-                      onClick={handleRemoveCover}
-                      disabled={isUploadingCover}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="gap-2"
-                    onClick={() => coverFileInputRef.current?.click()}
-                    disabled={isUploadingCover}
-                  >
-                    {isUploadingCover ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Uploading...
-                      </>
-                    ) : (
-                      <>
-                        <Upload className="h-4 w-4" />
-                        Change Cover
-                      </>
-                    )}
-                  </Button>
-                </div>
-              ) : (
-                /* Upload zone when no cover */
-                <button
-                  type="button"
-                  onClick={() => coverFileInputRef.current?.click()}
-                  disabled={isUploadingCover}
-                  className={cn(
-                    'w-full aspect-video border-2 border-dashed rounded-lg',
-                    'flex flex-col items-center justify-center gap-2',
-                    'text-muted-foreground hover:text-foreground hover:border-foreground/50',
-                    'transition-colors cursor-pointer',
-                    isUploadingCover && 'opacity-50 cursor-not-allowed'
-                  )}
-                >
-                  {isUploadingCover ? (
-                    <>
-                      <Loader2 className="h-8 w-8 animate-spin" />
-                      <span className="text-sm">Uploading...</span>
-                    </>
-                  ) : (
-                    <>
-                      <ImageIcon className="h-8 w-8" />
-                      <span className="text-sm">Click to upload a cover image</span>
-                      <span className="text-xs">PNG, JPG, WebP up to 5MB</span>
-                    </>
-                  )}
-                </button>
-              )}
-            </CardContent>
-          </Card>
+          
 
           {/* Actions */}
           <div className="flex justify-end gap-4">
