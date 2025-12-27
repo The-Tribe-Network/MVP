@@ -96,6 +96,133 @@ export function AlbumDetailsSection({
         </p>
       </div>
 
+      {/* Cover Photo Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <ImageIcon className="h-4 w-4" />
+            Cover Photo
+          </CardTitle>
+          <CardDescription>
+            Choose a cover image for your album (optional)
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Hidden file input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            onChange={handleFileSelect}
+            className="hidden"
+          />
+
+          {coverPreviewUrl ? (
+            /* Cover preview */
+            <div className="space-y-3">
+              <div className="relative rounded-lg overflow-hidden border border-border">
+                <div className="aspect-video relative">
+                  <Image
+                    src={coverPreviewUrl}
+                    alt="Cover preview"
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute top-2 right-2 h-8 w-8 bg-background/80 hover:bg-background"
+                  onClick={onCoverRemove}
+                  disabled={isUploadingCover}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="gap-2"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploadingCover}
+                >
+                  <Upload className="h-4 w-4" />
+                  Change Cover
+                </Button>
+              </div>
+            </div>
+          ) : (
+            /* Drop zone */
+            <div
+              className={cn(
+                'border-2 border-dashed rounded-lg p-8 transition-colors',
+                isDragging
+                  ? 'border-primary bg-primary/5'
+                  : 'border-muted-foreground/25 hover:border-primary/50',
+                isUploadingCover && 'opacity-50 cursor-not-allowed'
+              )}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            >
+              <div className="flex flex-col items-center justify-center gap-4 text-center">
+                {isUploadingCover ? (
+                  <>
+                    <Loader2 className="h-10 w-10 animate-spin text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">Uploading...</p>
+                  </>
+                ) : (
+                  <>
+                    <ImageIcon className="h-10 w-10 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm font-medium">
+                        Drag and drop an image here
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        PNG, JPG, WebP up to 5MB
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="gap-2"
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        <Upload className="h-4 w-4" />
+                        Upload from device
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="gap-2"
+                        onClick={() => setIsMediaDialogOpen(true)}
+                      >
+                        <ImageIcon className="h-4 w-4" />
+                        Select from tribe
+                      </Button>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Media Select Dialog */}
+          <MediaSelectDialog
+            tribeId={tribeId}
+            open={isMediaDialogOpen}
+            onOpenChange={setIsMediaDialogOpen}
+            onSelect={onCoverSelect}
+            title="Select Cover Photo"
+            description="Choose an image from your tribe's media to use as the album cover"
+            selectedMediaId={coverId}
+          />
+        </CardContent>
+      </Card>
+      
       {/* Basic Information Card */}
       <Card>
         <CardHeader>
@@ -276,133 +403,6 @@ export function AlbumDetailsSection({
               )}
             />
           )}
-        </CardContent>
-      </Card>
-
-      {/* Cover Photo Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <ImageIcon className="h-4 w-4" />
-            Cover Photo
-          </CardTitle>
-          <CardDescription>
-            Choose a cover image for your album (optional)
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Hidden file input */}
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            onChange={handleFileSelect}
-            className="hidden"
-          />
-
-          {coverPreviewUrl ? (
-            /* Cover preview */
-            <div className="space-y-3">
-              <div className="relative rounded-lg overflow-hidden border border-border">
-                <div className="aspect-video relative">
-                  <Image
-                    src={coverPreviewUrl}
-                    alt="Cover preview"
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="absolute top-2 right-2 h-8 w-8 bg-background/80 hover:bg-background"
-                  onClick={onCoverRemove}
-                  disabled={isUploadingCover}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="gap-2"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isUploadingCover}
-                >
-                  <Upload className="h-4 w-4" />
-                  Change Cover
-                </Button>
-              </div>
-            </div>
-          ) : (
-            /* Drop zone */
-            <div
-              className={cn(
-                'border-2 border-dashed rounded-lg p-8 transition-colors',
-                isDragging
-                  ? 'border-primary bg-primary/5'
-                  : 'border-muted-foreground/25 hover:border-primary/50',
-                isUploadingCover && 'opacity-50 cursor-not-allowed'
-              )}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-            >
-              <div className="flex flex-col items-center justify-center gap-4 text-center">
-                {isUploadingCover ? (
-                  <>
-                    <Loader2 className="h-10 w-10 animate-spin text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">Uploading...</p>
-                  </>
-                ) : (
-                  <>
-                    <ImageIcon className="h-10 w-10 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm font-medium">
-                        Drag and drop an image here
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        PNG, JPG, WebP up to 5MB
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="gap-2"
-                        onClick={() => fileInputRef.current?.click()}
-                      >
-                        <Upload className="h-4 w-4" />
-                        Upload from device
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="gap-2"
-                        onClick={() => setIsMediaDialogOpen(true)}
-                      >
-                        <ImageIcon className="h-4 w-4" />
-                        Select from tribe
-                      </Button>
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Media Select Dialog */}
-          <MediaSelectDialog
-            tribeId={tribeId}
-            open={isMediaDialogOpen}
-            onOpenChange={setIsMediaDialogOpen}
-            onSelect={onCoverSelect}
-            title="Select Cover Photo"
-            description="Choose an image from your tribe's media to use as the album cover"
-            selectedMediaId={coverId}
-          />
         </CardContent>
       </Card>
     </div>

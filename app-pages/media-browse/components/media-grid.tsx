@@ -63,7 +63,7 @@ export function MediaGrid({ tribeId }: MediaGridProps) {
     if (!sortedPhotos.length) return
 
     const carouselPhotos: CarouselPhoto[] = sortedPhotos.map((photo) => ({
-      id: photo.id,
+      id: photo.mediaId,
       url: photo.fileUrl,
       caption: photo.altText || '',
       likes: photo.likeCount || 0,
@@ -219,7 +219,7 @@ export function MediaGrid({ tribeId }: MediaGridProps) {
                         variant="secondary"
                         size="sm"
                         className="h-7 bg-background/80 backdrop-blur-sm"
-                        onClick={(e) => handleSetFeatured(photo.id, e)}
+                        onClick={(e) => handleSetFeatured(photo.mediaId, e)}
                       >
                         <Star className="h-3 w-3 mr-1" />
                         Feature

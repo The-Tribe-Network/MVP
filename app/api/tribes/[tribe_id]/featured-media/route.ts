@@ -23,7 +23,7 @@ interface RouteParams {
  */
 export async function GET(
   request: NextRequest,
-  ctx: RouteParams
+  ctx: RouteContext<'/api/tribes/[tribe_id]/featured-media'>
 ) {
   try {
     const user = await getServerUser();
