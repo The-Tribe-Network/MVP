@@ -20,7 +20,7 @@ export default function HomeDashboard({ user }: HomeDashboardProps) {
       <DashboardHeader userName={user?.name} />
 
       {/* Main content grid */}
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-6 lg:grid-cols-3 mb-12">
         {/*
           On mobile: Hide messages/events completely
           On tablet (md): Show messages/events ABOVE activity feed (stacked)

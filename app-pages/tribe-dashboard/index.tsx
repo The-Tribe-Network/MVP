@@ -19,12 +19,12 @@ export function TribeDashboardPage({
   tribeId,
 }: TribeDashboardPageProps) {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background -mx-4 -mt-6 md:mx-0 md:mt-0">
       {/* Header with banner, avatar, name, and actions */}
       <TribeHeader tribeId={tribeId} />
 
       {/* Main content area */}
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className="max-w-7xl mx-auto md:px-4 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Left/Main Column - Timeline */}
           <main className="lg:col-span-8">
@@ -37,7 +37,6 @@ export function TribeDashboardPage({
             <EventsWidget tribeId={tribeId} />
             <MediaWidget tribeId={tribeId} />
             <TrendingWidget trends={trendingWidgetMockData} />
-            
           </ScrollableSidebar>
         </div>
       </div>
