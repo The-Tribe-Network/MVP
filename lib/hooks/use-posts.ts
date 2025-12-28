@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { PostWithStats } from "@/lib/database/types";
 import { queryKeys } from "@/lib/constants/query-keys";
-import { tribePostsOptions, postDetailOptions } from "@/lib/query-options/posts";
+import { tribePostsOptions, postDetailOptions, type PostFilterOptions } from "@/lib/query-options/posts";
 import {
   createPost,
   updatePost,
@@ -11,12 +11,17 @@ import {
   togglePostLike,
   type CreatePostParams,
   type UpdatePostParams,
+  type PostSortOption,
+  type PostContentType,
 } from "@/lib/api/posts";
 
+// Re-export types for convenience
+export type { PostSortOption, PostContentType, PostFilterOptions };
+
 /**
- * Fetch posts for a tribe
+ * Fetch posts for a tribe with optional filters
  */
-export function useTribePosts(tribeId: string, options?: { limit?: number; offset?: number }) {
+export function useTribePosts(tribeId: string, options?: PostFilterOptions) {
   return useQuery(tribePostsOptions(tribeId, options));
 }
 

@@ -1,7 +1,7 @@
 'use client'
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { TrendingUp } from 'lucide-react'
+import { Separator } from '@/components/ui/separator'
 
 interface TrendItem {
   topic: string
@@ -10,31 +10,36 @@ interface TrendItem {
 
 interface TrendingWidgetProps {
   trends: TrendItem[]
-};
+}
 
 export default function TrendingWidget({ trends }: TrendingWidgetProps) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg flex items-center gap-2">
-          <TrendingUp className="h-5 w-5 text-primary" />
+    <div className="space-y-3">
+      <Separator />
+
+      {/* Header */}
+      <div className="flex items-center gap-2">
+        <TrendingUp className="h-4 w-4 text-muted-foreground" />
+        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
           Trending
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
+        </h3>
+      </div>
+
+      {/* Trend items */}
+      <div className="space-y-1">
         {trends.map((trend, idx) => (
           <div
             key={idx}
-            className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+            className="flex items-center justify-between py-1.5 rounded hover:bg-muted/30 cursor-pointer transition-colors px-1 -mx-1"
           >
             <div>
-              <p className="font-medium text-sm">{trend.topic}</p>
+              <p className="text-sm font-medium">{trend.topic}</p>
               <p className="text-xs text-muted-foreground">{trend.posts} posts</p>
             </div>
           </div>
         ))}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }
 
@@ -44,4 +49,4 @@ export const trendingWidgetMockData: TrendItem[] = [
   { topic: '#FitnessChallenge', posts: 19 },
   { topic: '#MovieMarathon', posts: 15 },
   { topic: '#RecipeShare', posts: 12 }
-];
+]

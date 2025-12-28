@@ -1,6 +1,7 @@
 import PostCard from "@/components/post-card"
 import PostCardSkeleton from "@/components/post-card-skeleton"
 import { useDeletePost, useLikePost, useTribePosts } from "@/lib/hooks/use-posts"
+import type { PostSortOption, PostContentType } from "@/lib/hooks/use-posts"
 import { formatRelativeTime } from "@/lib/utils"
 import { useState } from "react"
 import { toast } from "sonner"
@@ -11,10 +12,12 @@ import { Separator } from "@/components/ui/separator"
 interface TimelineContentProps {
   tribeId: string
   onViewChange: (view: "posts" | "new post") => void
+  sort: PostSortOption
+  contentType: PostContentType
 }
 
-export default function TimelineContent({ tribeId, onViewChange }: TimelineContentProps) {
-  const { data: posts, isError, isLoading } = useTribePosts(tribeId)
+export default function TimelineContent({ tribeId, onViewChange, sort, contentType }: TimelineContentProps) {
+  const { data: posts, isError, isLoading } = useTribePosts(tribeId, { sort, contentType })
 
   const [likeError, setLikeError] = useState<string | null>(null)
   const [likingPostId, setLikingPostId] = useState<string | null>(null)
@@ -82,10 +85,16 @@ export default function TimelineContent({ tribeId, onViewChange }: TimelineConte
   }
 
   if (transformedPosts.length === 0 && !isLoading) {
+    // Show different message based on filters
+    const isFiltered = sort !== 'new' || contentType !== 'all'
     return (
       <EmptyView
-        title="No Posts Yet"
-        description="There are no posts in this tribe yet. Be the first to set the tone!"
+        title={isFiltered ? "No Matching Posts" : "No Posts Yet"}
+        description={
+          isFiltered
+            ? "No posts match your current filters. Try adjusting your filters or create a new post."
+            : "There are no posts in this tribe yet. Be the first to set the tone!"
+        }
       >
         <Button onClick={() => onViewChange("new post")}>Create a Post</Button>
       </EmptyView>

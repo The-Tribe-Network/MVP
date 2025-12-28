@@ -1,13 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { AlbumIcon } from "lucide-react";
+import { Image } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { useTribeMedia } from "@/lib/hooks/use-media";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Empty, EmptyTitle, EmptyDescription, EmptyHeader, EmptyContent } from "@/components/ui/empty";
+import { Separator } from "@/components/ui/separator";
 import { useDialogStore } from "@/lib/stores/dialog-store";
 import { tribeMediaOptions } from "@/lib/query-options/media";
 
@@ -27,71 +25,71 @@ export default function MediaWidget({ tribeId }: MediaWidgetProps) {
   const openDialog = useDialogStore((s) => s.openDialog);
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <Link href={`/tribe/${tribeId}/media`} className="flex items-center hover:cursor-pointer gap-2">
-            <AlbumIcon className="h-5 w-5 text-primary" />
-            <CardTitle className="text-lg">Media</CardTitle>
-          </Link>
+    <div className="space-y-3">
+      <Separator />
+
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <Link
+          href={`/tribe/${tribeId}/media`}
+          className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+        >
+          <Image className="h-4 w-4 text-muted-foreground" />
+          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            Media
+          </h3>
+        </Link>
+      </div>
+
+      {/* Content */}
+      {isLoading ? (
+        <ContentSkeleton />
+      ) : error ? (
+        <div className="text-center py-4">
+          <p className="text-xs text-muted-foreground mb-2">Failed to load media</p>
+          <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => refetch()}>
+            Retry
+          </Button>
         </div>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <ContentSkeleton />
-        ) : error ? (
-          <Empty>
-            <EmptyHeader>
-              <EmptyTitle>Failed to load media</EmptyTitle>
-              <EmptyDescription>{error.message}</EmptyDescription>
-            </EmptyHeader>
-            <EmptyContent>
-              <Button variant="outline" size="sm" onClick={() => {
-                refetch();
-              }}>Retry</Button>
-            </EmptyContent>
-          </Empty>
-        ) : !media || media.length === 0 ? (
-          <Empty>
-            <EmptyHeader>
-              <EmptyTitle>No media available</EmptyTitle>
-              <EmptyDescription>No media available</EmptyDescription>
-            </EmptyHeader>
-          </Empty>
-        ) : (
-          <div className="grid grid-cols-2 gap-2">
-            {media.map((mediaItem) => (
-              <div
-                key={mediaItem.id}
-                className="aspect-square rounded-lg overflow-hidden bg-muted hover:opacity-80 transition-opacity cursor-pointer"
-              >
-                <img
-                  src={mediaItem.fileUrl || "/placeholder.svg"}
-                  alt={mediaItem.altText || `Media ${mediaItem.id}`}
-                  className="w-full h-full object-cover"
-                  onClick={() => openDialog('image-preview', { imageUrl: mediaItem.fileUrl || "/placeholder.svg", altText: mediaItem.altText || `Media ${mediaItem.id}` })}
-                />
-              </div>
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  )
-};
+      ) : !media || media.length === 0 ? (
+        <p className="text-xs text-muted-foreground py-2">No media yet</p>
+      ) : (
+        <div className="grid grid-cols-2 gap-1.5">
+          {media.map((mediaItem) => (
+            <div
+              key={mediaItem.id}
+              className="aspect-square rounded-md overflow-hidden bg-muted hover:opacity-80 transition-opacity cursor-pointer"
+            >
+              <img
+                src={mediaItem.fileUrl || "/placeholder.svg"}
+                alt={mediaItem.altText || `Media ${mediaItem.id}`}
+                className="w-full h-full object-cover"
+                onClick={() => openDialog('image-preview', {
+                  imageUrl: mediaItem.fileUrl || "/placeholder.svg",
+                  altText: mediaItem.altText || `Media ${mediaItem.id}`
+                })}
+              />
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function ContentSkeleton() {
   return (
-    <div className="grid grid-cols-2 gap-2">
+    <div className="grid grid-cols-2 gap-1.5">
       {[1, 2, 3, 4].map((idx) => (
         <div
           key={idx}
-          className="aspect-square rounded-lg overflow-hidden bg-muted animate-pulse"
+          className="aspect-square rounded-md overflow-hidden bg-muted animate-pulse"
         />
       ))}
     </div>
-  )
+  );
 }
+
 export const mockMediaWidgetData = [
   '/summer-party.png',
   '/team-hiking.jpg',

@@ -54,7 +54,8 @@ export const queryKeys = {
   posts: {
     all: ["posts"] as const,
     tribes: () => ["posts", "tribes"] as const,
-    tribe: (tribeId: string) => ["posts", "tribes", tribeId] as const,
+    tribe: (tribeId: string, filters?: Record<string, unknown>) =>
+      ["posts", "tribes", tribeId, filters] as const,
     detail: (postId: string) => ["posts", "detail", postId] as const,
   },
 

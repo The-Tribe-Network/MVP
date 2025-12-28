@@ -1,17 +1,15 @@
 'use client'
 
-import { useQuery } from "@tanstack/react-query";
-import { tribeDetailOptions } from "@/lib/query-options";
 import {
-  TribeInfoWidget,
   MediaWidget,
   EventsWidget,
   TrendingWidget,
   TimelineWidget,
+  SidebarInfoWidget,
   trendingWidgetMockData
 } from "@/app-pages/tribe-dashboard/components/widgets";
-import { TribeBanner, TribeBannerSkeleton } from "./components/tribe-banner";
-import { TribeHeaderNav } from "@/components/tribe-header-nav";
+import { TribeHeader } from "./components/tribe-header";
+import { ScrollableSidebar } from "./components/scrollable-sidebar";
 
 interface TribeDashboardPageProps {
   tribeId: string;
@@ -20,51 +18,27 @@ interface TribeDashboardPageProps {
 export function TribeDashboardPage({
   tribeId,
 }: TribeDashboardPageProps) {
-  const { data: tribe, isLoading } = useQuery(tribeDetailOptions(tribeId));
-
   return (
-    <div className="h-full bg-background">
-      {/* Banner - spans full width */}
-      <div className="mb-6">
-        {isLoading ? (
-          <TribeBannerSkeleton />
-        ) : tribe ? (
-          <TribeBanner
-            bannerUrl={tribe.banner}
-            tribeName={tribe.name}
-          />
-        ) : null}
-      </div>
+    <div className="min-h-screen bg-background">
+      {/* Header with banner, avatar, name, and actions */}
+      <TribeHeader tribeId={tribeId} />
 
-      <div className="mb-8 hidden lg:flex flex-row items-center justify-between">
-        <h1 className="text-4xl font-bold mb-2">Dashboard</h1>
+      {/* Main content area */}
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Left/Main Column - Timeline */}
+          <main className="lg:col-span-8">
+            <TimelineWidget tribeId={tribeId} />
+          </main>
 
-        <TribeHeaderNav
-          tribeId={tribeId}
-          tribeName={tribe?.name}
-          className="hidden lg:flex"
-        />
-      </div>
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Column - Tribe Info */}
-        <div className="lg:col-span-3 hidden lg:block">
-          <div className="space-y-6 sticky top-[72px]">
-            <TribeInfoWidget tribeId={tribeId} />
-            <MediaWidget tribeId={tribeId} />
-          </div>
-        </div>
-
-        {/* Middle Column - Timeline */}
-        <div className="lg:col-span-6 pt-6 lg:pt-0">
-          <TimelineWidget tribeId={tribeId} />
-        </div>
-
-        {/* Right Column - Trends & Events */}
-        <div className="lg:col-span-3 lg:block hidden">
-          <div className="space-y-6 sticky top-[72px]">
-            <TrendingWidget trends={trendingWidgetMockData} />
+          {/* Right Column - Scrollable Sidebar */}
+          <ScrollableSidebar className="lg:col-span-4">
+            <SidebarInfoWidget tribeId={tribeId} />
             <EventsWidget tribeId={tribeId} />
-          </div>
+            <MediaWidget tribeId={tribeId} />
+            <TrendingWidget trends={trendingWidgetMockData} />
+            
+          </ScrollableSidebar>
         </div>
       </div>
     </div>

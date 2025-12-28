@@ -7,10 +7,15 @@ const API_BASE = '/api/tribes';
 // Types
 // ============================================================================
 
+export type PostSortOption = 'new' | 'hot' | 'top';
+export type PostContentType = 'all' | 'text' | 'media' | 'announcements';
+
 export interface FetchTribePostsParams {
   tribeId: string;
   limit?: number;
   offset?: number;
+  sort?: PostSortOption;
+  contentType?: PostContentType;
 }
 
 export interface CreatePostParams {
@@ -33,13 +38,20 @@ export interface UpdatePostParams {
 // ============================================================================
 
 /**
- * Fetch posts for a tribe with optional pagination
+ * Fetch posts for a tribe with optional pagination and filtering
  */
 export async function fetchTribePosts(
   params: FetchTribePostsParams
 ): Promise<PostWithStats[]> {
   const { tribeId, ...queryParams } = params;
-  const queryString = buildQueryString(queryParams);
+  // Only include non-default values in query string
+  const filteredParams: Record<string, unknown> = {};
+  if (queryParams.limit) filteredParams.limit = queryParams.limit;
+  if (queryParams.offset) filteredParams.offset = queryParams.offset;
+  if (queryParams.sort && queryParams.sort !== 'new') filteredParams.sort = queryParams.sort;
+  if (queryParams.contentType && queryParams.contentType !== 'all') filteredParams.contentType = queryParams.contentType;
+
+  const queryString = buildQueryString(filteredParams);
   return apiFetch<PostWithStats[]>(
     `${API_BASE}/${tribeId}/posts${queryString}`
   );
