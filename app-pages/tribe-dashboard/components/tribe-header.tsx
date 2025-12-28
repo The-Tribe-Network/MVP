@@ -40,12 +40,12 @@ export function TribeHeader({ tribeId, className }: TribeHeaderProps) {
   return (
     <div className={cn("relative", className)}>
       {/* Banner */}
-      <div className="w-full aspect-[4/1] lg:aspect-[5/1] overflow-hidden bg-gradient-to-br from-primary/20 via-primary/10 to-background rounded-sm">
+      <div className="w-full aspect-[4/1] lg:aspect-[5/1] overflow-hidden bg-gradient-to-br from-primary/20 via-primary/10 to-background md:rounded-sm">
         {tribe.banner && (
           <img
             src={tribe.banner}
             alt={`${tribe.name} banner`}
-            className="w-full h-full object-cover rounded-sm"
+            className="w-full h-full object-cover md:rounded-sm"
           />
         )}
       </div>

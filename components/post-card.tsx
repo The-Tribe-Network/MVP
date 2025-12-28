@@ -86,7 +86,7 @@ export default function PostCard({
   })
 
   const cardContent = (
-    <CardContent className="pt-0 px-3">
+    <CardContent className="pt-0 px-4">
       <div className="space-y-4">
         {/* Post Header */}
         <div className="flex items-start gap-3">

@@ -46,7 +46,7 @@ export default function ActivityFeed() {
   const displayActivities = USE_MOCK_DATA ? mockActivities : []
 
   return (
-    <Card className="border-border/50 bg-card/50 lg:col-span-2">
+    <Card className="border-border/50 bg-card/50 lg:col-span-2 h-full">
       <CardHeader className="border-b border-border/50">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold text-foreground">Recent Activity</h2>
@@ -57,7 +57,7 @@ export default function ActivityFeed() {
         </div>
       </CardHeader>
 
-      <ScrollArea className="h-[600px]">
+      <ScrollArea className="h-[calc(100vh-222px)]">
         <div className="divide-y divide-border/50">
           {displayActivities.map((activity) => (
             <ActivityItem key={activity.id} activity={activity} />

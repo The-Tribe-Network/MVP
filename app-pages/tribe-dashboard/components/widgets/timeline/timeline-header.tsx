@@ -54,7 +54,7 @@ export default function TimelineHeader({
   // Show back button and "New Post" title when in new post view
   if (view === "new post") {
     return (
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 px-4 md:px-0">
         <Button
           variant="ghost"
           size="icon"
@@ -70,7 +70,7 @@ export default function TimelineHeader({
 
   // Posts view - show filters
   return (
-    <div className="flex items-center justify-between gap-2">
+    <div className="flex items-center justify-between gap-2 px-4 md:px-0">
       {/* Mobile: Dropdowns */}
       <div className="flex items-center gap-2 lg:hidden">
         {/* Sort Dropdown */}

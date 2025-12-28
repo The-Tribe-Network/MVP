@@ -222,7 +222,7 @@ export function NewPost({ tribeId, onViewChange }: NewPostProps) {
   }
 
   return (
-    <div className="pt-6">
+    <div className="pt-6 px-4 md:px-0">
       <div className="space-y-4">
         <Textarea
           placeholder="What's on your mind?"
