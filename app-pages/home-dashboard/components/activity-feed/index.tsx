@@ -4,35 +4,46 @@ import { ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { useUserActivities } from '@/lib/hooks/use-activities'
+// API imports preserved for future use
+// import { useUserActivities } from '@/lib/hooks/use-activities'
+// import { transformActivityData } from '../../lib/utils'
+// import { ActivityWithUser } from '@/lib/database/types'
+// import { ActivityFeedSkeleton } from './loading'
+// import { ActivityFeedEmpty } from './empty'
+// import { ActivityFeedError } from './error'
 import { ActivityItem } from './activity-item'
-import { ActivityFeedSkeleton } from './loading'
-import { ActivityFeedEmpty } from './empty'
-import { ActivityFeedError } from './error'
-import { transformActivityData } from '../../lib/utils'
-import { ActivityWithUser } from '@/lib/database/types'
+import { mockActivities } from '../../mock/data'
+
+// Set to true to use real API data, false for mock data (for screenshots)
+const USE_MOCK_DATA = true
 
 export default function ActivityFeed() {
-  const { data: activities, isLoading, error, isError, refetch } = useUserActivities({ limit: 20 })
+  // API functionality preserved - uncomment to use real data
+  // const { data: activities, isLoading, error, isError, refetch } = useUserActivities({ limit: 20 })
 
-  if (isLoading) {
-    return <ActivityFeedSkeleton />
-  }
+  // if (!USE_MOCK_DATA) {
+  //   if (isLoading) {
+  //     return <ActivityFeedSkeleton />
+  //   }
+  //
+  //   if (isError) {
+  //     return (
+  //       <ActivityFeedError
+  //         message={error instanceof Error ? error.message : 'Failed to load activities'}
+  //         onRetry={() => refetch()}
+  //       />
+  //     )
+  //   }
+  //
+  //   const transformedActivities = activities?.map((activity) => transformActivityData(activity as unknown as ActivityWithUser)) || []
+  //
+  //   if (transformedActivities.length === 0) {
+  //     return <ActivityFeedEmpty />
+  //   }
+  // }
 
-  if (isError) {
-    return (
-      <ActivityFeedError
-        message={error instanceof Error ? error.message : 'Failed to load activities'}
-        onRetry={() => refetch()}
-      />
-    )
-  }
-
-  const transformedActivities = activities?.map((activity) => transformActivityData(activity as unknown as ActivityWithUser)) || []
-
-  if (transformedActivities.length === 0) {
-    return <ActivityFeedEmpty />
-  }
+  // Use mock data for screenshots
+  const displayActivities = USE_MOCK_DATA ? mockActivities : []
 
   return (
     <Card className="border-border/50 bg-card/50 lg:col-span-2">
@@ -48,7 +59,7 @@ export default function ActivityFeed() {
 
       <ScrollArea className="h-[600px]">
         <div className="divide-y divide-border/50">
-          {transformedActivities.map((activity) => (
+          {displayActivities.map((activity) => (
             <ActivityItem key={activity.id} activity={activity} />
           ))}
         </div>
