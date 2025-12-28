@@ -50,3 +50,15 @@ export interface Metric {
   change: string
 }
 
+// Announcement types
+export interface Announcement {
+  id: string
+  tribe: {
+    name: string
+    avatar: string
+  }
+  title: string
+  message: string
+  timestamp: string
+}
+

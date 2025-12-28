@@ -28,6 +28,8 @@ export type SeedPostData = {
   daysAgo: number;
   /** Flat array of comments (no nesting) */
   comments?: SeedCommentData[];
+  /** Indices of users who liked this post */
+  likerIndices?: number[];
 };
 
 export type SeedEventData = {

@@ -1,4 +1,4 @@
-import { Card } from '@/components/ui/card'
+import { Card, CardHeader } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { EventItem } from './event-item'
 import { UpcomingEventsEmpty } from './empty'
@@ -15,9 +15,9 @@ export default function UpcomingEvents({ events }: UpcomingEventsProps) {
 
   return (
     <Card className="border-border/50 bg-card/50">
-      <div className="border-b border-border/50 p-4">
+      <CardHeader className="border-b border-border/50">
         <h3 className="font-semibold text-foreground">Upcoming Events</h3>
-      </div>
+      </CardHeader>
 
       <ScrollArea className="h-[280px]">
         <div className="divide-y divide-border/50">

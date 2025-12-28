@@ -2,7 +2,7 @@
 
 import { ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
+import { Card, CardHeader } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
 // API imports preserved for future use
 // import { useUserActivities } from '@/lib/hooks/use-activities'
@@ -47,7 +47,7 @@ export default function ActivityFeed() {
 
   return (
     <Card className="border-border/50 bg-card/50 lg:col-span-2">
-      <div className="border-b border-border/50 p-6">
+      <CardHeader className="border-b border-border/50">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold text-foreground">Recent Activity</h2>
           <Button variant="ghost" size="sm">
@@ -55,7 +55,7 @@ export default function ActivityFeed() {
             <ChevronRight className="ml-2 h-4 w-4" />
           </Button>
         </div>
-      </div>
+      </CardHeader>
 
       <ScrollArea className="h-[600px]">
         <div className="divide-y divide-border/50">

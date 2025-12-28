@@ -1,4 +1,4 @@
-import type { Activity, Message, Event, Metric } from '../lib/types'
+import type { Activity, Message, Event, Metric, Announcement } from '../lib/types'
 
 // Real avatar URLs from randomuser.me for demo screenshots
 const avatars = {
@@ -14,12 +14,12 @@ const avatars = {
   ryan: 'https://randomuser.me/api/portraits/men/41.jpg',
 }
 
-// Tribe avatars using UI Avatars service
+// Tribe avatars using Unsplash images
 const tribeAvatars = {
-  family: 'https://ui-avatars.com/api/?name=Family+Squad&background=6366f1&color=fff&size=128',
-  work: 'https://ui-avatars.com/api/?name=Work+Crew&background=10b981&color=fff&size=128',
-  college: 'https://ui-avatars.com/api/?name=College+Friends&background=f59e0b&color=fff&size=128',
-  neighbors: 'https://ui-avatars.com/api/?name=Neighbors&background=ef4444&color=fff&size=128',
+  family: 'https://images.unsplash.com/photo-1511895426328-dc8714191300?w=128&h=128&fit=crop&crop=faces',
+  work: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=128&h=128&fit=crop&crop=faces',
+  college: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=128&h=128&fit=crop&crop=faces',
+  neighbors: 'https://images.unsplash.com/photo-1517457373958-b7bdd4587205?w=128&h=128&fit=crop&crop=faces',
 }
 
 export const mockActivities: Activity[] = [
@@ -190,9 +190,33 @@ export const mockUpcomingEvents: Event[] = [
 ]
 
 export const mockMetrics: Metric[] = [
+  { label: 'Upcoming Events', value: '6', change: '3 this week' },
+  { label: 'Unread Messages', value: '23', change: '5 urgent' },
   { label: 'Active Tribes', value: '8', change: '+2 this month' },
   { label: 'Total Members', value: '127', change: '+15 this week' },
-  { label: 'Unread Messages', value: '23', change: '5 urgent' },
-  { label: 'Upcoming Events', value: '6', change: '3 this week' },
+]
+
+export const mockAnnouncements: Announcement[] = [
+  {
+    id: '1',
+    tribe: { name: 'Family Squad', avatar: tribeAvatars.family },
+    title: 'Holiday Gathering Update',
+    message: 'The venue has been changed to Grandma\'s house. Please bring a dish to share!',
+    timestamp: '2h ago',
+  },
+  {
+    id: '2',
+    tribe: { name: 'Work Crew', avatar: tribeAvatars.work },
+    title: 'Q1 Planning Session',
+    message: 'Mandatory team meeting this Thursday at 2 PM. Please review the agenda beforehand.',
+    timestamp: '5h ago',
+  },
+  {
+    id: '3',
+    tribe: { name: 'College Friends', avatar: tribeAvatars.college },
+    title: 'Reunion Trip Confirmed!',
+    message: 'We\'re going to Lake Tahoe in March! Check the event for booking details.',
+    timestamp: '1d ago',
+  },
 ]
 

@@ -1,4 +1,4 @@
-import { Card } from '@/components/ui/card'
+import { Card, CardHeader } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { MessageItem } from './message-item'
@@ -18,7 +18,7 @@ export default function RecentMessages({ messages }: RecentMessagesProps) {
 
   return (
     <Card className="border-border/50 bg-card/50">
-      <div className="border-b border-border/50 p-4">
+      <CardHeader className="border-b border-border/50">
         <div className="flex items-center justify-between">
           <h3 className="font-semibold text-foreground">Recent Messages</h3>
           {unreadCount > 0 && (
@@ -27,7 +27,7 @@ export default function RecentMessages({ messages }: RecentMessagesProps) {
             </Badge>
           )}
         </div>
-      </div>
+      </CardHeader>
 
       <ScrollArea className="h-[280px]">
         <div className="divide-y divide-border/50">

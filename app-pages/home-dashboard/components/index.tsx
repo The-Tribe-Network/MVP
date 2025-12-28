@@ -21,3 +21,6 @@ export { default as UpcomingEvents } from './upcoming-events'
 export { UpcomingEventsSkeleton } from './upcoming-events/loading'
 export { UpcomingEventsEmpty } from './upcoming-events/empty'
 
+// Announcements carousel
+export { default as AnnouncementsCarousel } from './announcements-carousel'
+
