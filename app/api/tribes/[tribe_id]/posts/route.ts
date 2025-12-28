@@ -35,17 +35,21 @@ export async function GET(
       );
     }
 
-    // Get pagination params
+    // Get pagination and filter params
     const searchParams = request.nextUrl.searchParams;
     const limit = parseInt(searchParams.get("limit") || "20", 10);
     const offset = parseInt(searchParams.get("offset") || "0", 10);
+    const sort = (searchParams.get("sort") || "new") as "new" | "hot" | "top";
+    const contentType = (searchParams.get("contentType") || "all") as "all" | "text" | "media" | "announcements";
 
     // Fetch posts
     const posts = await getTribePosts(
       tribeValidation.data.tribe_id,
       limit,
       offset,
-      user.id
+      user.id,
+      sort,
+      contentType
     );
 
     return NextResponse.json(posts);

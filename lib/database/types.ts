@@ -216,6 +216,8 @@ export type TribeWithCreator = Tribe & {
 
 export type TribeWithMembers = TribeWithCreator & {
   memberCount: number;
+  eventCount: number;
+  mediaCount: number;
 };
 
 // Tribe member extended types

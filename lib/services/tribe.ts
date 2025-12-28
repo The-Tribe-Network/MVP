@@ -2,7 +2,8 @@ import { db, getDbTransaction } from "@/lib/database/client";
 import { tribe, tribeMember, tribeMemberPermission, tribeSettings } from "@/lib/database/schemas/tribe";
 import { user } from "@/lib/database/schemas/auth";
 import { media } from "@/lib/database/schemas/media";
-import { eq, count, and, inArray, aliasedTable } from "drizzle-orm";
+import { event } from "@/lib/database/schemas/event";
+import { eq, count, and, inArray, aliasedTable, sql } from "drizzle-orm";
 import type { TribeInsert, TribeWithCreator, TribeWithMembers, Tribe } from "@/lib/database/types";
 import { getMemberWithPermissions } from "./permissions";
 import type { UpdateTribeInput } from "@/lib/validations/tribe";
@@ -145,11 +146,21 @@ export async function getTribeById(id: string, includeAvatar: boolean = false): 
     return null;
   }
 
-  // Get member count (single query)
-  const [memberCountResult] = await db
-    .select({ count: count() })
-    .from(tribeMember)
-    .where(eq(tribeMember.tribeId, id));
+  // Get member count, event count, and media count in parallel
+  const [memberCountResult, eventCountResult, mediaCountResult] = await Promise.all([
+    db
+      .select({ count: count() })
+      .from(tribeMember)
+      .where(eq(tribeMember.tribeId, id)),
+    db
+      .select({ count: count() })
+      .from(event)
+      .where(eq(event.tribeId, id)),
+    db
+      .select({ count: count() })
+      .from(media)
+      .where(eq(media.tribeId, id)),
+  ]);
 
   // Replace avatar/banner IDs with URLs if available
   const { avatarUrl, bannerUrl, creator, ...tribeFields } = tribeData;
@@ -159,7 +170,9 @@ export async function getTribeById(id: string, includeAvatar: boolean = false): 
     avatar: avatarUrl || tribeData.avatar, // Use URL if available, otherwise keep original (null or ID)
     banner: bannerUrl || tribeData.banner, // Use URL if available, otherwise keep original (null or ID)
     creator,
-    memberCount: memberCountResult?.count || 0,
+    memberCount: memberCountResult[0]?.count || 0,
+    eventCount: eventCountResult[0]?.count || 0,
+    mediaCount: mediaCountResult[0]?.count || 0,
   };
 }
 

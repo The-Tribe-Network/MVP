@@ -1,7 +1,8 @@
-import { Card, CardHeader, CardTitle } from '@/components/ui/card'
+'use client'
+
 import { Calendar } from 'lucide-react'
+import { Separator } from '@/components/ui/separator'
 import Link from 'next/link'
-import { Button } from '@/components/ui/button'
 import EventsWidgetContent from './events-widget-content'
 
 interface EventWidgetProps {
@@ -10,17 +11,23 @@ interface EventWidgetProps {
 
 export default function EventsWidget({ tribeId }: EventWidgetProps) {
   return (
-    <Card>
-      <CardHeader className="flex items-center justify-between">
-        <CardTitle className="text-lg flex items-center gap-2">
-          <Link href={`/tribe/${tribeId}/events`} className="flex items-center hover:cursor-pointer gap-2">
-            <Calendar className="h-5 w-5 text-primary" />
-            <span>Upcoming Events</span>
-          </Link>
-        </CardTitle>
-      </CardHeader>
+    <div className="space-y-3">
+      <Separator />
+
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <Link
+          href={`/tribe/${tribeId}/events`}
+          className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+        >
+          <Calendar className="h-4 w-4 text-muted-foreground" />
+          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            Upcoming Events
+          </h3>
+        </Link>
+      </div>
+
       <EventsWidgetContent tribeId={tribeId} />
-    </Card>
+    </div>
   )
 }
-

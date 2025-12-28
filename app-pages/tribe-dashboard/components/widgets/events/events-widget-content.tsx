@@ -1,9 +1,7 @@
 'use client'
 
-import { CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty'
-import { Plus, AlertCircle } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import Link from 'next/link'
 import { useTribeEvents } from '@/lib/hooks/use-events'
 import EventPreviewItem from './event-preview-item'
@@ -17,71 +15,51 @@ export default function EventsWidgetContent({ tribeId }: EventsWidgetContentProp
     status: 'upcoming',
     limit: 4
   })
+
   // Loading state
   if (isLoading) {
     return (
-      <CardContent className="space-y-4">
-        <div className="space-y-3">
-          {[...Array(2)].map((_, i) => (
-            <div key={i} className="h-20 animate-pulse rounded-lg bg-muted" />
-          ))}
-        </div>
-      </CardContent>
+      <div className="space-y-2">
+        {[...Array(2)].map((_, i) => (
+          <div key={i} className="h-16 animate-pulse rounded-md bg-muted" />
+        ))}
+      </div>
     )
   }
 
   // Error state
   if (error) {
     return (
-      <CardContent>
-        <Empty>
-          <EmptyHeader>
-            <EmptyTitle>Failed to load events</EmptyTitle>
-            <EmptyDescription>
-              {error.message || 'An error occurred while loading events'}
-            </EmptyDescription>
-          </EmptyHeader>
-          <EmptyContent>
-            <Button variant="outline" size="sm" onClick={() => refetch()}>
-              <AlertCircle className="h-4 w-4 mr-2" />
-              Try Again
-            </Button>
-          </EmptyContent>
-        </Empty>
-      </CardContent>
+      <div className="text-center py-4">
+        <p className="text-xs text-muted-foreground mb-2">Failed to load events</p>
+        <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => refetch()}>
+          Retry
+        </Button>
+      </div>
     )
   }
 
   // Empty state (no events)
   if (!events || events.length === 0) {
     return (
-      <CardContent>
-        <Empty>
-          <EmptyHeader>
-            <EmptyTitle>No upcoming events</EmptyTitle>
-            <EmptyDescription>
-              Things seem to be quiet, shake things up by creating an event!
-            </EmptyDescription>
-          </EmptyHeader>
-          <EmptyContent>
-            <Button variant="outline" size="sm" className="hover:bg-accent hover:text-accent-foreground" asChild>
-              <Link href={`/tribe/${tribeId}/events/new`}>
-                <Plus className="size-4 mr-2" />
-                New Event
-              </Link>
-            </Button>
-          </EmptyContent>
-        </Empty>
-      </CardContent>
+      <div className="py-2">
+        <p className="text-xs text-muted-foreground mb-3">No upcoming events</p>
+        <Button variant="ghost" size="sm" className="text-xs h-7 px-2" asChild>
+          <Link href={`/tribe/${tribeId}/events/new`}>
+            <Plus className="h-3 w-3 mr-1" />
+            Create Event
+          </Link>
+        </Button>
+      </div>
     )
   }
 
   // Data state (events available)
   return (
-    <CardContent className="space-y-4">
+    <div className="space-y-2">
       {events.map((event) => (
         <EventPreviewItem key={event.id} event={event} />
       ))}
-    </CardContent>
+    </div>
   )
 }
