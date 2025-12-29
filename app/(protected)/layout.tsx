@@ -13,8 +13,13 @@ export default async function ProtectedLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // Block access to protected routes in production (redirect to coming soon page)
-  if (process.env.NODE_ENV === "production") {
+  // Block access to protected routes in production only (allow preview deployments)
+  // VERCEL_ENV is "production" | "preview" | "development" on Vercel
+  // Falls back to NODE_ENV for local development
+  const isProduction = process.env.VERCEL_ENV === "production" ||
+    (process.env.VERCEL_ENV === undefined && process.env.NODE_ENV === "production");
+
+  if (isProduction) {
     redirect("/coming-soon");
   }
 

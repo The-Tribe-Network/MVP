@@ -13,7 +13,9 @@
     "migrate-avatar": "npx tsx lib/database/migrations/run-migration.ts",
     "seed": "npx tsx lib/database/seeds/index.ts",
     "seed:force": "npx tsx lib/database/seeds/index.ts --force",
-    "seed:clean": "npx tsx lib/database/seeds/clean.ts"
+    "seed:clean": "npx tsx lib/database/seeds/clean.ts",
+    "deploy": "vercel",
+    "deploy:prod": "vercel --prod"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -50,6 +52,7 @@
     "@tanstack/react-query-devtools": "latest",
     "@tanstack/react-table": "^8.21.3",
     "@types/react-joyride": "^2.0.5",
+    "@vercel/analytics": "^1.6.1",
     "autoprefixer": "^10.4.20",
     "better-auth": "latest",
     "class-variance-authority": "^0.7.1",
@@ -95,6 +98,7 @@
     "postcss": "^8.5",
     "tailwindcss": "^4.1.9",
     "tw-animate-css": "1.3.3",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vercel": "^50.1.3"
   }
 }

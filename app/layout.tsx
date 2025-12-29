@@ -1,6 +1,7 @@
 
 import type { Metadata } from "next";
 import { Geist, Manrope } from "next/font/google";
+import { Analytics } from '@vercel/analytics/next';
 
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
@@ -68,6 +69,7 @@ export default async function RootLayout({
             disableTransitionOnChange
           >
             {children}
+            <Analytics />
             <Toaster />
           </ThemeProvider>
         </QueryProvider>
