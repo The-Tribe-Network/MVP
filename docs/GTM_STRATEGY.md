@@ -1,612 +1,458 @@
 # Go-to-Market Strategy
 ## Tribe - Community Organization Platform
 
-**Version:** 1.0
-**Last Updated:** December 23, 2024
+**Version:** 2.0 - Waitlist Focus
+**Last Updated:** December 29, 2024
 **Owner:** Growth/Marketing Team
-**Status:** Pre-Launch
+**Status:** Pre-Launch (Waitlist Building)
 
 ---
 
 ## Table of Contents
 
 1. [Strategy Overview](#strategy-overview)
-2. [Target Acquisition Goals](#target-acquisition-goals)
+2. [Target Audience](#target-audience)
 3. [Acquisition Channels](#acquisition-channels)
-4. [Outreach Playbook](#outreach-playbook)
-5. [Pilot Program](#pilot-program)
-6. [Sales Process](#sales-process)
-7. [Launch Timeline](#launch-timeline)
-8. [Marketing Assets](#marketing-assets)
-9. [Partnership Strategy](#partnership-strategy)
-10. [Growth Loops](#growth-loops)
+4. [Content Strategy](#content-strategy)
+5. [Waitlist Goals](#waitlist-goals)
+6. [Tracking & Attribution](#tracking--attribution)
+7. [Timeline](#timeline)
+8. [Growth Loops](#growth-loops)
+9. [Appendix](#appendix)
 
 ---
 
 ## Strategy Overview
 
+### The Opportunity: Communities in Crisis
+
+Third places—the cafes, community centers, and gathering spots where communities form—are disappearing. The U.S. Surgeon General has declared loneliness a public health epidemic, with health risks "as deadly as smoking 15 cigarettes daily." Yet existing digital tools have failed communities because they were designed for individuals, not groups.
+
+Tribe provides organizational infrastructure for communities that already exist. We're not building a social network—we're building tools that help communities stay connected, preserve memories, and coordinate real-world gatherings.
+
+### Phase 1 Goal: Build the Waitlist
+
+Before launching pilots, we're building awareness and validating demand through community engagement. The goal is to:
+
+1. **Validate pain points** by engaging with community organizers where they already are
+2. **Build credibility** by contributing value before asking for signups
+3. **Grow the waitlist** to 500+ qualified leads
+4. **Identify early adopter communities** for pilot invitations
+
 ### Core GTM Thesis
 
-**Lead with diaspora communities** because they have:
-- Most urgent pain (Facebook Groups + WhatsApp chaos)
-- Strongest lock-in (cultural heritage preservation)
-- Fastest word-of-mouth (tight-knit trust networks)
-- Largest addressable market (every city has 10+ communities)
-
-### Phase 1 GTM Focus (Months 1-2)
-
-**Primary Target:** 4-6 Diaspora & Cultural Communities
-
-**Geographic Focus:**
-- Major metro areas with large diaspora populations
-- **Tier 1 Cities:** NYC, LA, Chicago, Houston, DC, Boston
-- **Rationale:** High density of diaspora communities, easy to visit in-person
-
-**Segment Prioritization (Phase 1):**
-1. **Mosque Congregations** (Islamic diaspora communities) - 2-3 pilots
-2. **African Diaspora Groups** (Ethiopian, Nigerian, Ghanaian associations) - 1-2 pilots
-3. **Hispanic/Latino Cultural Associations** - 1 pilot
-4. **Asian Community Groups** (Chinese, Indian, Filipino) - 1 pilot (opportunistic)
-
-**Why this order:**
-- Mosques have established leadership (imams, community organizers)
-- African diaspora groups have strong gathering culture (weekend meetups)
-- Hispanic/Latino communities are large and family-oriented
-- Asian communities are opportunistic (high density in certain cities)
+**Engage where community organizers already gather** because:
+- They're actively discussing pain points (perfect for validation)
+- Building credibility first creates warm leads
+- Word-of-mouth within these communities is organic
+- Lower CAC than cold outreach
 
 ---
 
-## Target Acquisition Goals
+## Target Audience
 
-### Phase 1 (Months 1-2)
+### Who We're Looking For
 
-| Segment | Target Tribes | Members per Tribe | Total Members | Activation Rate |
-|---------|--------------|-------------------|---------------|-----------------|
-| **Mosque Congregations** | 2-3 | 50-100 | 150-300 | 60%+ |
-| **African Diaspora** | 1-2 | 30-80 | 60-160 | 60%+ |
-| **Hispanic/Latino** | 1 | 30-60 | 30-60 | 60%+ |
-| **Asian Communities** | 0-1 | 30-60 | 0-60 | 60%+ |
-| **TOTAL** | **4-6** | - | **240-580** | **60%+** |
+Community leaders/organizers with these characteristics:
+- Already gather in person regularly (weekly, monthly, or for events)
+- Have hierarchical structure (leaders, members, tiers)
+- Are actively frustrated with current tools
+- Have shared memories worth preserving (photos from events)
 
-**Secondary Targets (Validation):**
-- 2-3 Fraternities/Sororities (college campuses)
-- 1-2 Fitness Studios (CrossFit boxes)
-- 1 Hospitality VIP List (restaurant/bar)
+### Community Types (Examples)
 
-**Total Phase 1 Goal:** 8-12 active tribes, 400-800 total members
+| Type | Examples |
+|------|----------|
+| Cultural/Religious | Mosque congregations, church groups, cultural associations |
+| Athletic | CrossFit boxes, rec leagues, sports clubs |
+| Social | Greek orgs, alumni networks, VIP groups |
+| Professional | Coworking communities, industry associations |
+| Hobbyist | Photography clubs, maker spaces, outdoor groups |
 
-### Phase 2 (Months 3-4)
+### Where They Hang Out Online
 
-- **Expand diaspora:** 6-10 additional communities (word-of-mouth referrals)
-- **Expand other segments:** 3-5 tribes across sports, country clubs, coworking
-- **Total Phase 2 Goal:** 20-30 active tribes, 1,000-2,000 members
-
-### Phase 3 (Months 5-6)
-
-- **Diaspora word-of-mouth explosion:** 20-30 additional communities
-- **Organic growth:** 10-20 tribes across all segments
-- **Total Phase 3 Goal:** 60-80 active tribes, 3,000-5,000 members
+- **Reddit**: Community organizing subreddits, niche interest subreddits
+- **Facebook Groups**: Alumni groups, local community groups, hobby groups
+- **Instagram**: Community organizer accounts, local event pages
+- **LinkedIn**: Community builders, event organizers
 
 ---
 
 ## Acquisition Channels
 
-### Primary Channels (Phase 1)
-
-#### 1. Direct LinkedIn Outreach (Primary Channel - 60% of pilots)
-
-**Target Personas:**
-- Mosque imams and community organizers
-- African diaspora association presidents
-- Hispanic/Latino cultural center directors
-- Asian community group leaders
-
-**Sourcing Strategy:**
-- LinkedIn search: "imam" + "NYC" / "community organizer" + "Ethiopian" + "Chicago"
-- LinkedIn groups: Muslim Professionals Network, African Diaspora Network, etc.
-- LinkedIn events: Diaspora community events in target cities
-
-**Outreach Volume:**
-- **Week 1-2:** 50 LinkedIn connection requests → 30 acceptances
-- **Week 3-4:** 30 personalized outreach messages → 10 responses → 6 discovery calls → 4 pilots
-
-**Success Metrics:**
-- Connection acceptance rate: 60%+
-- Response rate: 30%+
-- Discovery call booking rate: 60%+
-- Pilot conversion rate: 65%+
-
-#### 2. Email Outreach (Secondary Channel - 30% of pilots)
-
-**Target Lists:**
-- Mosque email addresses (public on websites)
-- Cultural association contact forms
-- Community center directories
-
-**Email Strategy:**
-- Personalized emails (no mass blasts)
-- Reference specific pain points (Facebook Groups chaos, WhatsApp overwhelm)
-- Offer free pilot program with white-glove onboarding
-
-**Outreach Volume:**
-- **Week 1-4:** 100 personalized emails → 20 responses → 8 discovery calls → 3 pilots
-
-**Success Metrics:**
-- Open rate: 40%+
-- Response rate: 20%+
-- Discovery call booking rate: 40%+
-- Pilot conversion rate: 40%+
-
-#### 3. In-Person Community Events (Tertiary Channel - 10% of pilots)
-
-**Event Strategy:**
-- Attend Eid celebrations, African cultural festivals, Diwali events
-- Network with community leaders
-- Demo Tribe on mobile/tablet
-
-**Target Events (NYC/LA/Chicago):**
-- Eid al-Fitr celebrations (April 2025)
-- Juneteenth African diaspora events (June 2025)
-- Hispanic Heritage Month events (September 2025)
-- Diwali celebrations (October/November 2025)
-
-**Success Metrics:**
-- 10+ community leader contacts per event
-- 1-2 pilot signups per event
-
-#### 4. Partnership/Referral Channel (Opportunistic - TBD%)
-
-**Partnership Targets:**
-- Islamic Society of North America (ISNA)
-- National Association of African American Studies
-- Hispanic Federation
-- Asian American Federation
-
-**Partnership Model:**
-- Co-marketing (feature Tribe at their events)
-- Referral program (partners refer communities, get credit)
-
-**Success Metrics:**
-- 1-2 partnership agreements in Phase 1
-- 2-3 referrals per partnership in first 60 days
+All channels have equal priority. Success is measured by waitlist signups tracked via the `source` field.
 
 ---
 
-## Outreach Playbook
+### Channel 1: Reddit
 
-### LinkedIn Outreach Template
+**Strategy**: Engagement first. Build credibility before mentioning Tribe.
 
-**Step 1: Connection Request (Personalized Note)**
+**Phase 1: Listen & Engage (Weeks 1-2)**
+- Join relevant subreddits
+- Upvote and comment on pain point discussions
+- Ask genuine questions about community organization challenges
+- DO NOT mention Tribe yet
 
-```
-Hi [First Name],
+**Phase 2: Contribute Value (Weeks 3-4)**
+- Share insights about community organization (without selling)
+- Help people with tool recommendations (objectively)
+- Build karma and reputation
+- Start mentioning "building something" casually
 
-I noticed you're leading [Community Name] in [City]. I'm working on a tool
-specifically for diaspora communities struggling with Facebook Groups and
-WhatsApp chaos.
+**Phase 3: Soft Launch (Weeks 5+)**
+- Post about the problem you're solving (third space crisis)
+- Share Tribe as "what we're building" with waitlist link
+- Ask for feedback on specific features
+- Track signups with source: `reddit-{subreddit}`
 
-Would love to connect and hear about how your community coordinates events
-and preserves photos from celebrations.
+**Target Subreddits:**
 
-Best,
-[Your Name]
-```
+| Subreddit | Subscribers | Relevance |
+|-----------|-------------|-----------|
+| r/communitybuilding | ~15k | Direct target - community organizers |
+| r/eventplanning | ~50k | Event coordinators |
+| r/nonprofit | ~80k | Nonprofit community organizers |
+| r/fraternity & r/sorority | ~20k each | Greek life organizers |
+| r/CrossFit | ~350k | Gym community owners |
+| r/smallbusiness | ~1M+ | Local business owners with communities |
+| r/churchofchrist, r/islam, etc. | Varies | Religious community organizers |
+| r/loneliness | ~150k | People experiencing the problem |
 
-**Step 2: Follow-Up Message (After Connection Accepted)**
+**Example Engagement Posts:**
 
-```
-Hi [First Name],
+*Listening post:*
+> "Community organizers - what's your biggest frustration with keeping your group connected between meetups? We use Facebook Groups but important announcements always get buried."
 
-Thanks for connecting! I wanted to reach out because we're building Tribe -
-a platform specifically for cultural communities like [Community Name].
+*Value post:*
+> "Here's what I've learned about organizing community photos after running [type] group for 3 years..."
 
-We're hearing from mosque leaders and diaspora organizers that:
-- Facebook Groups' algorithmic feed buries important announcements
-- WhatsApp groups with 50+ members are unmanageable
-- Photos from weddings, Eid celebrations, and cultural events get lost
-
-Tribe solves this with organized photo albums, structured events, and
-permission controls (elders, families, youth).
-
-We're looking for 2-3 communities to pilot the platform (free, with
-white-glove onboarding). Would you be open to a 15-minute call to hear
-more?
-
-[Link to calendar booking]
-
-Best,
-[Your Name]
-```
-
-**Step 3: Discovery Call (15 minutes)**
-
-**Agenda:**
-1. Understand their current pain points (2-3 minutes)
-   - "How do you currently coordinate events?" (Facebook Groups? WhatsApp?)
-   - "Where do photos from weddings/Eid/cultural events end up?" (Instagram? Lost?)
-   - "Do you need different permissions for elders vs. youth?" (RBAC validation)
-
-2. Present Tribe solution (5 minutes)
-   - Show The Vault (organized albums for weddings, festivals)
-   - Show RBAC (elder/family/youth permissions)
-   - Show Events (RSVP for cultural gatherings)
-
-3. Pitch pilot program (3 minutes)
-   - Free for 6 months (Phase 1-2)
-   - White-glove onboarding (we set everything up)
-   - Weekly check-ins for feedback
-
-4. Next steps (2 minutes)
-   - Schedule demo call (30 minutes)
-   - Send pilot agreement
-
-**Step 4: Demo Call (30 minutes)**
-
-**Agenda:**
-1. Live demo (15 minutes)
-   - Walk through tribe creation
-   - Show album creation (mock Eid celebration photos)
-   - Demo event creation with RSVP
-   - Show permission settings (elder/family/youth)
-
-2. Q&A (10 minutes)
-   - Answer technical questions
-   - Address concerns (privacy, migration from Facebook)
-
-3. Pilot signup (5 minutes)
-   - Sign pilot agreement
-   - Schedule onboarding session (1 hour)
+*Launch post:*
+> "We're building Tribe because communities are more disconnected than ever—even online. The Surgeon General called loneliness an epidemic, and I think it's because our digital tools are designed for individuals, not groups. Would love your feedback on what we're building: [link]"
 
 ---
 
-## Email Outreach Template
+### Channel 2: Facebook & Instagram
 
-**Subject Line:** A better way to organize [Community Name]'s photos and events
+**Strategy**: Find active group members frustrated with Facebook Groups, engage, and redirect to waitlist.
 
-**Email Body:**
+**Phase 1: Identify Target Groups**
+- Alumni groups (college, high school)
+- Local community groups
+- Hobby groups (photography, hiking, etc.)
+- Religious/cultural groups
+- Sports league groups
 
-```
-Dear [Leader Name],
+**Phase 2: Engage Authentically**
+- Join groups as a genuine participant
+- Comment on posts about organization challenges
+- DM people who complain about group chaos
+- Share helpful organization tips
 
-My name is [Your Name], and I'm reaching out because I've heard from many
-mosque leaders / cultural association organizers that Facebook Groups and
-WhatsApp are failing their communities.
+**Phase 3: Redirect to Waitlist**
+- When someone expresses pain, mention Tribe as a solution
+- Share waitlist link in DMs (not public posts - avoid bans)
+- Track with source: `facebook-{group-type}` or `instagram-{context}`
 
-Specifically:
-- Important announcements (weddings, funerals, events) get buried in
-  Facebook's algorithmic feed
-- WhatsApp groups with 50+ members are chaotic
-- Photos from Eid celebrations, weddings, and cultural events are scattered
-  and lost
+**Target Facebook Group Types:**
 
-We built Tribe specifically to solve this for diaspora communities like
-yours.
+| Group Type | Pain Points to Listen For |
+|------------|---------------------------|
+| Alumni networks | "Can anyone find the photos from reunion?" |
+| Local community groups | "This group is so chaotic, how do I find info?" |
+| Sports leagues | "Who's coming to Saturday's game?" |
+| Hobby groups | "Where did we post those meetup photos?" |
+| Religious groups | "Did anyone see the announcement about Sunday?" |
 
-**What makes Tribe different:**
-- Organized photo albums (preserve wedding, Eid, cultural event photos)
-- Permission controls (different access for elders, families, youth)
-- Event coordination with RSVP (replace WhatsApp chaos)
-- Privacy-first (no ads, no Meta data harvesting)
-
-We're offering a free 6-month pilot to 4-6 communities, with white-glove
-onboarding (we set everything up for you).
-
-Would you be open to a 15-minute call to learn more?
-
-You can book a time here: [Calendar Link]
-
-Or reply to this email and I'll send availability.
-
-Best regards,
-[Your Name]
-[Title]
-[Contact Info]
-```
+**Instagram Approach:**
+- Follow community organizer accounts
+- Engage with content about events/gatherings
+- DM when they post about organization challenges
+- Share stories about community disconnection problem
 
 ---
 
-## Pilot Program
+### Channel 3: Personal Network
 
-### Pilot Structure
+**Strategy**: Warm intros through people you know connected to communities.
 
-**Duration:** 6 months (free)
+**Phase 1: Map Your Network**
+- List everyone you know who runs/organizes a community
+- List people connected to community leaders (one degree away)
+- Categorize by community type
 
-**What's Included:**
-- Free access to all Tribe features
-- White-glove onboarding (1-hour setup session)
-- Weekly check-ins for first 4 weeks
-- Direct Slack/email support
-- Priority feature requests
+**Phase 2: Personal Outreach**
+- Reach out personally (text, call, coffee)
+- Share what you're building and why
+- Ask for their pain points and feedback
+- Request waitlist signup + introductions to other organizers
 
-**Pilot Requirements:**
-- Minimum 20 members onboarded in first 30 days
-- Upload at least 1 album in first 60 days
-- Provide weekly feedback (15-minute calls)
-- NPS survey at 30, 60, 90 days
+**Phase 3: Referral Chain**
+- Each converted lead → ask for 2-3 more introductions
+- Track with source: `personal-{name}` or `personal-referral`
 
-**Pilot Success Criteria:**
-- 60%+ member activation (accept invite + upload profile pic)
-- 3+ albums created in first 60 days
-- 20+ photos uploaded per cultural event
-- Community leader NPS 9-10 at 90 days
-
-### Pilot Onboarding Process
-
-**Week 0: Signup**
-- Community leader signs pilot agreement
-- Sends list of 20-30 initial members (names + emails)
-
-**Week 1: Setup**
-- 1-hour onboarding call (screen share)
-  - Create tribe
-  - Set up permissions (elder/family/youth roles)
-  - Upload first album (recent cultural event photos)
-  - Invite first 20-30 members
-- Send welcome email to members with invitation link
-
-**Week 2: Activation**
-- Monitor member activations (goal: 60%+ accept invitations)
-- Follow-up call (30 minutes) to troubleshoot issues
-- Encourage community leader to share at next gathering
-
-**Week 3-4: Engagement**
-- Weekly check-in calls (15 minutes)
-- Track: Albums created, photos uploaded, events created
-- Gather feedback on pain points
-
-**Month 2-3: Retention**
-- Bi-weekly check-ins
-- Monitor usage metrics (posts, photos, events)
-- Identify blockers to full migration from Facebook/WhatsApp
-
-**Month 4-6: Advocacy**
-- Request testimonial
-- Ask for referrals (other mosque leaders, cultural associations)
-- Case study creation (if NPS 9-10)
+**Outreach Script:**
+> "Hey [Name], I've been building something and thought of you. Communities everywhere are struggling to stay connected—Facebook Groups bury important stuff, photos get lost, there's no real home for the group. I'm building Tribe to fix this. Would love your feedback and if you know any community organizers who might be interested."
 
 ---
 
-## Sales Process
+### Channel 4: LinkedIn
 
-### 5-Step Sales Funnel
+**Strategy**: Connect with community organizers and event professionals.
 
-**Step 1: Outreach (LinkedIn/Email/In-Person)**
-- Target: 100 contacts in 4 weeks
-- Expected: 30 responses (30% response rate)
+**Search Terms:**
+- "Community organizer" + [city]
+- "Event coordinator"
+- "Group leader"
+- "Community manager" (filter for non-tech)
 
-**Step 2: Discovery Call (15 minutes)**
-- Target: 30 discovery calls
-- Expected: 20 demo calls booked (65% conversion)
+**Engagement Approach:**
+- Connect with personalized note about community challenges
+- Share content about third space crisis
+- DM with waitlist link after establishing rapport
+- Track with source: `linkedin`
 
-**Step 3: Demo Call (30 minutes)**
-- Target: 20 demo calls
-- Expected: 12 pilot signups (60% conversion)
-
-**Step 4: Pilot Agreement**
-- Target: 12 pilot agreements
-- Expected: 8 onboarding sessions completed (65% completion)
-
-**Step 5: Onboarding Session (1 hour)**
-- Target: 8 onboarding sessions
-- Expected: 6 active pilots (75% activation - some may drop off)
-
-**Phase 1 Goal:** 4-6 active diaspora pilots
-
-### Sales Metrics Dashboard
-
-| Metric | Target | Actual | Status |
-|--------|--------|--------|--------|
-| **Outreach Volume** | 100 contacts | - | 🟡 In Progress |
-| **Response Rate** | 30% (30 responses) | - | 🟡 Pending |
-| **Discovery Calls Booked** | 20 calls | - | 🟡 Pending |
-| **Demo Call Conversion** | 60% (12 demos) | - | 🟡 Pending |
-| **Pilot Signups** | 60% (8 pilots) | - | 🟡 Pending |
-| **Active Pilots** | 4-6 communities | - | 🟡 Pending |
+**LinkedIn Post Ideas:**
+- "The Surgeon General declared loneliness an epidemic. Here's why I think it's because our digital tools are failing communities..."
+- "I asked 50 community organizers their biggest frustration. The #1 answer: lost photos and buried announcements."
 
 ---
 
-## Launch Timeline
+## Content Strategy
 
-### Pre-Launch (Weeks -4 to 0)
+Content supports all channels by providing shareable material.
 
-**Week -4:**
-- [ ] Finalize landing page (tribe.com)
-- [ ] Create demo video (3 minutes)
-- [ ] Build outreach list (100+ community leaders)
-- [ ] Write email templates
+### Core Messaging
 
-**Week -3:**
-- [ ] Launch landing page
-- [ ] Record demo video
-- [ ] Set up calendar booking (Calendly)
-- [ ] Create pitch deck
+**Level 1 (Why):** "Third places are disappearing. Communities are more disconnected than ever."
 
-**Week -2:**
-- [ ] Test onboarding flow (internal)
-- [ ] Dry-run demo calls with team
-- [ ] Prepare pilot agreement template
+**Level 2 (What):** "Tribe is organizational infrastructure for communities that gather in person."
 
-**Week -1:**
-- [ ] Soft launch with 1-2 beta communities (friends/family)
-- [ ] Fix critical bugs
-- [ ] Finalize support documentation
+**Level 3 (How):** "Organized photo albums. Granular permissions. Event coordination that works."
 
-### Launch (Weeks 1-8)
+### Content Types
 
-**Week 1-2: Outreach Blitz**
+| Type | Platform | Frequency |
+|------|----------|-----------|
+| Problem posts | Reddit, LinkedIn | 2x/week |
+| Engagement comments | All | Daily |
+| DM conversations | FB, IG, LinkedIn | 5-10/day |
+| Personal outreach | Text, calls | 3-5/week |
+
+### Sample Posts
+
+**Reddit/LinkedIn - Problem-focused:**
+> Communities are more disconnected than ever—even as we're more "online" than ever. The places where we used to gather are disappearing, and our digital tools have made things worse. Photos scattered across phones. Announcements buried in algorithmic feeds. No single home for the group. Is anyone else seeing this with the communities they're part of?
+
+**DM - Pain validation:**
+> Hey! Saw your post about [specific frustration]. We're building something to solve exactly this - would love to hear more about what you're dealing with.
+
+**DM - Soft pitch:**
+> Thanks for sharing your experience! We're actually building a platform called Tribe specifically for communities like yours. It's focused on photo organization, event coordination, and giving groups a single home instead of being scattered across platforms. Would love your feedback if you have a minute to check it out: [waitlist link]
+
+---
+
+## Waitlist Goals
+
+### Phase 1: Foundation (Weeks 1-4)
+
+| Metric | Target |
+|--------|--------|
+| Subreddits joined | 10+ |
+| Facebook groups joined | 15+ |
+| Personal network contacts | 20+ |
+| LinkedIn connections | 50+ |
+| Waitlist signups | 100 |
+
+### Phase 2: Momentum (Weeks 5-8)
+
+| Metric | Target |
+|--------|--------|
+| Reddit karma/credibility | Established in 3+ subreddits |
+| Active FB group conversations | 10+ ongoing |
+| Referrals from personal network | 30+ |
+| Waitlist signups | 300 |
+
+### Phase 3: Pre-Launch (Weeks 9-12)
+
+| Metric | Target |
+|--------|--------|
+| Total waitlist signups | 500+ |
+| Signups from Reddit | 100+ |
+| Signups from FB/IG | 150+ |
+| Signups from Personal | 150+ |
+| Signups from LinkedIn | 100+ |
+| Pilot candidates identified | 10-15 |
+
+---
+
+## Tracking & Attribution
+
+### Source Naming Convention
+
+Use the `source` field in the waitlist form to track attribution:
+
+| Channel | Source Format | Examples |
+|---------|---------------|----------|
+| Reddit | `reddit-{subreddit}` | `reddit-communitybuilding`, `reddit-crossfit` |
+| Facebook | `facebook-{group-type}` | `facebook-alumni`, `facebook-sports` |
+| Instagram | `instagram-{context}` | `instagram-dm`, `instagram-story` |
+| Personal | `personal-{name}` | `personal-john-referral` |
+| LinkedIn | `linkedin` | `linkedin` |
+| Organic | `organic-{page}` | `organic-homepage`, `organic-features` |
+
+### Weekly Tracking Dashboard
+
+| Metric | Week 1 | Week 2 | Week 3 | Week 4 | Week 5 | Week 6 | Week 7 | Week 8 |
+|--------|--------|--------|--------|--------|--------|--------|--------|--------|
+| Reddit signups | - | - | - | - | - | - | - | - |
+| FB/IG signups | - | - | - | - | - | - | - | - |
+| Personal signups | - | - | - | - | - | - | - | - |
+| LinkedIn signups | - | - | - | - | - | - | - | - |
+| **Total signups** | - | - | - | - | - | - | - | - |
+
+### Key Metrics to Track
+
+| Metric | Definition | Target |
+|--------|------------|--------|
+| Signups per channel | Total waitlist signups attributed to each channel | See Waitlist Goals |
+| Conversion rate | DM conversations → waitlist signups | 20%+ |
+| Engagement rate | Posts/comments that generate responses | 10%+ |
+| Referral rate | Personal contacts → additional introductions | 50%+ |
+
+---
+
+## Timeline
+
+### Pre-Launch: Waitlist Building (Weeks 1-12)
+
+**Week 1-2: Foundation**
+- [ ] Join 10+ relevant subreddits
+- [ ] Join 15+ Facebook groups
+- [ ] Map personal network (20+ contacts)
 - [ ] Send 50 LinkedIn connection requests
-- [ ] Send 50 personalized emails
-- [ ] Target: 30 responses, 10 discovery calls
+- [ ] Begin engagement (comments, upvotes, DMs)
+- **Goal**: Establish presence, no selling yet
 
-**Week 3-4: Discovery & Demos**
-- [ ] Conduct 10 discovery calls
-- [ ] Book 6 demo calls
-- [ ] Target: 4 pilot signups
+**Week 3-4: Value Contribution**
+- [ ] Post helpful content on Reddit (2x/week)
+- [ ] Engage in FB group discussions daily
+- [ ] Reach out to 10 personal network contacts
+- [ ] Share LinkedIn content about third space problem
+- [ ] Start casual mentions of "building something"
+- **Goal**: Build credibility, 50 waitlist signups
 
-**Week 5-6: Onboarding**
-- [ ] Onboard 4 pilot communities
-- [ ] Weekly check-ins with each
-- [ ] Target: 60%+ member activation
+**Week 5-6: Soft Launch**
+- [ ] Share Tribe on Reddit with waitlist link
+- [ ] DM interested FB/IG users with waitlist
+- [ ] Request personal network referrals
+- [ ] LinkedIn DM outreach to warm connections
+- **Goal**: 150 waitlist signups
 
-**Week 7-8: Activation & Feedback**
-- [ ] Monitor album creation, photo uploads
-- [ ] Gather feedback from community leaders
-- [ ] Iterate on pain points
+**Week 7-8: Momentum**
+- [ ] Double down on highest-performing channel
+- [ ] Continue engagement across all channels
+- [ ] Follow up with non-responders
+- [ ] Expand to additional subreddits/groups
+- **Goal**: 300 waitlist signups
 
-### Post-Launch (Weeks 9-12)
+**Week 9-10: Scale**
+- [ ] Repeat successful tactics
+- [ ] Engage referrals from converted leads
+- [ ] Test new messaging variants
+- **Goal**: 400 waitlist signups
 
-**Week 9-10: Expansion**
-- [ ] Request referrals from pilot communities
-- [ ] Expand outreach to 50 more contacts
-- [ ] Target: 2-3 additional pilots
+**Week 11-12: Pre-Pilot**
+- [ ] Identify 10-15 pilot candidates from waitlist
+- [ ] Begin pilot outreach to top leads
+- [ ] Document learnings for Phase 2
+- **Goal**: 500+ waitlist signups, pilot candidates identified
 
-**Week 11-12: Case Studies**
-- [ ] Create testimonials from successful pilots
-- [ ] Document migration stories (Facebook → Tribe)
-- [ ] Prepare for Phase 2 expansion
+### Post-Waitlist: Pilot Phase (Weeks 13+)
 
----
-
-## Marketing Assets
-
-### Required Assets (Pre-Launch)
-
-**Landing Page:**
-- Homepage (general value prop)
-- Diaspora-specific landing page (cultural heritage preservation)
-- Pricing page (free for Phase 1)
-- About Us / Team page
-
-**Demo Materials:**
-- 3-minute demo video (YouTube unlisted)
-- Slide deck for demo calls (10 slides)
-- One-pager PDF (leave-behind after calls)
-
-**Email Templates:**
-- Cold outreach email (see Outreach Playbook)
-- Follow-up email (if no response after 1 week)
-- Meeting confirmation email
-- Pilot welcome email
-- Weekly check-in email
-
-**Social Proof:**
-- Testimonial from beta community (if available)
-- Screenshots of photo albums (with permission)
-- Case study (if available)
-
-### Content Marketing (Phase 2)
-
-**Blog Posts:**
-- "Why Diaspora Communities Are Leaving Facebook Groups"
-- "How to Preserve Your Cultural Heritage Photos"
-- "5 Ways to Organize Your Mosque Community Online"
-
-**Social Media:**
-- Twitter/X: Share case studies, testimonials
-- LinkedIn: Thought leadership on community organization
-- Instagram: Show photo album examples (with permission)
-
----
-
-## Partnership Strategy
-
-### Target Partners (Phase 1)
-
-**National Organizations:**
-- Islamic Society of North America (ISNA)
-- National Association of African American Studies
-- Hispanic Federation
-- Asian American Federation
-
-**Local Organizations:**
-- Mosque associations in target cities
-- African cultural centers
-- Hispanic/Latino community centers
-- Asian community groups
-
-### Partnership Model
-
-**Value Proposition to Partners:**
-- Free tool for their member communities
-- Co-marketing opportunities (feature at events)
-- Referral credits (if monetization in future)
-
-**Partnership Agreement:**
-- Partner promotes Tribe to member communities
-- Tribe provides free pilot program
-- Co-branding on landing pages (optional)
-
-**Success Metrics:**
-- 1-2 partnerships in Phase 1
-- 2-3 referrals per partnership in first 60 days
+*See separate Pilot Program document for details.*
 
 ---
 
 ## Growth Loops
 
-### Primary Growth Loop: Community Leader Referrals
+### Primary Loop: Community Leader Referrals
 
 **Loop:**
-1. Community leader pilots Tribe
-2. Achieves success (photo lock-in, event coordination)
-3. Shares with other community leaders (mosque network, cultural associations)
-4. Referred leaders sign up
+1. Community organizer sees content about third space problem
+2. Relates to the pain and signs up for waitlist
+3. Shares with other community organizers they know
+4. Referred organizers sign up
 5. Repeat
 
 **Activation Triggers:**
-- NPS 9-10 at 90 days → request referral
-- Community leader shares at inter-mosque gathering
-- Testimonial featured on landing page
+- Compelling Reddit post → shares in other subreddits
+- Personal network contact → introduces to 2-3 others
+- Facebook DM → shares with other group admins
 
 **Expected Velocity:**
-- 1 successful pilot → 2-3 referrals in 90 days
-- 4 successful pilots → 8-12 referrals in 90 days
+- 1 engaged personal contact → 2-3 referrals
+- 1 viral Reddit post → 20-50 signups
+- 1 FB group admin → 3-5 member referrals
 
-### Secondary Growth Loop: Member Invitations
+### Secondary Loop: Platform-Native Sharing
 
 **Loop:**
-1. Community member invited to tribe
-2. Uploads photos, participates in events
-3. Invites family members from other communities
-4. Family member's community leader sees Tribe
-5. Requests pilot
+1. Waitlist signup receives confirmation email
+2. Email asks them to share with community
+3. Community members sign up
+4. Repeat
 
 **Activation Triggers:**
-- Member invites spouse from different diaspora community
-- Multi-family gatherings (weddings) cross-pollinate communities
+- Email with share link
+- Social share buttons on confirmation page
+- Referral incentive (priority access)
 
 ---
 
 ## Appendix
 
-### Key Contacts (Target Communities)
+### FAQ for Waitlist Leads
 
-| Community | Leader Name | City | Contact | Status |
-|-----------|------------|------|---------|--------|
-| [Mosque Name] | [Imam Name] | NYC | [Email/LinkedIn] | 🟡 Outreach planned |
-| [African Association] | [President] | Chicago | [Email/LinkedIn] | 🟡 Outreach planned |
-| [Hispanic Center] | [Director] | LA | [Email/LinkedIn] | 🟡 Outreach planned |
+**Q: What is Tribe?**
+A: Tribe is organizational infrastructure for communities that gather in person. We help groups stay connected with organized photo albums, event coordination, and granular permissions—all in one place.
 
-### FAQ for Community Leaders
+**Q: Why are you building this?**
+A: Third places are disappearing. The U.S. Surgeon General declared loneliness a public health epidemic. Digital tools have made communities more fragmented, not less. We're building the infrastructure that helps communities stay connected.
 
 **Q: How is Tribe different from Facebook Groups?**
-A: Granular permissions (elder/family/youth), organized photo albums, no algorithmic feed chaos, privacy-first.
+A: We're not a social network—we're organizational infrastructure. Granular permissions that mirror real-world community structure, organized photo albums that preserve memories permanently, and no algorithmic feed burying your important updates.
 
-**Q: Can we migrate our existing Facebook Group?**
-A: Not directly, but we can help onboard members. Start with your next cultural event.
+**Q: When will Tribe launch?**
+A: We're currently building the waitlist and will invite pilot communities soon. Sign up to be first in line.
 
 **Q: Is Tribe free?**
-A: Yes, free for Phase 1-2 (6 months). Future pricing TBD based on community size.
+A: Free during the pilot phase. Future pricing TBD based on community feedback.
 
-**Q: What if we don't like it?**
-A: You can export your photos and data anytime. No lock-in.
+**Q: What communities is Tribe for?**
+A: Any existing community that gathers in person: religious groups, sports leagues, Greek organizations, alumni networks, coworking spaces, hobby clubs, and more.
 
-**Q: Do we need to leave WhatsApp?**
-A: No, keep WhatsApp for casual chat. Use Tribe for events, photos, and official announcements.
+### Messaging Reference
+
+**The Problem (for posts/DMs):**
+- "Communities are more disconnected than ever—even as we're more 'online' than ever."
+- "Third places are disappearing. The Surgeon General called it an epidemic."
+- "Your photos are scattered across phones. Your announcements are buried in algorithmic feeds. There's no single home for your group."
+
+**The Solution (for follow-ups):**
+- "We're building organizational infrastructure for communities that gather in person."
+- "Tribe gives your community a single digital home."
+- "Organized photo albums. Granular permissions. Event coordination that works."
+
+**The Ask:**
+- "Would love your feedback on what we're building."
+- "Sign up for early access and be first to try it."
+- "Know any community organizers who might be interested?"
 
 ---
 
-**Document Status:** Draft
-**Last Updated:** December 23, 2024
-**Next Review:** Weekly during Phase 1
+**Document Status:** Active
+**Last Updated:** December 29, 2024
+**Version:** 2.0 - Waitlist Focus
+**Next Review:** Weekly during waitlist phase
 **Owner:** Growth Team
