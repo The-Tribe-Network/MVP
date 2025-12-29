@@ -23,7 +23,7 @@ export function PricingTiers() {
       ],
       cta: "Join Waitlist",
       highlighted: true,
-      note: "Available now in beta",
+      note: "Join the waitlist for early access",
     },
     {
       name: "Pro",

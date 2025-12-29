@@ -11,12 +11,12 @@ export function HeroSection() {
         {/* Hero Content */}
         <div className="text-center space-y-8 mb-16">
           <h1 className="text-5xl md:text-7xl font-bold leading-tight tracking-tight">
-            The Organization Tool for{" "}
-            <span className="text-primary">Communities That Gather.</span>
+            Your Community Already Exists.{" "}
+            <span className="text-primary">Now Give It a Home.</span>
           </h1>
 
           <p className="text-lg md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-            Events, memories, members — one home.
+            You have the people. We provide the tools. Events, memories, members — one private home.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">

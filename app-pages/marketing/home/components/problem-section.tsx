@@ -31,7 +31,7 @@ export function ProblemSection() {
             The Infrastructure for Community Is Broken
           </h2>
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            70% less time with friends in person since 2003. More connected than ever — lonelier than ever.
+            The U.S. Surgeon General declared loneliness a public health epidemic — with health risks as deadly as smoking 15 cigarettes daily. We spend 70% less time with friends in person since 2003. More connected than ever — lonelier than ever.
           </p>
         </div>
 
