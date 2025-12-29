@@ -1,25 +1,25 @@
 import { SectionContainer } from "@/components/marketing/section-container";
-import { MessageSquareX, ImageOff, ShieldAlert } from "lucide-react";
+import { MapPinOff, Radio, Puzzle } from "lucide-react";
 
 export function ProblemSection() {
   const problems = [
     {
-      icon: MessageSquareX,
-      title: "GroupMe Chaos",
+      icon: MapPinOff,
+      title: "Third Spaces Are Dying",
       description:
-        "Important messages buried in endless threads. No structure, no organization, just noise.",
+        "Coffee shops and community centers are fading. More time online, less connection.",
     },
     {
-      icon: ImageOff,
-      title: "Instagram Ephemerality",
+      icon: Radio,
+      title: "Broadcasting, Not Belonging",
       description:
-        "Memories disappear after 24 hours. Finding that one photo from last year? Good luck.",
+        "Social platforms optimize for strangers and engagement. Reach over relationships.",
     },
     {
-      icon: ShieldAlert,
-      title: "Facebook Data Mining",
+      icon: Puzzle,
+      title: "Scattered Across Five Apps",
       description:
-        "Your community deserves privacy. Not ads, not tracking, not data harvesting.",
+        "Events here, photos there, group chat somewhere else. No single home.",
     },
   ];
 
@@ -28,10 +28,10 @@ export function ProblemSection() {
       <div className="max-w-4xl mx-auto text-center space-y-16">
         <div className="space-y-6">
           <h2 className="text-3xl md:text-5xl font-bold">
-            Your Community Deserves Better
+            The Infrastructure for Community Is Broken
           </h2>
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            Existing tools weren't built for real communities. They're built for engagement, ads, and data collection.
+            70% less time with friends in person since 2003. More connected than ever — lonelier than ever.
           </p>
         </div>
 
