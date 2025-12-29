@@ -147,7 +147,7 @@ export function SolutionSection() {
                 }`}
               >
                 {/* Text */}
-                <div className={`space-y-8 ${isEven ? "" : "md:col-start-2"}`}>
+                <div className={`space-y-8 order-2 md:order-none ${isEven ? "" : "md:col-start-2"}`}>
                   <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium">
                     {solution.highlight}
                   </div>
@@ -186,7 +186,7 @@ export function SolutionSection() {
 
                 {/* Screenshot */}
                 <div
-                  className={`relative rounded-2xl overflow-hidden border border-border/50 shadow-2xl bg-background ${
+                  className={`relative rounded-2xl overflow-hidden border border-border/50 shadow-2xl bg-background order-1 md:order-none ${
                     isEven ? "" : "md:col-start-1"
                   }`}
                 >
