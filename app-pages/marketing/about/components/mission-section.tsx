@@ -23,7 +23,7 @@ export function MissionSection() {
           </p>
 
           <p className="text-lg text-muted-foreground leading-relaxed">
-            That's why we're building Tribe. One home for members, memories, and the real-world moments that strengthen connection.
+            That's why we're building Tribe — <strong className="text-foreground">digital third place infrastructure</strong> for communities that already exist. One home for members, memories, and the real-world moments that strengthen connection.
           </p>
         </div>
       </div>

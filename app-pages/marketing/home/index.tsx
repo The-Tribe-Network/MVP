@@ -5,6 +5,7 @@ import { AppShowcase } from "./components/app-showcase";
 import { ProblemSection } from "./components/problem-section";
 import { SolutionSection } from "./components/solution-section";
 import { FeaturesPreview } from "./components/features-preview";
+import { FAQSection } from "./components/faq-section";
 import { FinalCTA } from "./components/final-cta";
 
 export default function HomePageContent() {
@@ -15,6 +16,7 @@ export default function HomePageContent() {
       <ProblemSection />
       <SolutionSection />
       <FeaturesPreview />
+      <FAQSection />
       <FinalCTA />
     </div>
   );

@@ -88,7 +88,7 @@ export function WaitlistForm({
           size={variant === "inline" ? "lg" : "default"}
           className="whitespace-nowrap"
         >
-          {isPending ? "Joining..." : "Join Waitlist"}
+          {isPending ? "Joining..." : "Get Early Access"}
         </Button>
       </form>
     </Form>

@@ -13,7 +13,7 @@ export function PricingHero() {
         </p>
 
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium">
-          Currently in Beta — Free for all early users
+          Join the Waitlist — Free for all early access users
         </div>
       </div>
     </SectionContainer>
