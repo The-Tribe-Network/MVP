@@ -35,7 +35,7 @@ export function EventRSVPFeature() {
       <div className="max-w-6xl mx-auto">
         <div className="grid md:grid-cols-2 gap-16 items-center">
           {/* Text */}
-          <div className="space-y-8">
+          <div className="space-y-8 order-2 md:order-none">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium">
               Real Coordination
             </div>
@@ -74,7 +74,7 @@ export function EventRSVPFeature() {
           </div>
 
           {/* Screenshot */}
-          <div className="rounded-2xl border bg-background/50 overflow-hidden shadow-xl">
+          <div className="rounded-2xl border bg-background/50 overflow-hidden shadow-xl order-1 md:order-none">
             <Image
               src="/app-screenshots-1024/event_rsvp_light.png"
               alt="Event RSVPs - Capacity limits, waitlists, and date polling"
