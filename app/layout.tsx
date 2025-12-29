@@ -55,6 +55,7 @@ export const metadata: Metadata = {
 export default async function RootLayout({
   children,
 }: LayoutProps<'/'>) {
+  console.log("VERCEL_ENV", process.env.VERCEL_ENV);
   return (
     <html
       lang="en"
