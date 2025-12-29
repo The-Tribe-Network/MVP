@@ -42,12 +42,11 @@ export function EventLocationMap({ location, isLoading }: EventLocationMapProps)
       {/* Map Placeholder - In a real implementation, use Google Maps, Mapbox, or similar */}
       <div className="relative aspect-video rounded-lg overflow-hidden bg-muted border border-border">
         {/* Static map placeholder */}
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="text-center space-y-2">
-            <MapPin className="h-12 w-12 mx-auto text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">Map View</p>
-          </div>
-        </div>
+        <img
+          src="/app-media/community_center_placeholder.png"
+          alt="Event location map"
+          className="w-full h-full object-cover object-center scale-125 origin-center"
+        />
 
         {/* You can replace this with an actual map iframe or component */}
         {/* Example with Google Maps static image:

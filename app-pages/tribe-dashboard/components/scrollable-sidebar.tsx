@@ -23,6 +23,7 @@ export function ScrollableSidebar({ children, className }: ScrollableSidebarProp
         'max-h-[calc(100vh-88px)]', // Viewport minus header height with some padding
         'overflow-y-auto',
         'scrollbar-thin',
+        'dark:bg-card bg-accent rounded-md py-4',
         className
       )}
     >

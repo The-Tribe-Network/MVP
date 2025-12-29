@@ -1,6 +1,6 @@
 'use client'
 
-import { Bell, MessageSquare, Megaphone, Menu } from 'lucide-react'
+import { Bell, MessageSquare, Megaphone, Menu, Search } from 'lucide-react'
 import { usePathname, useParams } from 'next/navigation'
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
@@ -8,6 +8,7 @@ import { SidebarTrigger } from './ui/sidebar'
 import { Separator } from './ui/separator'
 import { ViewInvitesDropdown } from './dropdowns/view-invites'
 import { TooltipButton } from './ui/tooltip-button'
+import { Input } from './ui/input'
 import { NotificationsDrawer } from '@/components/notifications-drawer'
 import { TribeHeaderNav } from '@/components/tribe-header-nav'
 import { TribeMobileDrawer } from '@/components/tribe-mobile-drawer'
@@ -49,17 +50,25 @@ export function TribeDashboardToolbar() {
             </h1>
           </div>
 
-          {/* Center - Navigation tabs (desktop only, tribe context only) */}
-          {/* {isTribeContext && (
-            <TribeHeaderNav
-              tribeId={tribe_id}
-              tribeName={tribe?.name}
-              className="hidden lg:flex"
-            />
-          )} */}
+          {/* Center - Search bar */}
+          <div className="hidden md:flex flex-1 max-w-md mx-4">
+            <div className="relative w-full">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Search..."
+                className="pl-9 w-full bg-muted/50"
+              />
+            </div>
+          </div>
 
           {/* Right side - Icons and User Menu */}
           <div data-tour="toolbar-buttons" className="flex items-center gap-2">
+            {/* Mobile search button */}
+            <TooltipButton message="Search" variant="ghost" size="icon" className="md:hidden">
+              <Search className="h-5 w-5" />
+            </TooltipButton>
+
             <ViewInvitesDropdown />
 
             <TooltipButton message="Announcements" variant="ghost" size="icon" className="hidden sm:inline-flex">

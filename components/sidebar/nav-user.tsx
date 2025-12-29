@@ -63,7 +63,7 @@ export function NavUser({
             <SidebarMenuButton
               size="lg"
               asChild
-              className="bg-sidebar-accent text-sidebar-accent-foreground md:h-8 md:p-0"
+              className="bg-sidebar-accent text-sidebar-accent-foreground md:h-8 md:!p-0"
             >
               <Avatar className="w-full h-full">
                 <AvatarImage src={user.avatar} alt={user.name} />

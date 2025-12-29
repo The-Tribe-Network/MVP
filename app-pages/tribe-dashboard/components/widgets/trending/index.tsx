@@ -18,7 +18,7 @@ export default function TrendingWidget({ trends }: TrendingWidgetProps) {
       <Separator />
 
       {/* Header */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 px-4">
         <TrendingUp className="h-4 w-4 text-muted-foreground" />
         <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
           Trending
@@ -26,11 +26,11 @@ export default function TrendingWidget({ trends }: TrendingWidgetProps) {
       </div>
 
       {/* Trend items */}
-      <div className="space-y-1">
+      <div className="space-y-1 px-4">
         {trends.map((trend, idx) => (
           <div
             key={idx}
-            className="flex items-center justify-between py-1.5 rounded hover:bg-muted/30 cursor-pointer transition-colors px-1 -mx-1"
+            className="flex items-center justify-between py-1.5 rounded hover:bg-muted/30 cursor-pointer transition-colors px-4 -mx-1"
           >
             <div>
               <p className="text-sm font-medium">{trend.topic}</p>

@@ -73,7 +73,7 @@ export function FeaturedMedia({ tribeId }: FeaturedMediaProps) {
 
   return (
     <div
-      className="group relative h-full min-h-[500px] overflow-hidden rounded-lg bg-muted cursor-pointer"
+      className="group relative h-full overflow-hidden rounded-lg bg-muted cursor-pointer"
       onClick={handleClick}
     >
       <Image
@@ -82,7 +82,7 @@ export function FeaturedMedia({ tribeId }: FeaturedMediaProps) {
         fill
         className="object-cover transition-transform duration-500 group-hover:scale-105"
       />
-      <div className="absolute inset-0 bg-gradient-to-t from-primary/80 via-primary/20 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 via-30% to-transparent transition-colors group-hover:from-black/90 group-hover:via-black/30" />
       <div className="absolute bottom-0 left-0 right-0 p-6">
         <span className="mb-2 inline-block rounded-full bg-accent px-3 py-1 text-xs font-medium text-accent-foreground">
           Featured
@@ -142,7 +142,7 @@ export function FeaturedMedia({ tribeId }: FeaturedMediaProps) {
 
 function FeaturedMediaSkeleton() {
   return (
-    <div className="h-full min-h-[500px] overflow-hidden rounded-lg">
+    <div className="h-full overflow-hidden rounded-lg">
       <Skeleton className="h-full w-full" />
     </div>
   )
@@ -150,7 +150,7 @@ function FeaturedMediaSkeleton() {
 
 function FeaturedMediaError() {
   return (
-    <div className="flex h-full min-h-[500px] flex-col items-center justify-center rounded-lg border border-border bg-card p-8 text-center">
+    <div className="flex h-full flex-col items-center justify-center rounded-lg border border-border bg-card p-8 text-center">
       <ImageIcon className="h-12 w-12 text-muted-foreground mb-4" />
       <p className="text-muted-foreground">Failed to load featured media</p>
     </div>
@@ -159,7 +159,7 @@ function FeaturedMediaError() {
 
 function FeaturedMediaEmpty({ tribeId }: { tribeId: string }) {
   return (
-    <div className="flex h-full min-h-[500px] flex-col items-center justify-center rounded-lg border border-dashed border-border bg-card/50 p-8 text-center">
+    <div className="flex h-full flex-col items-center justify-center rounded-lg border border-dashed border-border bg-card/50 p-8 text-center">
       <Star className="h-12 w-12 text-muted-foreground mb-4" />
       <h3 className="text-lg font-semibold text-foreground mb-2">No Featured Photo</h3>
       <p className="text-sm text-muted-foreground mb-4 max-w-md">

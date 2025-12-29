@@ -32,11 +32,11 @@ export function SidebarInfoWidget({ tribeId }: SidebarInfoWidgetProps) {
   return (
     <div className="space-y-4">
       {/* Tribe name as header */}
-      <h3 className="text-base font-semibold">Description:</h3>
+      <h3 className="text-base font-semibold px-4">Description:</h3>
 
       {/* Description */}
       {tribe.description && (
-        <p className="text-sm text-muted-foreground leading-relaxed">
+        <p className="text-sm text-muted-foreground leading-relaxed px-4">
           {tribe.description}
         </p>
       )}
@@ -44,14 +44,14 @@ export function SidebarInfoWidget({ tribeId }: SidebarInfoWidgetProps) {
       <Separator />
 
       {/* Created date */}
-      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+      <div className="flex items-center gap-2 text-xs text-muted-foreground px-4">
         <Calendar className="h-3.5 w-3.5" />
         <span>Created {format(new Date(tribe.createdAt), 'MMM d, yyyy')}</span>
       </div>
 
       {/* Location if available */}
       {tribe.location && (
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground px-4">
           <MapPin className="h-3.5 w-3.5" />
           <span>{tribe.location}</span>
         </div>
@@ -60,7 +60,7 @@ export function SidebarInfoWidget({ tribeId }: SidebarInfoWidgetProps) {
       <Separator />
 
       {/* Stats row */}
-      <div className="flex flex-wrap gap-x-4 gap-y-2">
+      <div className="flex flex-wrap gap-x-4 gap-y-2 px-4">
         {/* Members */}
         <Button
           variant="ghost"
@@ -76,14 +76,14 @@ export function SidebarInfoWidget({ tribeId }: SidebarInfoWidgetProps) {
         </Button>
 
         {/* Events */}
-        <div className="flex items-center gap-1.5 text-sm">
+        <div className="flex items-center gap-1.5 text-sm px-4">
           <CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />
           <span className="font-semibold">{tribe.eventCount.toLocaleString()}</span>
           <span className="text-muted-foreground">Events</span>
         </div>
 
         {/* Media */}
-        <div className="flex items-center gap-1.5 text-sm">
+        <div className="flex items-center gap-1.5 text-sm px-4">
           <Image className="h-3.5 w-3.5 text-muted-foreground" />
           <span className="font-semibold">{tribe.mediaCount.toLocaleString()}</span>
           <span className="text-muted-foreground">Media</span>

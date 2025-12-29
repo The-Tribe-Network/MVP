@@ -15,7 +15,7 @@ export default function EventsWidget({ tribeId }: EventWidgetProps) {
       <Separator />
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between px-4">
         <Link
           href={`/tribe/${tribeId}/events`}
           className="flex items-center gap-2 hover:opacity-80 transition-opacity"

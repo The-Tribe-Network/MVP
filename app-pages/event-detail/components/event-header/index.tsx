@@ -83,8 +83,12 @@ export function EventHeader({ event, tribeId, isLoading, isError, error, onRetry
 
   return (
     <div className="flex items-center justify-end gap-2">
+      <Button variant="outline" size="sm" onClick={handleShare}>
+        <Share2 className="h-4 w-4 mr-2" />
+        Share
+      </Button>
       {event.isUserAttending ? (
-        <Button variant="outline" size="sm" onClick={handleRSVP} disabled={isRSVPLoading}>
+        <Button variant="destructive" size="sm" onClick={handleRSVP} disabled={isRSVPLoading}>
           <X className="h-4 w-4 mr-2" />
           Cancel RSVP
         </Button>
@@ -94,10 +98,6 @@ export function EventHeader({ event, tribeId, isLoading, isError, error, onRetry
           RSVP
         </Button>
       )}
-      <Button variant="outline" size="sm" onClick={handleShare}>
-        <Share2 className="h-4 w-4 mr-2" />
-        Share
-      </Button>
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>

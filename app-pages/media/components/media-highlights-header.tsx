@@ -39,7 +39,7 @@ export function MediaHighlightsHeader({ tribeId }: MediaHighlightsHeaderProps) {
   }
 
   return (
-    <div className="mb-8">
+    <div className="mb-4">
       <Breadcrumb className="mb-4">
         <BreadcrumbList>
           <BreadcrumbItem>

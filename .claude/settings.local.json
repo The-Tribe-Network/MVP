@@ -12,7 +12,10 @@
       "Bash(head:*)",
       "Bash(xargs cat:*)",
       "mcp__notion__notion-search",
-      "mcp__notion__notion-fetch"
+      "mcp__notion__notion-fetch",
+      "Bash(for:*)",
+      "Bash(do mv \"$f\" \"media_highlights_light.png\")",
+      "Bash(done)"
     ],
     "deny": [],
     "ask": []

@@ -54,15 +54,15 @@ export function PopularPhotos({ tribeId }: PopularPhotosProps) {
   }
 
   return (
-    <div className="flex h-full flex-col rounded-lg border border-border bg-card p-4">
-      <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+    <div className="flex h-full flex-col overflow-hidden rounded-lg border border-border bg-card p-4">
+      <h3 className="mb-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground shrink-0">
         Popular Photos
       </h3>
-      <div className="grid flex-1 grid-cols-2 gap-2">
+      <div className="grid flex-1 grid-cols-2 gap-2 min-h-0">
         {popularPhotos.map((photo, index) => (
           <div
             key={photo.id}
-            className="group relative aspect-square overflow-hidden rounded-md bg-muted cursor-pointer"
+            className="group relative overflow-hidden rounded-md bg-muted cursor-pointer"
             onClick={() => handlePhotoClick(index)}
           >
             <Image
@@ -71,7 +71,7 @@ export function PopularPhotos({ tribeId }: PopularPhotosProps) {
               fill
               className="object-cover transition-transform duration-300 group-hover:scale-110"
             />
-            <div className="absolute inset-0 flex items-end bg-gradient-to-t from-primary/60 to-transparent p-2 opacity-0 transition-opacity group-hover:opacity-100">
+            <div className="absolute inset-0 flex items-end bg-gradient-to-t from-black/70 to-transparent p-2 opacity-0 transition-opacity group-hover:opacity-100">
               <div className="flex items-center gap-1 text-xs text-primary-foreground">
                 <Heart className="h-3 w-3" />
                 {(photo.likeCount || 0).toLocaleString()}

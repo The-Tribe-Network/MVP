@@ -35,11 +35,11 @@ export function PopularAlbums({ tribeId }: PopularAlbumsProps) {
   }
 
   return (
-    <div className="flex h-full flex-col rounded-lg border border-border bg-card p-4">
-      <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+    <div className="flex h-full flex-col overflow-hidden rounded-lg border border-border bg-card p-4">
+      <h3 className="mb-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground shrink-0">
         Popular Albums
       </h3>
-      <div className="flex flex-1 flex-col gap-2">
+      <div className="flex flex-1 flex-col gap-2 min-h-0 overflow-hidden">
         {popularAlbums.map((album) => (
           <Link
             key={album.id}

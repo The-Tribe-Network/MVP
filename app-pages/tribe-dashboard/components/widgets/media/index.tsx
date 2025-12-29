@@ -29,7 +29,7 @@ export default function MediaWidget({ tribeId }: MediaWidgetProps) {
       <Separator />
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between px-4">
         <Link
           href={`/tribe/${tribeId}/media`}
           className="flex items-center gap-2 hover:opacity-80 transition-opacity"
@@ -45,16 +45,16 @@ export default function MediaWidget({ tribeId }: MediaWidgetProps) {
       {isLoading ? (
         <ContentSkeleton />
       ) : error ? (
-        <div className="text-center py-4">
+        <div className="text-center py-4 px-4">
           <p className="text-xs text-muted-foreground mb-2">Failed to load media</p>
           <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => refetch()}>
             Retry
           </Button>
         </div>
       ) : !media || media.length === 0 ? (
-        <p className="text-xs text-muted-foreground py-2">No media yet</p>
+        <p className="text-xs text-muted-foreground py-2 px-4">No media yet</p>
       ) : (
-        <div className="grid grid-cols-2 gap-1.5">
+        <div className="grid grid-cols-2 gap-1.5 px-4">
           {media.map((mediaItem) => (
             <div
               key={mediaItem.id}
@@ -79,7 +79,7 @@ export default function MediaWidget({ tribeId }: MediaWidgetProps) {
 
 function ContentSkeleton() {
   return (
-    <div className="grid grid-cols-2 gap-1.5">
+    <div className="grid grid-cols-2 gap-1.5 px-4">
       {[1, 2, 3, 4].map((idx) => (
         <div
           key={idx}

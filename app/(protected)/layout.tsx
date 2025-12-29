@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import AppSidebar from "@/components/sidebar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { requireAuth } from "@/lib/services/auth";
@@ -12,6 +13,11 @@ export default async function ProtectedLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // Block access to protected routes in production (redirect to coming soon page)
+  if (process.env.NODE_ENV === "production") {
+    redirect("/coming-soon");
+  }
+
   // This will redirect to /sign-in if user is not authenticated for all route under this layout
   await requireAuth();
 

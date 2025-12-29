@@ -27,7 +27,7 @@ export function AlbumHeroBanner({ album }: AlbumHeroBannerProps) {
             <ImageIcon className="h-16 w-16 text-muted-foreground" />
           </div>
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-primary/70 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 via-30% to-transparent" />
         <div className="absolute bottom-0 left-0 right-0 p-8">
           <h1 className="mb-2 text-4xl font-bold text-primary-foreground">
             {album.name}

@@ -19,7 +19,7 @@ export default function EventsWidgetContent({ tribeId }: EventsWidgetContentProp
   // Loading state
   if (isLoading) {
     return (
-      <div className="space-y-2">
+      <div className="space-y-2 px-4">
         {[...Array(2)].map((_, i) => (
           <div key={i} className="h-16 animate-pulse rounded-md bg-muted" />
         ))}
@@ -30,7 +30,7 @@ export default function EventsWidgetContent({ tribeId }: EventsWidgetContentProp
   // Error state
   if (error) {
     return (
-      <div className="text-center py-4">
+      <div className="text-center py-4 px-4">
         <p className="text-xs text-muted-foreground mb-2">Failed to load events</p>
         <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => refetch()}>
           Retry
@@ -42,7 +42,7 @@ export default function EventsWidgetContent({ tribeId }: EventsWidgetContentProp
   // Empty state (no events)
   if (!events || events.length === 0) {
     return (
-      <div className="py-2">
+      <div className="py-2 px-4">
         <p className="text-xs text-muted-foreground mb-3">No upcoming events</p>
         <Button variant="ghost" size="sm" className="text-xs h-7 px-2" asChild>
           <Link href={`/tribe/${tribeId}/events/new`}>
@@ -56,7 +56,7 @@ export default function EventsWidgetContent({ tribeId }: EventsWidgetContentProp
 
   // Data state (events available)
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 px-4">
       {events.map((event) => (
         <EventPreviewItem key={event.id} event={event} />
       ))}

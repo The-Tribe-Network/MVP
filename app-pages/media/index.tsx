@@ -9,9 +9,9 @@ interface MediaPageProps {
 
 export default function MediaPage({ tribeId }: MediaPageProps) {
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-4 h-[calc(100vh-64px-24px)] flex flex-col">
       <MediaHighlightsHeader tribeId={tribeId} />
-      <BentoGrid tribeId={tribeId} />
+      <BentoGrid tribeId={tribeId} className="flex-1 min-h-0" />
     </div>
   )
 }
