@@ -1,16 +1,15 @@
 import { SectionContainer } from "@/components/marketing/section-container";
-import { WaitlistForm } from "@/components/marketing/waitlist-form";
-import { Crown, Lock, Bell } from "lucide-react";
+import { Users, Calendar, Archive } from "lucide-react";
 
-export function HospitalityCase() {
+export function ReligiousCase() {
   return (
     <SectionContainer>
-      <div className="max-w-6xl mx-auto space-y-20">
+      <div className="max-w-6xl mx-auto">
         <div className="grid md:grid-cols-2 gap-16 items-center">
           {/* Placeholder */}
           <div className="rounded-2xl border bg-secondary/20 aspect-[4/3] flex items-center justify-center shadow-xl">
             <p className="text-muted-foreground text-center px-4">
-              VIP member directory & exclusive events
+              Congregation events & community photos
             </p>
           </div>
 
@@ -18,66 +17,50 @@ export function HospitalityCase() {
           <div className="space-y-8">
             <div>
               <h2 className="text-4xl md:text-5xl font-bold mb-4">
-                Hospitality VIP Lists
+                Religious & Faith Communities
               </h2>
               <p className="text-lg text-muted-foreground leading-relaxed">
-                Manage exclusive communities with the control and privacy they deserve.
+                Churches, mosques, temples, and faith groups deserve better than scattered group chats. Keep your congregation connected and organized.
               </p>
             </div>
 
             <div className="space-y-6">
               <div className="flex gap-4">
                 <div className="w-12 h-12 rounded-lg bg-secondary/30 flex items-center justify-center flex-shrink-0">
-                  <Lock className="w-6 h-6 text-primary" />
+                  <Users className="w-6 h-6 text-primary" />
                 </div>
                 <div>
-                  <h3 className="font-semibold mb-2">Invite-Only Access</h3>
+                  <h3 className="font-semibold mb-2">Leadership Permissions</h3>
                   <p className="text-muted-foreground text-sm leading-relaxed">
-                    Control exactly who can join. Perfect for exclusive member clubs and VIP communities.
+                    Separate permissions for clergy, ministry leaders, and congregation members. Everyone has the right level of access.
                   </p>
                 </div>
               </div>
 
               <div className="flex gap-4">
                 <div className="w-12 h-12 rounded-lg bg-secondary/30 flex items-center justify-center flex-shrink-0">
-                  <Bell className="w-6 h-6 text-primary" />
+                  <Calendar className="w-6 h-6 text-primary" />
                 </div>
                 <div>
-                  <h3 className="font-semibold mb-2">Exclusive Event Invites</h3>
+                  <h3 className="font-semibold mb-2">Event Coordination</h3>
                   <p className="text-muted-foreground text-sm leading-relaxed">
-                    Send private event invitations with RSVP tracking. Know who's attending your exclusive gatherings.
+                    Organize services, community dinners, volunteer events, and youth activities with RSVPs and reminders.
                   </p>
                 </div>
               </div>
 
               <div className="flex gap-4">
                 <div className="w-12 h-12 rounded-lg bg-secondary/30 flex items-center justify-center flex-shrink-0">
-                  <Crown className="w-6 h-6 text-primary" />
+                  <Archive className="w-6 h-6 text-primary" />
                 </div>
                 <div>
-                  <h3 className="font-semibold mb-2">Concierge Features</h3>
+                  <h3 className="font-semibold mb-2">Community Archives</h3>
                   <p className="text-muted-foreground text-sm leading-relaxed">
-                    Share exclusive content, private galleries, and VIP announcements with your community.
+                    Preserve photos from celebrations, ceremonies, and gatherings. Build a lasting record of your community's journey.
                   </p>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-
-        {/* Final CTA for Use Cases */}
-        <div className="text-center space-y-8 pt-16">
-          <div className="space-y-4">
-            <h3 className="text-3xl md:text-4xl font-bold">
-              Ready to Build Your Community?
-            </h3>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Join the waitlist and be among the first to try Tribe.
-            </p>
-          </div>
-
-          <div className="max-w-md mx-auto">
-            <WaitlistForm source="use-cases" variant="inline" />
           </div>
         </div>
       </div>

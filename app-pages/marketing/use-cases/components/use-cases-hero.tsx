@@ -8,7 +8,7 @@ export function UseCasesHero() {
           Your Community, <span className="text-primary">Your Way</span>
         </h1>
         <p className="text-lg md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-          From diaspora communities to Greek life, fitness studios to VIP lists — Tribe adapts to your community's unique needs.
+          From families to faith communities, friend groups to sports teams — Tribe adapts to your community's unique needs.
         </p>
       </div>
     </SectionContainer>
