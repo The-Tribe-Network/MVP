@@ -10,20 +10,20 @@ export function MissionSection() {
         </h1>
 
         <p className="text-xl md:text-2xl text-muted-foreground leading-relaxed max-w-3xl mx-auto">
-          We believe communities should own their data, control their privacy, and have tools that actually work for them — not advertisers.
+          Your data. Your privacy. Your community. Tools that work for you — not advertisers.
         </p>
 
         <div className="pt-8 space-y-6 text-left max-w-2xl mx-auto">
           <p className="text-lg text-muted-foreground leading-relaxed">
-            Tribe started from a simple observation: existing social platforms weren't built for communities. They were built for engagement metrics, ad revenue, and data collection.
+            We're in a loneliness epidemic. Third spaces are disappearing. What's left? Platforms built for strangers, optimized for engagement over belonging.
           </p>
 
           <p className="text-lg text-muted-foreground leading-relaxed">
-            Real communities — diaspora groups, Greek organizations, fitness studios, cultural associations — deserve better. They deserve privacy, control, and tools designed for their actual needs.
+            But real communities still exist that gather, coordinate, and build bonds that matter. They just lack the infrastructure they deserve.
           </p>
 
           <p className="text-lg text-muted-foreground leading-relaxed">
-            That's why we're building Tribe: a platform that puts communities first.
+            That's why we're building Tribe. One home for members, memories, and the real-world moments that strengthen connection.
           </p>
         </div>
       </div>

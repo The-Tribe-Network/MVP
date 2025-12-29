@@ -127,10 +127,10 @@ export function SolutionSection() {
       <div className="max-w-6xl mx-auto space-y-20">
         <div className="text-center space-y-6">
           <h2 className="text-3xl md:text-5xl font-bold">
-            Tribe Changes Everything
+            Built for Communities That Gather
           </h2>
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            Built from the ground up for communities. Privacy-first, ad-free, and actually useful.
+            Members. Memories. Events. One private, ad-free home.
           </p>
         </div>
 
