@@ -28,10 +28,10 @@ export function ProblemSection() {
       <div className="max-w-4xl mx-auto text-center space-y-16">
         <div className="space-y-6">
           <h2 className="text-3xl md:text-5xl font-bold">
-            The Infrastructure for Community Is Broken
+            The Infrastructure for Communities Is Broken
           </h2>
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            The U.S. Surgeon General declared loneliness a public health epidemic — with health risks as deadly as smoking 15 cigarettes daily. We spend 70% less time with friends in person since 2003. More connected than ever — lonelier than ever.
+            We spend 70% less time with friends in person since 2003. More connected than ever, but lonelier than ever.
           </p>
         </div>
 
