@@ -16,7 +16,7 @@ export function PricingFAQ() {
     {
       question: "What happens when paid tiers launch?",
       answer:
-        "Early users on the Free plan will stay on the Free plan with all its features. We may introduce new advanced features exclusive to paid plans, but we'll never take away features you already have. As a thank you for being an early adopter, you'll also get special pricing if you ever want to upgrade.",
+        "Early access users on the Free plan will stay on the Free plan with all its features. We may introduce new advanced features exclusive to paid plans, but we'll never take away features you already have. As a thank you for being an early adopter, you'll also get special pricing if you ever want to upgrade.",
     },
     {
       question: "Can I upgrade or downgrade anytime?",

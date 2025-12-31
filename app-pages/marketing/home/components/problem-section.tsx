@@ -1,5 +1,5 @@
 import { SectionContainer } from "@/components/marketing/section-container";
-import { MapPinOff, Radio, Puzzle } from "lucide-react";
+import { MapPinOff, Radio, Volume2 } from "lucide-react";
 
 export function ProblemSection() {
   const problems = [
@@ -16,10 +16,10 @@ export function ProblemSection() {
         "Social platforms optimize for strangers and engagement. Reach over relationships.",
     },
     {
-      icon: Puzzle,
-      title: "Scattered Across Five Apps",
+      icon: Volume2,
+      title: "Drowning in Noise",
       description:
-        "Events here, photos there, group chat somewhere else. No single home.",
+        "Endless feeds of irrelevant content. What matters gets buried. Tribe cuts through the noise.",
     },
   ];
 
@@ -28,10 +28,10 @@ export function ProblemSection() {
       <div className="max-w-4xl mx-auto text-center space-y-16">
         <div className="space-y-6">
           <h2 className="text-3xl md:text-5xl font-bold">
-            The Infrastructure for Community Is Broken
+            The Infrastructure for Communities Is Broken
           </h2>
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            70% less time with friends in person since 2003. More connected than ever — lonelier than ever.
+            We spend 70% less time with friends in person since 2003. More connected than ever, but lonelier than ever.
           </p>
         </div>
 

@@ -16,10 +16,10 @@ export function FinalCTA() {
         <div className="rounded-3xl bg-gradient-to-br from-primary/10 via-primary/5 to-background border p-12 md:p-16 text-center space-y-10">
           <div className="space-y-6">
             <h2 className="text-4xl md:text-6xl font-bold">
-              Be Among the First
+              Get Early Access + Shape the Product
             </h2>
             <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-              Join the waitlist and get early access when we launch. Help us build the community platform you actually want to use.
+              Join the waitlist and help us build the community platform you actually want to use. Your feedback shapes what we build next.
             </p>
           </div>
 
