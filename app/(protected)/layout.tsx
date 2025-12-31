@@ -7,18 +7,13 @@ import { TribeDashboardToolbar } from "@/components/tribe-dashboard-toolbar";
 import { ProfileCompletionGuard } from "@/components/profile-completion-guard";
 import { GlobalDialogContainer } from "@/components/dialogs/global-dialog-container";
 import { TourGuide } from "@/components/tour-guide";
+import { isProduction } from "@/lib/utils";
 
 export default async function ProtectedLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  // Block access to protected routes in production only (allow preview deployments)
-  // VERCEL_ENV is "production" | "preview" | "development" on Vercel
-  // Falls back to NODE_ENV for local development
-  const isProduction = process.env.VERCEL_ENV === "production" ||
-    (process.env.VERCEL_ENV === undefined && process.env.NODE_ENV === "production");
-
   if (isProduction) {
     redirect("/coming-soon");
   }

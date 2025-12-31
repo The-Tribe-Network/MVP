@@ -9,7 +9,10 @@ export function capitalize(str: string): string {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
-export const isProduction = process.env.NODE_ENV === "production";
+// VERCEL_ENV is "production" | "preview" | "development" on Vercel
+// Falls back to NODE_ENV for local development
+export const isProduction = process.env.VERCEL_ENV === "production" ||
+  (process.env.VERCEL_ENV === undefined && process.env.NODE_ENV === "production");
 
 export function getInitials(name: string): string {
   if (!name) return "";

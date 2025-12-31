@@ -6,6 +6,7 @@ import { useSession } from "@/lib/clients/auth-client";
 import { Menu, Moon, Sun, X } from "lucide-react";
 import { useState } from "react";
 import { useTheme } from "next-themes";
+import { isProduction } from "@/lib/utils";
 
 export function MarketingHeader() {
   const { data: session } = useSession();
@@ -42,7 +43,11 @@ export function MarketingHeader() {
 
         {/* Auth CTAs and Theme Toggle */}
         <div className="hidden md:flex items-center gap-3">
-          {session ? (
+          {isProduction ? (
+            <Link href="/waitlist">
+              <Button>Join Waitlist</Button>
+            </Link>
+          ) : session ? (
             <Link href="/dashboard">
               <Button variant="outline">Go to Dashboard</Button>
             </Link>
@@ -117,7 +122,11 @@ export function MarketingHeader() {
                   </>
                 )}
               </Button>
-              {session ? (
+              {isProduction ? (
+                <Link href="/waitlist" onClick={() => setMobileMenuOpen(false)}>
+                  <Button className="w-full">Join Waitlist</Button>
+                </Link>
+              ) : session ? (
                 <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)}>
                   <Button variant="outline" className="w-full">
                     Go to Dashboard

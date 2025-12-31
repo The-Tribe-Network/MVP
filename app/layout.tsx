@@ -22,7 +22,11 @@ const manrope = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: "Tribe - Community Organization, Perfected",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
+  title: {
+    default: "Tribe - Community Organization, Perfected",
+    template: "%s | Tribe",
+  },
   description: "The privacy-first platform for communities. Better photo archiving, granular permissions, and structured events. No ads, no data mining. Built for diaspora communities, Greek life, gyms, and more.",
   keywords: [
     "community platform",
@@ -40,7 +44,6 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
     title: "Tribe - Community Organization, Perfected",
     description: "The privacy-first platform for communities that deserve better than GroupMe chaos and Instagram ephemerality.",
     siteName: "Tribe",
@@ -49,6 +52,17 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Tribe - Community Organization, Perfected",
     description: "Privacy-first community platform with photo archives, event management, and granular permissions.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
   },
 };
 
