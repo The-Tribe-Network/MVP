@@ -10,12 +10,14 @@ import {
   deleteEvent,
   addEventAttendee,
   removeEventAttendee,
+  removeEventAttendees,
   type CreateEventInput,
   type CreateEventParams,
   type UpdateEventParams,
   type DeleteEventParams,
   type AddEventAttendeeParams,
   type RemoveEventAttendeeParams,
+  type RemoveEventAttendeesParams,
 } from "@/lib/api/events";
 
 // Re-export types for backwards compatibility
@@ -268,6 +270,31 @@ export function useRemoveEventAttendee() {
       // Only invalidate related queries that we didn't update
       queryClient.invalidateQueries({
         queryKey: queryKeys.events.attendees(variables.eventId),
+      });
+    },
+  });
+}
+
+/**
+ * Remove multiple event attendees (bulk remove for hosts/admins)
+ */
+export function useRemoveEventAttendees() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (params: RemoveEventAttendeesParams) => removeEventAttendees(params),
+    onSuccess: (_, variables) => {
+      // Invalidate attendees list
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.events.attendees(variables.eventId),
+      });
+      // Invalidate event detail to update attendee count
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.events.detail(variables.eventId),
+      });
+      // Invalidate tribe events list to update attendee counts
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.events.tribe(variables.tribeId),
       });
     },
   });

@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import {
   Breadcrumb,
@@ -14,6 +15,7 @@ import { useEventDetail } from '@/lib/hooks/use-events'
 import { EventSettingsNavigation } from './components/settings-navigation'
 import { EventSettingsHeader } from './components/settings-header'
 import { DetailsSection } from './details'
+import { AttendeesSection } from './attendees'
 import { RsvpSection } from './rsvp'
 import { PollsSection } from './polls'
 import { NotificationsSection } from './notifications'
@@ -31,6 +33,7 @@ interface EventSettingsContentProps {
 
 export type EventSettingsTab =
   | 'details'
+  | 'attendees'
   | 'rsvp'
   | 'polls'
   | 'notifications'
@@ -38,9 +41,33 @@ export type EventSettingsTab =
   | 'permissions'
   | 'danger-zone'
 
+const validTabs: EventSettingsTab[] = [
+  'details',
+  'attendees',
+  'rsvp',
+  'polls',
+  'notifications',
+  'media',
+  'permissions',
+  'danger-zone',
+]
+
 export function EventSettingsContent({ tribeId, eventId }: EventSettingsContentProps) {
-  const [activeTab, setActiveTab] = useState<EventSettingsTab>('details')
+  const searchParams = useSearchParams()
+  const tabParam = searchParams.get('tab')
+  const initialTab = tabParam && validTabs.includes(tabParam as EventSettingsTab)
+    ? (tabParam as EventSettingsTab)
+    : 'details'
+
+  const [activeTab, setActiveTab] = useState<EventSettingsTab>(initialTab)
   const { data: event, isLoading, isError, error, refetch } = useEventDetail(tribeId, eventId)
+
+  // Update tab when URL param changes
+  useEffect(() => {
+    if (tabParam && validTabs.includes(tabParam as EventSettingsTab)) {
+      setActiveTab(tabParam as EventSettingsTab)
+    }
+  }, [tabParam])
 
   if (isLoading) {
     return <EventSettingsLoadingSkeleton />
@@ -67,6 +94,8 @@ export function EventSettingsContent({ tribeId, eventId }: EventSettingsContentP
     switch (activeTab) {
       case 'details':
         return <DetailsSection tribeId={tribeId} eventId={eventId} event={event} />
+      case 'attendees':
+        return <AttendeesSection tribeId={tribeId} eventId={eventId} />
       case 'rsvp':
         return <RsvpSection tribeId={tribeId} eventId={eventId} />
       case 'polls':
@@ -109,7 +138,7 @@ export function EventSettingsContent({ tribeId, eventId }: EventSettingsContentP
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbPage>Settings</BreadcrumbPage>
+              <BreadcrumbPage>Manage</BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>

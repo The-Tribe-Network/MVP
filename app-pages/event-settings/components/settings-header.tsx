@@ -13,9 +13,9 @@ export function EventSettingsHeader({ eventTitle }: EventSettingsHeaderProps) {
         <Settings className="h-6 w-6 text-primary" />
       </div>
       <div>
-        <h1 className="text-2xl font-bold">Event Settings</h1>
+        <h1 className="text-2xl font-bold">Manage Event</h1>
         <p className="text-muted-foreground mt-1">
-          Manage settings for <span className="font-medium text-foreground">{eventTitle}</span>
+          Manage <span className="font-medium text-foreground">{eventTitle}</span>
         </p>
       </div>
     </div>

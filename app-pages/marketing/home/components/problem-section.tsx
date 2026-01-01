@@ -31,7 +31,7 @@ export function ProblemSection() {
             The Infrastructure for Communities Is Broken
           </h2>
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            We spend 70% less time with friends in person since 2003. More connected than ever, but lonelier than ever.
+          Since 2003, the amount of time we spend with friends in person has decreased by 70%. We're more connected than ever, but lonelier than ever.
           </p>
         </div>
 

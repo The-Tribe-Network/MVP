@@ -49,7 +49,7 @@ export function SolutionSection() {
       icon: Archive,
       title: "The Vault",
       description:
-        "Never lose a memory again. The Vault is your community's photo archive — organized, searchable, and built to last. Instagram stories disappear. The Vault doesn't.",
+        "Never lose a memory again. The Vault is your community's photo archive — organized, searchable, and built to last..",
       highlight: "The Sticky Feature",
       image: `/app-screenshots-1024/media_browse_${currentTheme}.png`,
       subFeatures: [
@@ -99,8 +99,8 @@ export function SolutionSection() {
       icon: Calendar,
       title: "Structured Events",
       description:
-        "Stop using Google Forms for RSVPs. Tribe's event system is built for communities that actually coordinate in real life.",
-      highlight: "Real Coordination",
+        "Stop using Google Forms for RSVPs. Tribe's event system provides the infrastructure you need to coordinate in real life.",
+      highlight: "Event Coordination",
       image: `/app-screenshots-1024/event_detail_${currentTheme}.png`,
       subFeatures: [
         {

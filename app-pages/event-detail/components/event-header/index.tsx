@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { CheckCircle2, X, Share2, MoreVertical, Settings, Copy, Calendar, Flag } from 'lucide-react'
+import { CheckCircle2, X, Share2, MoreVertical, Settings, Copy, Calendar, Flag, Users } from 'lucide-react'
 import type { EventWithDetails } from '@/lib/database/types'
 import { EventHeaderSkeleton } from './loading'
 import { EventHeaderError } from './error'
@@ -109,7 +109,13 @@ export function EventHeader({ event, tribeId, isLoading, isError, error, onRetry
           <DropdownMenuItem asChild>
             <Link href={`/tribe/${tribeId}/events/${event.id}/settings`}>
               <Settings className="h-4 w-4 mr-2" />
-              Event Settings
+              Manage Event
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link href={`/tribe/${tribeId}/events/${event.id}/settings?tab=attendees`}>
+              <Users className="h-4 w-4 mr-2" />
+              Manage Attendees
             </Link>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
