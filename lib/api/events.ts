@@ -51,6 +51,12 @@ export interface RemoveEventAttendeeParams {
   eventId: string;
 }
 
+export interface RemoveEventAttendeesParams {
+  tribeId: string;
+  eventId: string;
+  userIds: string[];
+}
+
 // ============================================================================
 // Query Functions
 // ============================================================================
@@ -173,5 +179,22 @@ export async function removeEventAttendee(
   return apiFetch<{ success: boolean }>(
     `${API_BASE}/${tribeId}/events/${eventId}/attendees`,
     { method: 'DELETE' }
+  );
+}
+
+/**
+ * Remove multiple event attendees (bulk remove)
+ */
+export async function removeEventAttendees(
+  params: RemoveEventAttendeesParams
+): Promise<{ success: boolean }> {
+  const { tribeId, eventId, userIds } = params;
+  return apiFetch<{ success: boolean }>(
+    `${API_BASE}/${tribeId}/events/${eventId}/attendees/bulk-remove`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userIds }),
+    }
   );
 }

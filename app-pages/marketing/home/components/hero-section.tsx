@@ -16,7 +16,7 @@ export function HeroSection() {
           </h1>
 
           <p className="text-lg md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-            You have the people. We provide the tools. Events, memories, members — one private home.
+            You have the people. We provide the tools. Events, memories, and conversations, all in one private home.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">

@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils'
 import {
   FileText,
   Users,
+  UserCog,
   BarChart3,
   Bell,
   Image,
@@ -32,9 +33,15 @@ const navItems: NavItem[] = [
     icon: FileText,
   },
   {
+    id: 'attendees',
+    label: 'Manage Attendees',
+    description: 'View and remove attendees',
+    icon: UserCog,
+  },
+  {
     id: 'rsvp',
-    label: 'RSVP & Attendance',
-    description: 'Manage capacity and RSVPs',
+    label: 'RSVP Settings',
+    description: 'Capacity and deadlines',
     icon: Users,
   },
   {

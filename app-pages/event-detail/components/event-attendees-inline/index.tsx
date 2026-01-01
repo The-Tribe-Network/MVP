@@ -3,6 +3,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useEventAttendees } from '@/lib/hooks/use-events'
+import { EventAttendeesDialog } from '../event-attendees-dialog'
 import type { EventAttendeeWithUser } from '@/lib/database/types'
 
 interface EventAttendeesInlineProps {
@@ -30,21 +31,26 @@ export function EventAttendeesInline({ tribeId, eventId, maxVisible = 5 }: Event
   }
 
   return (
-    <div className="flex items-center gap-1">
-      <div className="flex -space-x-2">
-        {visibleAttendees.map((attendee) => (
-          <AttendeeAvatarSmall key={attendee.id} attendee={attendee} />
-        ))}
-        {remainingCount > 0 && (
-          <div className="h-8 w-8 rounded-full bg-muted border-2 border-background flex items-center justify-center">
-            <span className="text-xs font-medium text-muted-foreground">+{remainingCount}</span>
-          </div>
-        )}
-      </div>
-      <span className="text-sm text-muted-foreground ml-2">
-        {goingAttendees.length} {goingAttendees.length === 1 ? 'person' : 'people'} attending
-      </span>
-    </div>
+    <EventAttendeesDialog tribeId={tribeId} eventId={eventId}>
+      <button
+        type="button"
+        className="flex items-center gap-1 hover:opacity-80 transition-opacity cursor-pointer"
+      >
+        <div className="flex -space-x-2">
+          {visibleAttendees.map((attendee) => (
+            <AttendeeAvatarSmall key={attendee.id} attendee={attendee} />
+          ))}
+          {remainingCount > 0 && (
+            <div className="h-8 w-8 rounded-full bg-muted border-2 border-background flex items-center justify-center">
+              <span className="text-xs font-medium text-muted-foreground">+{remainingCount}</span>
+            </div>
+          )}
+        </div>
+        <span className="text-sm text-muted-foreground ml-2">
+          {goingAttendees.length} {goingAttendees.length === 1 ? 'person' : 'people'} attending
+        </span>
+      </button>
+    </EventAttendeesDialog>
   )
 }
 

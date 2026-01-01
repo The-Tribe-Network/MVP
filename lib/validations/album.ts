@@ -20,6 +20,30 @@ export type CreateAlbumInput = z.infer<typeof createAlbumSchema>;
 export type UpdateAlbumInput = z.infer<typeof updateAlbumSchema>;
 
 // ============================================
+// Album Settings Form Schemas
+// ============================================
+
+/**
+ * Form schema for album details section (edit name, description, privacy)
+ */
+export const albumDetailsFormSchema = z.object({
+  name: z.string().min(1, "Album name is required").max(100, "Album name must be 100 characters or less"),
+  description: z.string().max(500, "Description must be 500 characters or less").optional().default(''),
+  privacy: z.enum(["public", "private", "admin_only"]),
+});
+
+export type AlbumDetailsFormInput = z.infer<typeof albumDetailsFormSchema>;
+
+/**
+ * Schema for adding/removing media from album
+ */
+export const albumMediaActionSchema = z.object({
+  mediaIds: z.array(z.string().uuid("Invalid media ID")).min(1, "At least one photo must be selected"),
+});
+
+export type AlbumMediaActionInput = z.infer<typeof albumMediaActionSchema>;
+
+// ============================================
 // Multi-step form schemas (3 steps)
 // ============================================
 
