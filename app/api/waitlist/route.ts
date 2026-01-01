@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Insert new waitlist entry
-    const [entry] = await db
+    await db
       .insert(waitlist)
       .values({
         email,
