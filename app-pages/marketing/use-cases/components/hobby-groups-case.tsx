@@ -1,8 +1,8 @@
 import { SectionContainer } from "@/components/marketing/section-container";
 import { WaitlistForm } from "@/components/marketing/waitlist-form";
-import { Crown, Lock, Bell } from "lucide-react";
+import { Palette, UserPlus, MessageSquare } from "lucide-react";
 
-export function HospitalityCase() {
+export function HobbyGroupsCase() {
   return (
     <SectionContainer>
       <div className="max-w-6xl mx-auto space-y-20">
@@ -10,7 +10,7 @@ export function HospitalityCase() {
           {/* Placeholder */}
           <div className="rounded-2xl border bg-secondary/20 aspect-[4/3] flex items-center justify-center shadow-xl">
             <p className="text-muted-foreground text-center px-4">
-              VIP member directory & exclusive events
+              Project gallery & community discussion feed
             </p>
           </div>
 
@@ -18,46 +18,54 @@ export function HospitalityCase() {
           <div className="space-y-8">
             <div>
               <h2 className="text-4xl md:text-5xl font-bold mb-4">
-                Hospitality VIP Lists
+                Social & Hobby Groups
               </h2>
               <p className="text-lg text-muted-foreground leading-relaxed">
-                Manage exclusive communities with the control and privacy they deserve.
+                From book clubs to maker spaces, bring your passion community
+                together. Share creations, coordinate gatherings, and welcome
+                new members with ease.
               </p>
             </div>
 
             <div className="space-y-6">
               <div className="flex gap-4">
                 <div className="w-12 h-12 rounded-lg bg-secondary/30 flex items-center justify-center flex-shrink-0">
-                  <Lock className="w-6 h-6 text-primary" />
+                  <Palette className="w-6 h-6 text-primary" />
                 </div>
                 <div>
-                  <h3 className="font-semibold mb-2">Invite-Only Access</h3>
+                  <h3 className="font-semibold mb-2">Share Your Creations</h3>
                   <p className="text-muted-foreground text-sm leading-relaxed">
-                    Control exactly who can join. Perfect for exclusive member clubs and VIP communities.
+                    Post photos of projects, artworks, and accomplishments. The
+                    Vault keeps your community's creative output beautifully
+                    organized.
                   </p>
                 </div>
               </div>
 
               <div className="flex gap-4">
                 <div className="w-12 h-12 rounded-lg bg-secondary/30 flex items-center justify-center flex-shrink-0">
-                  <Bell className="w-6 h-6 text-primary" />
+                  <UserPlus className="w-6 h-6 text-primary" />
                 </div>
                 <div>
-                  <h3 className="font-semibold mb-2">Exclusive Event Invites</h3>
+                  <h3 className="font-semibold mb-2">Easy Onboarding</h3>
                   <p className="text-muted-foreground text-sm leading-relaxed">
-                    Send private event invitations with RSVP tracking. Know who's attending your exclusive gatherings.
+                    Invite new members with controlled access levels. Set
+                    permissions so newcomers can participate without
+                    overwhelming admin duties.
                   </p>
                 </div>
               </div>
 
               <div className="flex gap-4">
                 <div className="w-12 h-12 rounded-lg bg-secondary/30 flex items-center justify-center flex-shrink-0">
-                  <Crown className="w-6 h-6 text-primary" />
+                  <MessageSquare className="w-6 h-6 text-primary" />
                 </div>
                 <div>
-                  <h3 className="font-semibold mb-2">Concierge Features</h3>
+                  <h3 className="font-semibold mb-2">Community Discussion</h3>
                   <p className="text-muted-foreground text-sm leading-relaxed">
-                    Share exclusive content, private galleries, and VIP announcements with your community.
+                    Rich posts with comments, likes, and nested replies. Build
+                    conversations around shared interests, not scattered across
+                    multiple apps.
                   </p>
                 </div>
               </div>

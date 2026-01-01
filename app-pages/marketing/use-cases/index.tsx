@@ -1,19 +1,19 @@
 "use client";
 
 import { UseCasesHero } from "./components/use-cases-hero";
-import { DiasporaCase } from "./components/diaspora-case";
-import { GreekLifeCase } from "./components/greek-life-case";
-import { FitnessCase } from "./components/fitness-case";
-import { HospitalityCase } from "./components/hospitality-case";
+import { FaithCommunitiesCase } from "./components/faith-communities-case";
+import { AthleticGroupsCase } from "./components/athletic-groups-case";
+import { ProfessionalNetworksCase } from "./components/professional-networks-case";
+import { HobbyGroupsCase } from "./components/hobby-groups-case";
 
 export default function UseCasesPageContent() {
   return (
     <div className="min-h-screen">
       <UseCasesHero />
-      <DiasporaCase />
-      <GreekLifeCase />
-      <FitnessCase />
-      <HospitalityCase />
+      <FaithCommunitiesCase />
+      <AthleticGroupsCase />
+      <ProfessionalNetworksCase />
+      <HobbyGroupsCase />
     </div>
   );
 }
