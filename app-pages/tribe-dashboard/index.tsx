@@ -12,10 +12,12 @@ import { TribeHeader } from "./components/tribe-header";
 import { ScrollableSidebar } from "./components/scrollable-sidebar";
 
 interface TribeDashboardPageProps {
+  demo?: boolean;
   tribeId: string;
 }
 
 export function TribeDashboardPage({
+  demo = false,
   tribeId,
 }: TribeDashboardPageProps) {
   return (
