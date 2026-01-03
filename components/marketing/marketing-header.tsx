@@ -14,7 +14,6 @@ export function MarketingHeader() {
   const { setTheme, theme } = useTheme();
 
   const navLinks = [
-    { href: "/home", label: "Home" },
     { href: "/use-cases", label: "Use Cases" },
     { href: "/features", label: "Features" },
     { href: "/pricing", label: "Pricing" },
