@@ -41,29 +41,29 @@ export function HeroSection() {
           </p>
           <WaitlistForm source="hero" variant="inline" />
         </div>
+      </div>
 
-        {/* Dashboard Preview */}
-        <div className="mt-16 md:mt-24">
-          <div className="relative rounded-xl overflow-hidden shadow-2xl border border-border/50">
-            {/* Light mode image */}
-            <Image
-              src="/app-screenshots-1024/tribe_dashboard_light.png"
-              alt="Tribe Dashboard"
-              width={1024}
-              height={768}
-              className="w-full h-auto dark:hidden"
-              priority
-            />
-            {/* Dark mode image */}
-            <Image
-              src="/app-screenshots-1024/tribe_dashboard_dark.png"
-              alt="Tribe Dashboard"
-              width={1024}
-              height={768}
-              className="w-full h-auto hidden dark:block"
-              priority
-            />
-          </div>
+      {/* Dashboard Preview */}
+      <div className="mt-16 md:mt-24">
+        <div className="relative rounded-xl overflow-hidden shadow-2xl border border-border/50">
+          {/* Light mode image */}
+          <Image
+            src="/app-screenshots-1024/tribe_dashboard_light.png"
+            alt="Tribe Dashboard"
+            width={1024}
+            height={768}
+            className="w-full h-auto dark:hidden"
+            priority
+          />
+          {/* Dark mode image */}
+          <Image
+            src="/app-screenshots-1024/tribe_dashboard_dark.png"
+            alt="Tribe Dashboard"
+            width={1024}
+            height={768}
+            className="w-full h-auto hidden dark:block"
+            priority
+          />
         </div>
       </div>
     </SectionContainer>

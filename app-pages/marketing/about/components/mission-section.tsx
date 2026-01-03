@@ -20,11 +20,11 @@ export function MissionSection() {
           </p>
 
           <p className="text-lg text-muted-foreground leading-relaxed">
-            This is a byproduct of the advancements in technology. Platforms we use today are built for broadcasting, not belonging. They optimize for strangers and engagement metrics to capture attention, not nurture real connections.
+            Platforms we use today are built for broadcasting, not belonging. They optimize for strangers and engagement metrics to capture attention, not nurture real connections.
           </p>
 
           <p className="text-lg text-muted-foreground leading-relaxed">
-            And we're drowning in noise because of it. Endless feeds of irrelevant content bury what actually matters. The communities that <em>do</em> gather are scattered across multiple of apps, losing memories to disappearing stories and coordination to buried group chats.
+            And we're drowning in noise because of it. Endless feeds of irrelevant content bury what actually matters. The communities that <em>do</em> gather are scattered across multiple apps, losing memories to disappearing stories and coordination to buried group chats.
           </p>
 
           <p className="text-lg text-muted-foreground leading-relaxed">
