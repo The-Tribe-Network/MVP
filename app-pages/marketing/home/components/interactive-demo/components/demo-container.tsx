@@ -16,7 +16,7 @@ export function DemoContainer({ children, className }: DemoContainerProps) {
   const urlSlug = activeTribe.name.toLowerCase().replace(/\s+/g, '-')
 
   return (
-    <div className={cn('relative mx-auto max-w-6xl', className)}>
+    <div className={cn('relative mx-auto', className)}>
       {/* Browser-like frame */}
       <div className="rounded-xl overflow-hidden border border-border/50 shadow-2xl bg-background">
         {/* Browser toolbar */}
@@ -38,7 +38,7 @@ export function DemoContainer({ children, className }: DemoContainerProps) {
         </div>
 
         {/* Content area - horizontal layout for sidebar + main */}
-        <div className="flex h-[550px] md:h-[650px] overflow-hidden">
+        <div className="flex h-[1024px] md:h-[650px] overflow-hidden">
           {children}
         </div>
       </div>

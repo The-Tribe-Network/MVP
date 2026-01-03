@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { SectionContainer } from "@/components/marketing/section-container";
 import { WaitlistForm } from "@/components/marketing/waitlist-form";
@@ -16,7 +17,7 @@ export function HeroSection() {
           </h1>
 
           <p className="text-lg md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-            You have the people. We provide the tools. Events, memories, and conversations, all in one private home.
+            Events, memories, and conversations, all in one private home.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
@@ -39,6 +40,30 @@ export function HeroSection() {
             Join the waitlist for early access
           </p>
           <WaitlistForm source="hero" variant="inline" />
+        </div>
+
+        {/* Dashboard Preview */}
+        <div className="mt-16 md:mt-24">
+          <div className="relative rounded-xl overflow-hidden shadow-2xl border border-border/50">
+            {/* Light mode image */}
+            <Image
+              src="/app-screenshots-1024/tribe_dashboard_light.png"
+              alt="Tribe Dashboard"
+              width={1024}
+              height={768}
+              className="w-full h-auto dark:hidden"
+              priority
+            />
+            {/* Dark mode image */}
+            <Image
+              src="/app-screenshots-1024/tribe_dashboard_dark.png"
+              alt="Tribe Dashboard"
+              width={1024}
+              height={768}
+              className="w-full h-auto hidden dark:block"
+              priority
+            />
+          </div>
         </div>
       </div>
     </SectionContainer>

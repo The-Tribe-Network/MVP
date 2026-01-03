@@ -17,6 +17,8 @@ import {
 import Image from "next/image";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 type SubFeature = {
   icon: LucideIcon;
@@ -47,7 +49,7 @@ export function SolutionSection() {
   const solutions: Solution[] = [
     {
       icon: Archive,
-      title: "The Vault",
+      title: "Media Vault",
       description:
         "Never lose a memory again. The Vault is your community's photo archive — organized, searchable, and built to last..",
       highlight: "The Sticky Feature",
@@ -72,7 +74,7 @@ export function SolutionSection() {
     },
     {
       icon: Shield,
-      title: "Granular RBAC",
+      title: "Role Based Permissions",
       description:
         "Your executive board shouldn't have the same permissions as new members. Tribe's role-based access control gives you surgical precision over who can do what.",
       highlight: "Fine-Tuned Permissions",
@@ -105,13 +107,13 @@ export function SolutionSection() {
       subFeatures: [
         {
           icon: Calendar,
-          title: "Real RSVPs",
+          title: "RSVP & Waitlist System",
           description: "See who's coming, who's not, and who's maybe. Capacity limits and waitlists included.",
         },
         {
           icon: BarChart3,
-          title: "Event Polls",
-          description: "Can't decide on a date? Let members vote. Democracy for scheduling.",
+          title: "Event Polling",
+          description: "Pizza or wings? Keep it democratic, let the community decide.",
         },
         {
           icon: Users,
@@ -124,13 +126,13 @@ export function SolutionSection() {
 
   return (
     <SectionContainer>
-      <div className="max-w-6xl mx-auto space-y-20">
+      <div className="mx-auto space-y-20">
         <div className="text-center space-y-6">
           <h2 className="text-3xl md:text-5xl font-bold">
-            Built for Communities That Gather
+            Everything Your Community Needs to Thrive
           </h2>
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            Members. Memories. Events. One private, ad-free home.
+            You have the people. We provide the tools.
           </p>
         </div>
 
@@ -142,9 +144,8 @@ export function SolutionSection() {
             return (
               <div
                 key={solution.title}
-                className={`grid md:grid-cols-2 gap-16 items-center ${
-                  isEven ? "" : "md:grid-flow-dense"
-                }`}
+                className={`grid md:grid-cols-2 gap-16 items-center ${isEven ? "" : "md:grid-flow-dense"
+                  }`}
               >
                 {/* Text */}
                 <div className={`space-y-8 order-2 md:order-none ${isEven ? "" : "md:col-start-2"}`}>
@@ -186,9 +187,8 @@ export function SolutionSection() {
 
                 {/* Screenshot */}
                 <div
-                  className={`relative rounded-2xl overflow-hidden border border-border/50 shadow-2xl bg-background order-1 md:order-none ${
-                    isEven ? "" : "md:col-start-1"
-                  }`}
+                  className={`relative rounded-2xl overflow-hidden border border-border/50 shadow-2xl bg-background order-1 md:order-none ${isEven ? "" : "md:col-start-1"
+                    }`}
                 >
                   <div className="relative aspect-[16/10]">
                     <Image
@@ -205,6 +205,14 @@ export function SolutionSection() {
               </div>
             );
           })}
+        </div>
+
+        <div className="text-center pt-8">
+          <Link href="/features">
+            <Button size="lg" variant="outline" className="text-base px-8">
+              Explore All Features
+            </Button>
+          </Link>
         </div>
       </div>
     </SectionContainer>
