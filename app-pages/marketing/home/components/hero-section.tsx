@@ -19,19 +19,6 @@ export function HeroSection() {
           <p className="text-lg md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
             Events, memories, and conversations, all in one private home.
           </p>
-
-          <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-            <Link href="/features">
-              <Button
-                size="lg"
-                variant="outline"
-                className="text-base px-8 group"
-              >
-                See How It Works
-                <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </Button>
-            </Link>
-          </div>
         </div>
 
         {/* Waitlist Form */}
@@ -44,7 +31,7 @@ export function HeroSection() {
       </div>
 
       {/* Dashboard Preview */}
-      <div className="mt-16 md:mt-24">
+      <div className="mt-16 md:mt-24 space-y-8">
         <div className="relative rounded-xl overflow-hidden shadow-2xl border border-border/50">
           {/* Light mode image */}
           <Image
@@ -65,6 +52,19 @@ export function HeroSection() {
             priority
           />
         </div>
+
+        <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
+            <Link href="/features">
+              <Button
+                size="lg"
+                variant="outline"
+                className="text-base px-8 group"
+              >
+                See How It Works
+                <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </Button>
+            </Link>
+          </div>
       </div>
     </SectionContainer>
   );

@@ -51,7 +51,7 @@ export function SolutionSection() {
       icon: Archive,
       title: "Media Vault",
       description:
-        "Never lose a memory again. The Vault is your community's photo archive — organized, searchable, and built to last..",
+        "Never lose a memory again. The Vault is your community's photo archive — organized, searchable, and built to last.",
       highlight: "The Sticky Feature",
       image: `/app-screenshots-1024/media_browse_${currentTheme}.png`,
       subFeatures: [
