@@ -21,7 +21,7 @@ export function FAQSection() {
     {
       question: "What communities is Tribe for?",
       answer:
-        "Any existing community that gathers in person: religious groups, sports leagues, Greek organizations, alumni networks, coworking spaces, hobby clubs, diaspora communities, VIP membership groups, and more. If you already have the people, we provide the tools.",
+        "Any existing community that gathers in person: churches, sports teams, clubs, alumni groups, hobby communities, coworking spaces, and more. If you already have the people, we provide the tools.",
     },
     {
       question: "When will Tribe launch?",

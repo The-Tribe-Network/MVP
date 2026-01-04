@@ -30,7 +30,7 @@ export function SoftwareApplicationJsonLd() {
     operatingSystem: "Web",
     url: baseUrl,
     description:
-      "Privacy-first community platform with photo archives, structured events, and granular permissions. Built for diaspora communities, Greek life, gyms, and more.",
+      "Privacy-first community platform with photo archives, structured events, and granular permissions. Built for groups and communities that gather in person.",
     offers: {
       "@type": "Offer",
       price: "0",

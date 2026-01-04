@@ -4,7 +4,7 @@ import AboutPageContent from "@/app-pages/marketing/about";
 export const metadata: Metadata = {
   title: "About",
   description:
-    "Learn about Tribe's mission to build better community tools. Our story, values, and the team behind the privacy-first platform for diaspora communities, Greek life, and more.",
+    "Learn about Tribe's mission to build better community tools. Our story, values, and the team behind the privacy-first platform for groups and communities that gather in person.",
   keywords: [
     "about Tribe",
     "community platform company",
