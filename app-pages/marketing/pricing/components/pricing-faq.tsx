@@ -11,7 +11,22 @@ export function PricingFAQ() {
     {
       question: "Is the Free plan really free forever?",
       answer:
-        "Yes! The Free plan includes all core features and is free forever. We believe every community should have access to great tools, regardless of budget. Our Pro and Enterprise plans are for communities that need advanced features and premium support.",
+        "Yes! The Free plan includes all core features for up to 50 members and is free forever. We believe every community should have access to great tools, regardless of budget. Pro and Business plans are for communities that need more storage, members, or advanced features.",
+    },
+    {
+      question: "What happens when I hit the Free plan limits?",
+      answer:
+        "On the Free plan, you can have up to 50 members, 2GB of storage (~400 photos), and 1 active event at a time. If you hit these limits, you can upgrade to Pro for unlimited members and events, plus 10GB of storage. You'll never lose access to your existing data.",
+    },
+    {
+      question: "What counts toward storage?",
+      answer:
+        "Storage is used by photos and media uploaded to The Vault, event photos, and post attachments. Text content (posts, comments, member profiles) doesn't count against your storage quota. Free gets 2GB (~400 photos), Pro gets 10GB (~2,000 photos), and Business gets 50GB (~10,000 photos).",
+    },
+    {
+      question: "What are per-member permission overrides?",
+      answer:
+        "This is a Pro feature that lets you customize permissions for specific members without changing their role. For example, you could prevent a specific member from creating events while keeping them as a regular member. It's perfect for nuanced community management.",
     },
     {
       question: "What happens when paid tiers launch?",
@@ -21,17 +36,17 @@ export function PricingFAQ() {
     {
       question: "Can I upgrade or downgrade anytime?",
       answer:
-        "Absolutely. When paid plans launch, you can upgrade or downgrade at any time. If you downgrade, you'll keep access to paid features until the end of your billing period. No lock-ins, no penalties.",
+        "Absolutely. You can upgrade or downgrade at any time. If you downgrade, you'll keep access to paid features until the end of your billing period. No lock-ins, no penalties.",
     },
     {
-      question: "Do you offer discounts for nonprofits or educational institutions?",
+      question: "Do you offer annual discounts?",
+      answer:
+        "Yes! Pay annually and save: Pro is $180/year (save $48, about 20% off) and Business is $480/year (save $108, about 18% off). Annual plans also include better support priority.",
+    },
+    {
+      question: "Do you offer discounts for nonprofits?",
       answer:
         "Yes! We're committed to supporting nonprofits, educational institutions, and community organizations. Reach out to us after joining the waitlist, and we'll work out pricing that makes sense for your organization.",
-    },
-    {
-      question: "How does member count affect pricing?",
-      answer:
-        "The Free plan supports unlimited members. For Pro and Enterprise, pricing may be based on active members or features needed. We'll share detailed pricing closer to launch, but our goal is to keep it simple and transparent.",
     },
     {
       question: "Will you ever show ads or sell our data?",
