@@ -1,8 +1,8 @@
 # Pricing & Monetization Strategy
 ## Tribe - Community Organization Platform
 
-**Version:** 2.0
-**Last Updated:** December 31, 2024
+**Version:** 2.1
+**Last Updated:** January 3, 2026
 **Owner:** Product/Finance Team
 **Review Cadence:** Quarterly
 
@@ -55,15 +55,20 @@ Unlike generic SaaS pricing (member counts + storage), Tribe monetizes **four un
 
 ### 1. Storage (The Vault)
 
-The Vault is Tribe's sticky feature. Once a community has 2-3 years of organized event photos, they cannot leave. Storage limits create natural upgrade moments.
+The Vault is Tribe's sticky feature. Once a community has 2-3 years of organized event photos and videos, they cannot leave. Storage limits create natural upgrade moments.
 
-| Tier | Storage | Approx. Photos |
-|------|---------|----------------|
-| Free | 2GB | ~400 photos |
-| Pro | 10GB | ~2,000 photos |
-| Business | 50GB | ~10,000 photos |
+| Tier | Storage | Approx. Content | Video Quality |
+|------|---------|-----------------|---------------|
+| Free | 10GB | ~2,000 photos or ~70 videos (1min) | Max 1080p |
+| Pro | 100GB | ~20,000 photos or ~700 videos | Unlimited |
+| Business | Unlimited | Unlimited | Unlimited |
 
-**Upgrade trigger:** "We hit our storage limit after the third event."
+**Video sizing reference:**
+- 1-minute 1080p video: ~130-150MB
+- 1-minute 4K video: ~350-400MB
+- 10-second phone clip: ~15-50MB
+
+**Upgrade trigger:** "We hit our storage limit" or "We need to upload 4K video."
 
 ### 2. RBAC Complexity
 
@@ -122,7 +127,8 @@ Integrations are a natural Pro/Business feature. They require engineering invest
 | Category | Limit |
 |----------|-------|
 | **Members** | 50 |
-| **Storage** | 2GB (~400 photos) |
+| **Storage** | 10GB (~2,000 photos or ~70 videos) |
+| **Video quality** | Max 1080p |
 | **Roles** | All 4 (owner, admin, moderator, member) |
 | **Per-member overrides** | No |
 | **Role customization** | No |
@@ -140,7 +146,8 @@ Integrations are a natural Pro/Business feature. They require engineering invest
 | Category | Limit |
 |----------|-------|
 | **Members** | Unlimited |
-| **Storage** | 10GB (~2,000 photos) |
+| **Storage** | 100GB (~20,000 photos or ~700 videos) |
+| **Video quality** | Unlimited (4K+) |
 | **Roles** | All 4 |
 | **Per-member overrides** | Yes |
 | **Role customization** | Yes (customize role defaults) |
@@ -158,7 +165,8 @@ Integrations are a natural Pro/Business feature. They require engineering invest
 | Category | Limit |
 |----------|-------|
 | **Members** | Unlimited |
-| **Storage** | 50GB (~10,000 photos) |
+| **Storage** | Unlimited |
+| **Video quality** | Unlimited (4K+) |
 | **Roles** | All 4 + custom role builder (future) |
 | **Per-member overrides** | Yes + audit logs |
 | **Role customization** | Yes + permission templates |
@@ -186,7 +194,8 @@ Integrations are a natural Pro/Business feature. They require engineering invest
 | Feature | Free | Pro | Business |
 |---------|:----:|:---:|:--------:|
 | **Members** | 50 | Unlimited | Unlimited |
-| **Storage** | 2GB | 10GB | 50GB |
+| **Storage** | 10GB | 100GB | Unlimited |
+| **Video quality** | 1080p max | 4K+ | 4K+ |
 | **Basic roles (4)** | ✓ | ✓ | ✓ |
 | **Per-member overrides** | - | ✓ | ✓ |
 | **Role customization** | - | ✓ | ✓ |
@@ -216,48 +225,50 @@ Integrations are a natural Pro/Business feature. They require engineering invest
 
 | Item | Free Tier | Pro Tier | Business Tier |
 |------|-----------|----------|---------------|
-| **Cloudinary (storage)** | $0.40/month (2GB) | $2/month (10GB) | $10/month (50GB) |
+| **Cloudinary (storage)** | $2/month (10GB) | $20/month (100GB) | ~$40/month (unlimited, avg ~200GB) |
 | **Neon (database)** | $0.50/month | $0.50/month | $1/month |
 | **Resend (email)** | $0.25/month | $0.50/month | $1/month |
 | **Integration APIs** | $0 | $1/month | $3/month |
 | **Support (prorated)** | $0 | $1/month | $3/month |
-| **Total Cost** | **$1.15/month** | **$5/month** | **$18/month** |
+| **Total Cost** | **$2.75/month** | **$23/month** | **$48/month** |
 
 ### Contribution Margin
 
 | Tier | Revenue | Cost | Profit | Margin |
 |------|---------|------|--------|--------|
-| **Free** | $0 | $1.15 | -$1.15 | - |
-| **Pro** | $19 | $5 | $14 | 74% |
-| **Business** | $49 | $18 | $31 | 63% |
+| **Free** | $0 | $2.75 | -$2.75 | - |
+| **Pro** | $19 | $23 | -$4 | -21% |
+| **Business** | $49 | $48 | $1 | 2% |
 
-**Key Insight:** Conservative 2GB free tier dramatically reduces free tier costs ($1.15 vs previous $3.50). Higher margins on paid tiers due to storage optimization.
+**Key Insight:** With generous storage limits (10GB/100GB/Unlimited), unit economics are tighter. However, most tribes won't fully use their storage allocation. Real-world average usage is typically 20-40% of quota, making actual margins significantly better. The generous limits prioritize user experience and reduce churn over short-term profitability.
 
 ---
 
 ## Break-Even Analysis
 
-### Scenario 1: 100 Tribes (20% Pro, 5% Business, 75% Free)
+**Note:** These calculations assume 100% storage utilization, which is unrealistic. Real-world usage is typically 20-40% of quota.
+
+### Scenario 1: 100 Tribes (20% Pro, 5% Business, 75% Free) - Worst Case (100% usage)
 
 | Tier | Count | Revenue | Cost | Profit |
 |------|-------|---------|------|--------|
-| Free | 75 | $0 | $86.25 | -$86.25 |
-| Pro | 20 | $380 | $100 | $280 |
-| Business | 5 | $245 | $90 | $155 |
-| **Total** | **100** | **$625** | **$276.25** | **$348.75** |
+| Free | 75 | $0 | $206.25 | -$206.25 |
+| Pro | 20 | $380 | $460 | -$80 |
+| Business | 5 | $245 | $240 | $5 |
+| **Total** | **100** | **$625** | **$906.25** | **-$281.25** |
 
-**Break-even:** ~45 tribes with 20% Pro + 5% Business conversion
+### Scenario 1b: 100 Tribes - Realistic (30% avg storage usage)
 
-### Scenario 2: 200 Tribes (Same Conversion)
+| Tier | Count | Revenue | Cost (30% storage) | Profit |
+|------|-------|---------|---------------------|--------|
+| Free | 75 | $0 | $93.75 | -$93.75 |
+| Pro | 20 | $380 | $160 | $220 |
+| Business | 5 | $245 | $84 | $161 |
+| **Total** | **100** | **$625** | **$337.75** | **$287.25** |
 
-| Tier | Count | Revenue | Cost | Profit |
-|------|-------|---------|------|--------|
-| Free | 150 | $0 | $172.50 | -$172.50 |
-| Pro | 40 | $760 | $200 | $560 |
-| Business | 10 | $490 | $180 | $310 |
-| **Total** | **200** | **$1,250** | **$552.50** | **$697.50** |
+**Break-even:** ~55 tribes with 20% Pro + 5% Business conversion (at realistic 30% storage usage)
 
-**Insight:** With conservative storage limits, profitability significantly improved. Free tier loss is ~$1.15/tribe vs previous $3.50/tribe.
+**Insight:** Generous storage limits prioritize user experience. Actual margins depend on usage patterns. Early tribes with lower storage usage subsidize the generous limits, and most communities won't approach quota limits.
 
 ---
 
@@ -269,7 +280,7 @@ These are the real-world situations that drive upgrades:
 
 | Trigger | Free → Pro | Pro → Business |
 |---------|------------|----------------|
-| **Storage** | "We hit 2GB after 3 events" | "We need 50GB for our photo archive" |
+| **Storage** | "We hit 10GB" or "We need 4K video uploads" | "We need unlimited storage" |
 | **Events** | "We need more than 3 active events" | "We want event templates and check-in" |
 | **RBAC** | "We need to restrict a specific pledge" | "We need audit logs for compliance" |
 | **Integrations** | "We want Discord sync" | "We need Slack for work" |
@@ -297,29 +308,29 @@ Is the tribe commercial (gym, hospitality, coworking)?
 **Goal:** Prove product-market fit, gain 60-80 tribes, validate The Vault and RBAC value.
 
 **Burn Rate:**
-- 60 tribes × $1.15/month = ~$70/month (very manageable)
+- 60 tribes × $2.75/month = ~$165/month (manageable, assuming ~30% storage usage: ~$75/month)
 
 ### Phase 3: Introduce Pro Tier (Months 5-6)
 
 **Triggers to introduce Pro:**
 - 30+ active tribes
-- Communities hitting 2GB storage limit
+- Communities hitting 10GB storage limit or requesting 4K video
 - Communities requesting multiple concurrent events
 - NPS 9-10 from 60%+ of community leaders
 
 **Pricing:**
-- Free: 50 members, 2GB storage, 3 events + recurring, no RBAC overrides
-- Pro: $19/month - unlimited members/events, 10GB, full RBAC, integrations
+- Free: 50 members, 10GB storage (1080p max), 3 events + recurring, no RBAC overrides
+- Pro: $19/month - unlimited members/events, 100GB (4K+), full RBAC, integrations
 
 ### Phase 4: Introduce Business Tier (Month 7+)
 
 **Triggers to introduce Business:**
 - 5+ commercial tribes onboarded
 - Pro tier at $1,000+ MRR
-- Requests for recurring events, analytics, Slack integration
+- Requests for unlimited storage, analytics, Slack integration
 
 **Pricing:**
-- Business: $49/month - 50GB, advanced events, all integrations, analytics
+- Business: $49/month - Unlimited storage, advanced events, all integrations, analytics
 
 ---
 
@@ -404,12 +415,12 @@ Hi [Leader Name],
 Your community is growing! We're introducing Tribe Pro for communities that need more.
 
 **Tribe Free (You're here - no change):**
-- 50 members, 2GB storage, 3 active events + recurring
+- 50 members, 10GB storage (1080p video max), 3 active events + recurring
 - Perfect for getting started
 
 **NEW: Tribe Pro ($19/month):**
 - Unlimited members & events
-- 10GB storage (~2,000 photos)
+- 100GB storage + 4K video uploads
 - Per-member permission overrides
 - Discord + Google Calendar sync
 - Priority support
@@ -426,7 +437,7 @@ Questions? Just reply.
 ---
 
 **Document Status:** Active
-**Last Updated:** December 31, 2024
-**Version:** 2.0 - Four Monetization Levers
-**Next Review:** March 31, 2025 (or when MRR > $1,000)
+**Last Updated:** January 3, 2026
+**Version:** 2.1 - Generous Storage Limits
+**Next Review:** April 3, 2026 (or when MRR > $1,000)
 **Owner:** Product/Finance Team

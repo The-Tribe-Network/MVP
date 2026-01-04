@@ -1,19 +1,14 @@
 "use client";
 
-import { useState } from "react";
 import { SectionContainer } from "@/components/marketing/section-container";
 import { Button } from "@/components/ui/button";
 import { WaitlistForm } from "@/components/marketing/waitlist-form";
 import { Check } from "lucide-react";
-import { PricingToggle } from "./pricing-toggle";
-
-type BillingCycle = "monthly" | "annual";
 
 interface TierData {
   name: string;
-  price: { monthly: string; annual: string };
-  period: { monthly: string; annual: string };
-  annualSavings?: string;
+  price: string;
+  period?: string;
   description: string;
   features: string[];
   cta: string;
@@ -22,22 +17,20 @@ interface TierData {
 }
 
 export function PricingTiers() {
-  const [billingCycle, setBillingCycle] = useState<BillingCycle>("monthly");
-
   const tiers: TierData[] = [
     {
       name: "Free",
-      price: { monthly: "$0", annual: "$0" },
-      period: { monthly: "forever", annual: "forever" },
+      price: "$0",
+      period: "forever",
       description: "Perfect for small communities getting started.",
       features: [
         "Up to 50 members",
-        "2GB storage (~400 photos)",
+        "10GB storage (~2,000 photos or ~70 videos)",
+        "Video uploads up to 1080p",
         "3 active events + recurring",
         "Basic RSVPs",
         "All 4 roles (owner, admin, mod, member)",
         "Community timeline & posts",
-        "Comments & reactions",
         "No ads, privacy-first",
       ],
       cta: "Join Waitlist",
@@ -46,17 +39,15 @@ export function PricingTiers() {
     },
     {
       name: "Pro",
-      price: { monthly: "$19", annual: "$180" },
-      period: { monthly: "per month", annual: "per year" },
-      annualSavings: "Save $48",
+      price: "TBD",
       description: "For growing communities with structure.",
       features: [
         "Unlimited members",
-        "10GB storage (~2,000 photos)",
+        "100GB storage (~20,000 photos or ~700 videos)",
+        "4K+ video uploads",
         "Unlimited active events",
         "Private events with invites",
         "Per-member permission overrides",
-        "Role customization",
         "Capacity limits & waitlists",
         "Discord + Google Calendar sync",
       ],
@@ -66,13 +57,11 @@ export function PricingTiers() {
     },
     {
       name: "Business",
-      price: { monthly: "$49", annual: "$480" },
-      period: { monthly: "per month", annual: "per year" },
-      annualSavings: "Save $108",
+      price: "TBD",
       description: "For commercial communities at scale.",
       features: [
         "Everything in Pro",
-        "50GB storage (~10,000 photos)",
+        "Unlimited storage",
         "Event templates & check-in",
         "Co-hosts for events",
         "All integrations (Slack, Gmail, etc.)",
@@ -89,10 +78,6 @@ export function PricingTiers() {
   return (
     <SectionContainer background="muted">
       <div className="max-w-7xl mx-auto">
-        <div className="mb-10">
-          <PricingToggle billingCycle={billingCycle} onToggle={setBillingCycle} />
-        </div>
-
         <div className="grid md:grid-cols-3 gap-8">
           {tiers.map((tier) => (
             <div
@@ -112,20 +97,13 @@ export function PricingTiers() {
               <div className="mb-6">
                 <h3 className="text-2xl font-bold mb-2">{tier.name}</h3>
                 <div className="flex items-baseline gap-2 mb-3">
-                  <span className="text-4xl font-bold">
-                    {tier.price[billingCycle]}
-                  </span>
-                  {tier.period[billingCycle] && (
+                  <span className="text-4xl font-bold">{tier.price}</span>
+                  {tier.period && (
                     <span className="text-muted-foreground">
-                      /{tier.period[billingCycle]}
+                      /{tier.period}
                     </span>
                   )}
                 </div>
-                {billingCycle === "annual" && tier.annualSavings && (
-                  <span className="inline-block px-2 py-1 text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded-full">
-                    {tier.annualSavings}
-                  </span>
-                )}
                 <p className="text-sm text-muted-foreground mt-2">
                   {tier.description}
                 </p>

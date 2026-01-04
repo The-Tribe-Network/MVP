@@ -12,7 +12,8 @@ export function PricingComparison() {
   const features: FeatureRow[] = [
     // Core Limits
     { feature: "Members", free: "50", pro: "Unlimited", business: "Unlimited" },
-    { feature: "Storage", free: "2GB", pro: "10GB", business: "50GB" },
+    { feature: "Storage", free: "10GB", pro: "100GB", business: "Unlimited" },
+    { feature: "Video quality", free: "1080p max", pro: "4K+", business: "4K+" },
     { feature: "Active events", free: "3", pro: "Unlimited", business: "Unlimited" },
 
     // Roles & Permissions

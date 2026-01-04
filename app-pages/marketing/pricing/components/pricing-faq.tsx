@@ -16,12 +16,17 @@ export function PricingFAQ() {
     {
       question: "What happens when I hit the Free plan limits?",
       answer:
-        "On the Free plan, you can have up to 50 members, 2GB of storage (~400 photos), and 1 active event at a time. If you hit these limits, you can upgrade to Pro for unlimited members and events, plus 10GB of storage. You'll never lose access to your existing data.",
+        "On the Free plan, you can have up to 50 members, 10GB of storage (~2,000 photos or ~70 videos), and 3 active events at a time. Video uploads are capped at 1080p. If you hit these limits or need 4K video uploads, you can upgrade to Pro for unlimited members and events, plus 100GB of storage. You'll never lose access to your existing data.",
     },
     {
       question: "What counts toward storage?",
       answer:
-        "Storage is used by photos and media uploaded to The Vault, event photos, and post attachments. Text content (posts, comments, member profiles) doesn't count against your storage quota. Free gets 2GB (~400 photos), Pro gets 10GB (~2,000 photos), and Business gets 50GB (~10,000 photos).",
+        "Storage is used by photos and videos uploaded to The Vault, event media, and post attachments. Text content (posts, comments, member profiles) doesn't count against your storage quota. Free gets 10GB (~2,000 photos or ~70 one-minute videos), Pro gets 100GB, and Business gets unlimited storage.",
+    },
+    {
+      question: "Why is video quality limited on the Free plan?",
+      answer:
+        "The Free plan limits video uploads to 1080p resolution to help manage storage costs. A 1-minute 1080p video is about 130-150MB, while a 4K video is 350-400MB. If you need to upload high-quality 4K videos, Pro and Business plans support unlimited video quality.",
     },
     {
       question: "What are per-member permission overrides?",
