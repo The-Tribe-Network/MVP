@@ -56,7 +56,7 @@ export function PricingFAQ() {
   ];
 
   return (
-    <SectionContainer background="muted">
+    <SectionContainer>
       <div className="max-w-4xl mx-auto space-y-12">
         <div className="text-center space-y-6">
           <h2 className="text-4xl md:text-5xl font-bold">

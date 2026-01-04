@@ -3,7 +3,7 @@ import { Quote } from "lucide-react";
 
 export function SurgeonGeneralQuote() {
   return (
-    <SectionContainer background="default">
+    <SectionContainer background="muted">
       <div className="max-w-4xl mx-auto">
         <div className="relative">
           <Quote className="w-12 h-12 text-primary/20 absolute -top-2 -left-2" />

@@ -87,7 +87,7 @@ export function PricingTiers() {
   ];
 
   return (
-    <SectionContainer>
+    <SectionContainer background="muted">
       <div className="max-w-7xl mx-auto">
         <div className="mb-10">
           <PricingToggle billingCycle={billingCycle} onToggle={setBillingCycle} />

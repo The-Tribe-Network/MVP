@@ -11,6 +11,15 @@ import {
   HelpCircle,
   Lock,
 } from "lucide-react";
+import Image from "next/image";
+
+// User avatars for attendees
+const attendees = [
+  { name: "Sarah Chen", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=face" },
+  { name: "Alex Rivera", avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face" },
+  { name: "Emma Watson", avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face" },
+  { name: "James Morrison", avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face" },
+];
 
 export function EventRSVPFeature() {
   const rsvpFeatures = [
@@ -47,7 +56,7 @@ export function EventRSVPFeature() {
   ];
 
   return (
-    <SectionContainer background="muted">
+    <SectionContainer>
       <div className="max-w-6xl mx-auto">
         <div className="grid md:grid-cols-2 gap-16 items-center">
           {/* Text */}
@@ -90,70 +99,78 @@ export function EventRSVPFeature() {
           </div>
 
           {/* Illustration */}
-          <div className="rounded-2xl border bg-gradient-to-br from-primary/5 via-primary/10 to-primary/5 overflow-hidden shadow-xl order-1 md:order-none p-8 md:p-12">
-            <div className="space-y-5">
-              {/* Mock event card */}
-              <div className="bg-background rounded-xl p-5 shadow-lg">
-                <div className="flex items-start gap-4 mb-4">
-                  <div className="w-14 h-14 rounded-lg bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center flex-shrink-0">
-                    <Calendar className="w-6 h-6 text-primary" />
+          <div className="rounded-2xl border bg-gradient-to-br from-primary/5 via-primary/10 to-primary/5 overflow-hidden shadow-xl order-1 md:order-none p-6 md:p-8">
+            <div className="space-y-4">
+              {/* Event card */}
+              <div className="bg-background rounded-xl p-4 shadow-lg">
+                <div className="flex items-start gap-3 mb-4">
+                  <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center flex-shrink-0">
+                    <Calendar className="w-5 h-5 text-primary" />
                   </div>
-                  <div className="flex-1">
-                    <div className="h-4 bg-foreground/15 rounded w-3/4 mb-2" />
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <MapPin className="w-3.5 h-3.5" />
-                      <div className="h-3 bg-foreground/10 rounded w-24" />
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-sm mb-1">Spring Fitness Challenge</h3>
+                    <div className="flex items-center gap-1.5 text-muted-foreground text-xs">
+                      <MapPin className="w-3 h-3 flex-shrink-0" />
+                      <span className="truncate">Peak Performance Gym</span>
                     </div>
+                    <p className="text-xs text-muted-foreground mt-1">Feb 1, 2026 · 8:00 AM</p>
                   </div>
                 </div>
 
                 {/* RSVP buttons */}
                 <div className="flex gap-2 mb-4">
-                  <div className="flex-1 py-2.5 rounded-lg bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center gap-2">
-                    <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <div className="flex-1 py-2 rounded-lg bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center gap-1.5">
+                    <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                     <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
                       Going
                     </span>
                   </div>
-                  <div className="flex-1 py-2.5 rounded-lg bg-muted/50 border flex items-center justify-center gap-2">
-                    <HelpCircle className="w-4 h-4 text-muted-foreground" />
+                  <div className="flex-1 py-2 rounded-lg bg-muted/50 border flex items-center justify-center gap-1.5">
+                    <HelpCircle className="w-3.5 h-3.5 text-muted-foreground" />
                     <span className="text-xs font-medium text-muted-foreground">
                       Maybe
                     </span>
                   </div>
-                  <div className="flex-1 py-2.5 rounded-lg bg-muted/50 border flex items-center justify-center gap-2">
-                    <X className="w-4 h-4 text-muted-foreground" />
+                  <div className="flex-1 py-2 rounded-lg bg-muted/50 border flex items-center justify-center gap-1.5">
+                    <X className="w-3.5 h-3.5 text-muted-foreground" />
                     <span className="text-xs font-medium text-muted-foreground">
                       Can't Go
                     </span>
                   </div>
                 </div>
 
-                {/* Attendee avatars */}
+                {/* Attendee avatars - real photos */}
                 <div className="flex items-center justify-between pt-3 border-t">
                   <div className="flex -space-x-2">
-                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary/30 to-primary/50 border-2 border-background" />
-                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-emerald-400/30 to-emerald-500/50 border-2 border-background" />
-                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-amber-400/30 to-amber-500/50 border-2 border-background" />
-                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-400/30 to-purple-500/50 border-2 border-background" />
+                    {attendees.map((attendee, i) => (
+                      <div key={i} className="w-7 h-7 rounded-full border-2 border-background overflow-hidden">
+                        <Image
+                          src={attendee.avatar}
+                          alt={attendee.name}
+                          width={28}
+                          height={28}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    ))}
                     <div className="w-7 h-7 rounded-full bg-muted border-2 border-background flex items-center justify-center text-[10px] font-medium text-muted-foreground">
-                      +5
+                      +63
                     </div>
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    <span className="font-medium text-foreground">12</span>/20
-                    spots filled
+                    <span className="font-medium text-foreground">67</span>/100
+                    spots
                   </div>
                 </div>
               </div>
 
-              {/* Mock date poll */}
-              <div className="bg-background rounded-xl p-5 shadow-lg">
-                <div className="flex items-center gap-2 text-primary text-sm font-medium mb-4">
-                  <Vote className="w-4 h-4" />
-                  Date Poll
+              {/* Date poll */}
+              <div className="bg-background rounded-xl p-4 shadow-lg">
+                <div className="flex items-center gap-2 text-primary text-xs font-medium mb-3">
+                  <Vote className="w-3.5 h-3.5" />
+                  When should we do the team dinner?
                 </div>
-                <div className="space-y-3">
+                <div className="space-y-2.5">
                   <div className="flex items-center gap-3">
                     <div className="flex-1 h-8 rounded-lg bg-primary/20 relative overflow-hidden">
                       <div
@@ -161,10 +178,18 @@ export function EventRSVPFeature() {
                         style={{ width: "75%" }}
                       />
                       <div className="absolute inset-0 flex items-center justify-between px-3">
-                        <span className="text-xs font-medium">Friday 8th</span>
-                        <span className="text-xs text-muted-foreground">
-                          9 votes
-                        </span>
+                        <span className="text-xs font-medium">Friday, Jan 10</span>
+                        <div className="flex items-center gap-1.5">
+                          <div className="flex -space-x-1">
+                            <div className="w-4 h-4 rounded-full border border-background overflow-hidden">
+                              <Image src={attendees[0].avatar} alt="" width={16} height={16} className="w-full h-full object-cover" />
+                            </div>
+                            <div className="w-4 h-4 rounded-full border border-background overflow-hidden">
+                              <Image src={attendees[1].avatar} alt="" width={16} height={16} className="w-full h-full object-cover" />
+                            </div>
+                          </div>
+                          <span className="text-xs text-muted-foreground">9</span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -175,28 +200,29 @@ export function EventRSVPFeature() {
                         style={{ width: "42%" }}
                       />
                       <div className="absolute inset-0 flex items-center justify-between px-3">
-                        <span className="text-xs font-medium">
-                          Saturday 9th
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          5 votes
-                        </span>
+                        <span className="text-xs font-medium">Saturday, Jan 11</span>
+                        <div className="flex items-center gap-1.5">
+                          <div className="flex -space-x-1">
+                            <div className="w-4 h-4 rounded-full border border-background overflow-hidden">
+                              <Image src={attendees[2].avatar} alt="" width={16} height={16} className="w-full h-full object-cover" />
+                            </div>
+                          </div>
+                          <span className="text-xs text-muted-foreground">5</span>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Mock deadline notice */}
-              <div className="bg-background/60 rounded-xl p-4 shadow border flex items-center gap-3">
+              {/* Deadline notice */}
+              <div className="bg-background/60 rounded-xl p-3.5 shadow border flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center flex-shrink-0">
                   <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                 </div>
                 <div className="flex-1">
-                  <div className="text-xs font-medium mb-0.5">
-                    RSVP Deadline
-                  </div>
-                  <div className="h-2.5 bg-foreground/10 rounded w-24" />
+                  <p className="text-xs font-medium">RSVP Deadline</p>
+                  <p className="text-xs text-muted-foreground">January 8, 2026 at 6:00 PM</p>
                 </div>
               </div>
             </div>

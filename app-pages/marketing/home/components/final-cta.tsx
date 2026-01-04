@@ -11,7 +11,7 @@ export function FinalCTA() {
   ];
 
   return (
-    <SectionContainer>
+    <SectionContainer background="muted">
       <div className="max-w-4xl mx-auto">
         <div className="rounded-3xl bg-gradient-to-br from-primary/10 via-primary/5 to-background border p-12 md:p-16 text-center space-y-10">
           <div className="space-y-6">

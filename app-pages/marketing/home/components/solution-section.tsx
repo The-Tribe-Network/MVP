@@ -52,7 +52,7 @@ export function SolutionSection() {
       icon: Archive,
       title: "Media Vault",
       description:
-        "Never lose a memory again. The Vault is your community's photo archive — organized, searchable, and built to last..",
+        "Never lose a memory again. The Vault is your community's photo archive — organized, searchable, and built to last.",
       highlight: "The Sticky Feature",
       image: `/app-screenshots-1024/media_browse_${currentTheme}.png`,
       subFeatures: [
@@ -131,7 +131,7 @@ export function SolutionSection() {
   ];
 
   return (
-    <SectionContainer>
+    <SectionContainer background="muted">
       <div className="mx-auto space-y-20">
         <div className="text-center space-y-6">
           <h2 className="text-3xl md:text-5xl font-bold">

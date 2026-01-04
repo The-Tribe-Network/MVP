@@ -1,5 +1,26 @@
 import { SectionContainer } from "@/components/marketing/section-container";
 import { MessageSquare, Heart, ImageIcon, CornerDownRight } from "lucide-react";
+import Image from "next/image";
+
+// Realistic user data with Unsplash avatars
+const users = {
+  sarah: {
+    name: "Sarah Chen",
+    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=face",
+  },
+  alex: {
+    name: "Alex Rivera",
+    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face",
+  },
+  emma: {
+    name: "Emma Watson",
+    avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face",
+  },
+  james: {
+    name: "James Morrison",
+    avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
+  },
+};
 
 export function FeedFeature() {
   const feedFeatures = [
@@ -67,45 +88,68 @@ export function FeedFeature() {
           </div>
 
           {/* Illustration */}
-          <div className="rounded-2xl border bg-gradient-to-br from-primary/5 via-primary/10 to-primary/5 overflow-hidden shadow-xl order-1 md:order-none p-8 md:p-12">
-            <div className="space-y-5">
-              {/* Mock post with media */}
-              <div className="bg-background rounded-xl p-5 shadow-lg">
-                <div className="flex items-start gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/30 to-primary/50" />
-                  <div className="flex-1">
-                    <div className="h-3.5 bg-foreground/15 rounded w-24 mb-1.5" />
-                    <div className="h-2.5 bg-foreground/10 rounded w-16" />
+          <div className="rounded-2xl border bg-gradient-to-br from-primary/5 via-primary/10 to-primary/5 overflow-hidden shadow-xl order-1 md:order-none p-6 md:p-8">
+            <div className="space-y-4">
+              {/* Post with media */}
+              <div className="bg-background rounded-xl p-4 shadow-lg">
+                <div className="flex items-start gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
+                    <Image
+                      src={users.sarah.avatar}
+                      alt={users.sarah.name}
+                      width={40}
+                      height={40}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm truncate">{users.sarah.name}</p>
+                    <p className="text-xs text-muted-foreground">2 hours ago</p>
                   </div>
                 </div>
-                <div className="space-y-2 mb-4">
-                  <div className="h-3.5 bg-foreground/10 rounded w-full" />
-                  <div className="h-3.5 bg-foreground/10 rounded w-4/5" />
-                </div>
-                {/* Mock image */}
-                <div className="rounded-lg bg-gradient-to-br from-primary/10 to-primary/20 h-32 mb-4 flex items-center justify-center">
-                  <ImageIcon className="w-8 h-8 text-primary/40" />
+                <p className="text-sm mb-3 leading-relaxed">
+                  Just crushed our Saturday morning HIIT class! 23 members showed up today. The energy was incredible!
+                </p>
+                {/* Real image */}
+                <div className="rounded-lg overflow-hidden mb-3 border">
+                  <Image
+                    src="https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=600&h=300&fit=crop"
+                    alt="Group workout"
+                    width={600}
+                    height={300}
+                    className="w-full h-auto object-cover"
+                  />
                 </div>
                 {/* Engagement bar */}
                 <div className="flex items-center gap-4 pt-2 border-t">
                   <div className="flex items-center gap-1.5 text-primary">
                     <Heart className="w-4 h-4 fill-primary" />
-                    <span className="text-xs font-medium">24</span>
+                    <span className="text-xs font-medium">34</span>
                   </div>
                   <div className="flex items-center gap-1.5 text-muted-foreground">
                     <MessageSquare className="w-4 h-4" />
-                    <span className="text-xs">8</span>
+                    <span className="text-xs">12</span>
                   </div>
                 </div>
               </div>
 
-              {/* Mock comment thread */}
-              <div className="bg-background rounded-xl p-5 shadow-lg">
+              {/* Comment thread */}
+              <div className="bg-background rounded-xl p-4 shadow-lg">
                 <div className="flex items-start gap-3 mb-3">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400/30 to-emerald-500/50" />
-                  <div className="flex-1">
-                    <div className="h-3 bg-foreground/15 rounded w-20 mb-2" />
-                    <div className="h-3 bg-foreground/10 rounded w-full" />
+                  <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
+                    <Image
+                      src={users.alex.avatar}
+                      alt={users.alex.name}
+                      width={32}
+                      height={32}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-xs">{users.alex.name}</p>
+                    <p className="text-sm text-muted-foreground mt-0.5">
+                      That was such a great session! See you all next week!
+                    </p>
                   </div>
                 </div>
                 {/* Nested reply */}
@@ -113,24 +157,46 @@ export function FeedFeature() {
                   <div className="flex items-start gap-2">
                     <CornerDownRight className="w-3.5 h-3.5 text-primary/40 mt-1 flex-shrink-0" />
                     <div className="flex items-start gap-2 flex-1">
-                      <div className="w-6 h-6 rounded-full bg-gradient-to-br from-amber-400/30 to-amber-500/50" />
-                      <div className="flex-1">
-                        <div className="h-2.5 bg-foreground/10 rounded w-16 mb-1.5" />
-                        <div className="h-2.5 bg-foreground/10 rounded w-3/4" />
+                      <div className="w-6 h-6 rounded-full overflow-hidden flex-shrink-0">
+                        <Image
+                          src={users.emma.avatar}
+                          alt={users.emma.name}
+                          width={24}
+                          height={24}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-xs">{users.emma.name}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Count me in! Best workout of the week.
+                        </p>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Mock simple post */}
-              <div className="bg-background/60 rounded-xl p-5 shadow border">
-                <div className="flex items-start gap-3 mb-3">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-400/30 to-purple-500/50" />
-                  <div className="flex-1">
-                    <div className="h-3 bg-foreground/10 rounded w-28 mb-2" />
-                    <div className="h-3 bg-foreground/5 rounded w-full" />
-                    <div className="h-3 bg-foreground/5 rounded w-2/3 mt-1.5" />
+              {/* Simple post */}
+              <div className="bg-background/60 rounded-xl p-4 shadow border">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
+                    <Image
+                      src={users.james.avatar}
+                      alt={users.james.name}
+                      width={32}
+                      height={32}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold text-xs">{users.james.name}</p>
+                      <span className="text-xs text-muted-foreground">· 1d ago</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Reminder: Our nutrition workshop is tomorrow at 6 PM. Don't miss it!
+                    </p>
                   </div>
                 </div>
               </div>
