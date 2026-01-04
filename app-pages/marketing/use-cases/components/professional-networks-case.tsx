@@ -16,7 +16,7 @@ export function ProfessionalNetworksCase() {
       <div className="max-w-6xl mx-auto">
         <div className="grid md:grid-cols-2 gap-16 items-center">
           {/* Text */}
-          <div className="space-y-8">
+          <div className="space-y-8 order-last md:order-first">
             <div>
               <h2 className="text-4xl md:text-5xl font-bold mb-4">
                 Professional & Alumni Networks

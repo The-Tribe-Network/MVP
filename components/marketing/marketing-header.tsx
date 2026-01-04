@@ -14,10 +14,10 @@ export function MarketingHeader() {
   const { setTheme, theme } = useTheme();
 
   const navLinks = [
-    { href: "/use-cases", label: "Use Cases" },
-    { href: "/features", label: "Features" },
-    { href: "/pricing", label: "Pricing" },
     { href: "/about", label: "About" },
+    { href: "/features", label: "Features" },
+    { href: "/use-cases", label: "Use Cases" },
+    { href: "/pricing", label: "Pricing" },
   ];
 
   return (

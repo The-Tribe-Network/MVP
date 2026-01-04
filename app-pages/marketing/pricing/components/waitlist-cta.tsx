@@ -3,7 +3,7 @@ import { WaitlistForm } from "@/components/marketing/waitlist-form";
 
 export function WaitlistCTA() {
   return (
-    <SectionContainer>
+    <SectionContainer background="muted">
       <div className="max-w-3xl mx-auto text-center space-y-10">
         <div className="space-y-6">
           <h2 className="text-4xl md:text-6xl font-bold">
