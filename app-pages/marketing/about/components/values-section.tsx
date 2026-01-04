@@ -1,12 +1,12 @@
 import { SectionContainer } from "@/components/marketing/section-container";
-import { Lock, Palette, Users, Ban } from "lucide-react";
+import { Palette, Users, Heart, Sparkles } from "lucide-react";
 
 export function ValuesSection() {
   const values = [
     {
-      icon: Lock,
-      title: "Privacy First",
-      description: "Your data belongs to you. We don't sell it, mine it, or use it for ads. Period.",
+      icon: Heart,
+      title: "Inclusivity & Belonging",
+      description: "Everyone deserves a place where they feel seen and valued. We build spaces where authentic connection thrives.",
     },
     {
       icon: Palette,
@@ -19,9 +19,9 @@ export function ValuesSection() {
       description: "Communities should shape their own spaces. We give you the tools, you make it yours.",
     },
     {
-      icon: Ban,
-      title: "No Ads, Ever",
-      description: "We'll never show ads or sell your attention. Communities aren't products.",
+      icon: Sparkles,
+      title: "Intimate Moments",
+      description: "Life with the right people is ecstatic. We help cultivate environments where shared values, experiences, and desires bring people closer together.",
     },
   ];
 

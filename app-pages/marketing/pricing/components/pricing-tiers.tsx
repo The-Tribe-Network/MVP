@@ -66,7 +66,7 @@ export function PricingTiers() {
   ];
 
   return (
-    <SectionContainer>
+    <SectionContainer background="muted">
       <div className="max-w-7xl mx-auto">
         <div className="grid md:grid-cols-3 gap-8">
           {tiers.map((tier) => (

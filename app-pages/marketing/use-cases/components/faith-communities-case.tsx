@@ -16,10 +16,10 @@ export function FaithCommunitiesCase() {
       <div className="max-w-6xl mx-auto">
         <div className="grid md:grid-cols-2 gap-16 items-center">
           {/* Text */}
-          <div className="space-y-8">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium uppercase tracking-wide">
+          <div className="space-y-8 order-last md:order-first">
+            {/* <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium uppercase tracking-wide">
               Primary Use Case
-            </div>
+            </div> */}
 
             <div>
               <h2 className="text-4xl md:text-5xl font-bold mb-4">

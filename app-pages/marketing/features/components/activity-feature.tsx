@@ -58,7 +58,7 @@ export function ActivityFeature() {
   ];
 
   return (
-    <SectionContainer>
+    <SectionContainer background="muted">
       <div className="max-w-6xl mx-auto">
         <div className="grid md:grid-cols-2 gap-16 items-center">
           {/* Illustration */}
