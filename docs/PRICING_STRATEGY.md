@@ -85,17 +85,19 @@ Events drive real-world connection—Tribe's core thesis. We gate concurrent eve
 
 | Tier | Event Features |
 |------|----------------|
-| Free | 1 active event at a time |
+| Free | 3 active events at a time |
+| Free | Recurring events |
 | Free | Basic RSVPs (going, maybe, not going) |
 | Free | 1 poll per event (at creation only) |
 | Pro | Unlimited active events |
 | Pro | Unlimited polls per event |
 | Pro | Capacity limits, waitlists, RSVP deadlines |
-| Business | Recurring events, event templates |
+| Pro | **Private events with invite-only access** |
+| Business | Event templates |
 | Business | Co-hosts, event links |
 | Business | Check-in system |
 
-**Upgrade trigger:** "We have monthly meetups AND a big annual event to plan."
+**Upgrade trigger:** "We need private events, unlimited events, waitlists, or advanced coordination features."
 
 ### 4. Integrations
 
@@ -124,9 +126,10 @@ Integrations are a natural Pro/Business feature. They require engineering invest
 | **Roles** | All 4 (owner, admin, moderator, member) |
 | **Per-member overrides** | No |
 | **Role customization** | No |
-| **Active events** | 1 concurrent |
+| **Active events** | 3 concurrent |
+| **Recurring events** | Yes |
 | **Polls** | 1 per event (at creation only) |
-| **Event features** | Basic RSVPs only |
+| **Event features** | Basic RSVPs |
 | **Integrations** | None |
 | **Support** | Community docs |
 
@@ -143,6 +146,7 @@ Integrations are a natural Pro/Business feature. They require engineering invest
 | **Role customization** | Yes (customize role defaults) |
 | **Active events** | Unlimited |
 | **Polls** | Unlimited per event |
+| **Private events** | Yes (invite-only events) |
 | **Event features** | + Capacity limits, waitlists, RSVP deadlines |
 | **Integrations** | Discord + Google Calendar |
 | **Support** | Priority email |
@@ -160,7 +164,8 @@ Integrations are a natural Pro/Business feature. They require engineering invest
 | **Role customization** | Yes + permission templates |
 | **Active events** | Unlimited |
 | **Polls** | Unlimited + anonymous restrictions removed |
-| **Event features** | + Recurring events, co-hosts, event links, check-in |
+| **Private events** | Yes (invite-only events) |
+| **Event features** | + Event templates, co-hosts, event links, check-in |
 | **Integrations** | All (Discord, Slack, Gmail, Google Calendar, etc.) |
 | **Support** | Priority + white-label option |
 | **Extras** | Analytics, custom branding |
@@ -186,11 +191,13 @@ Integrations are a natural Pro/Business feature. They require engineering invest
 | **Per-member overrides** | - | ✓ | ✓ |
 | **Role customization** | - | ✓ | ✓ |
 | **Audit logs** | - | - | ✓ |
-| **Active events** | 1 | Unlimited | Unlimited |
+| **Active events** | 3 | Unlimited | Unlimited |
+| **Recurring events** | ✓ | ✓ | ✓ |
 | **Basic RSVPs** | ✓ | ✓ | ✓ |
 | **Multiple polls** | - | ✓ | ✓ |
 | **Capacity & waitlists** | - | ✓ | ✓ |
-| **Recurring events** | - | - | ✓ |
+| **Private events (invite-only)** | - | ✓ | ✓ |
+| **Event templates** | - | - | ✓ |
 | **Co-hosts** | - | - | ✓ |
 | **Check-in** | - | - | ✓ |
 | **Discord integration** | - | ✓ | ✓ |
@@ -263,7 +270,7 @@ These are the real-world situations that drive upgrades:
 | Trigger | Free → Pro | Pro → Business |
 |---------|------------|----------------|
 | **Storage** | "We hit 2GB after 3 events" | "We need 50GB for our photo archive" |
-| **Events** | "We need to plan 2 events simultaneously" | "We want recurring weekly events" |
+| **Events** | "We need more than 3 active events" | "We want event templates and check-in" |
 | **RBAC** | "We need to restrict a specific pledge" | "We need audit logs for compliance" |
 | **Integrations** | "We want Discord sync" | "We need Slack for work" |
 | **Scale** | "We grew past 50 members" | N/A |
@@ -301,7 +308,7 @@ Is the tribe commercial (gym, hospitality, coworking)?
 - NPS 9-10 from 60%+ of community leaders
 
 **Pricing:**
-- Free: 50 members, 2GB storage, 1 event, no RBAC overrides
+- Free: 50 members, 2GB storage, 3 events + recurring, no RBAC overrides
 - Pro: $19/month - unlimited members/events, 10GB, full RBAC, integrations
 
 ### Phase 4: Introduce Business Tier (Month 7+)
@@ -397,7 +404,7 @@ Hi [Leader Name],
 Your community is growing! We're introducing Tribe Pro for communities that need more.
 
 **Tribe Free (You're here - no change):**
-- 50 members, 2GB storage, 1 active event
+- 50 members, 2GB storage, 3 active events + recurring
 - Perfect for getting started
 
 **NEW: Tribe Pro ($19/month):**
