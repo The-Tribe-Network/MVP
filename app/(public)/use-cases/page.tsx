@@ -4,8 +4,12 @@ import UseCasesPageContent from "@/app-pages/marketing/use-cases";
 export const metadata: Metadata = {
   title: "Use Cases",
   description:
-    "See how Tribe works for diaspora communities, Greek life organizations, fitness groups, and hospitality VIP lists. Real solutions for real communities.",
+    "See how Tribe works for groups and communities of all kinds. Real solutions for real communities that gather in person.",
   keywords: [
+    "social group app",
+    "club platform",
+    "community organization app",
+    "group management",
     "diaspora community app",
     "fraternity sorority platform",
     "Greek life organization",
@@ -17,12 +21,12 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Use Cases - Tribe",
     description:
-      "From diaspora communities to Greek life, fitness groups to VIP lists. See how Tribe works for your community.",
+      "For groups and communities that gather in person. See how Tribe works for communities like yours.",
   },
   twitter: {
     title: "Use Cases - Tribe",
     description:
-      "Diaspora communities, Greek life, fitness groups, hospitality VIP lists. Tribe works for all of them.",
+      "For groups and communities that gather in person. See how Tribe works for you.",
   },
 };
 

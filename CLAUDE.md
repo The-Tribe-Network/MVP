@@ -4,19 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Tribe** is a utility-first community organization platform designed for existing, high-density groups that need better tools than GroupMe and Instagram. Built with Next.js 15, TypeScript, Better-Auth, Drizzle ORM, and TanStack Query.
+**Tribe** is a utility-first community organization platform. For product context, target users, features, and business rationale, see **`lib/docs/MVP_PRD_2025.md`**.
+
+**Tech Stack**: Next.js 15, TypeScript, Better-Auth, Drizzle ORM (PostgreSQL/Neon), TanStack Query, Cloudinary, Resend
 
 **MVP Status**: Production-Ready
-
-**Core Features**:
-- **Granular RBAC**: Role-based access control with 20+ per-member permission overrides
-- **Superior Photo Archiving**: Organized albums and media management ("The Vault" - the sticky feature)
-- **Structured Events**: Dedicated RSVP system with polls for real-world coordination
-- **Posts & Timeline**: Rich text posts with comments, likes, nested replies
-- **Privacy-First**: Private, invite-only communities with complete access control
-- **Discover**: Find and explore tribes (infrastructure for future public tribes)
-
-**Target Users**: Fraternities/Sororities, Hospitality VIP lists, existing high-density communities
 
 ## Development Commands
 
@@ -666,11 +658,16 @@ There is a `socket-server/` directory for real-time messaging (Socket.IO). This 
 
 ## Documentation Files
 
-- `docs/MVP_PRD.md` - Minimum viable product requirements
-- `docs/PRD.md` - Full product requirements document
-- `docs/PERFORMANCE_OPTIMIZATIONS.md` - Database query optimization guide
-- `docs/PHASE_1_OPTIMIZATIONS.md`, `docs/PHASE_2_OPTIMIZATIONS.md` - Implementation phases
-- `docs/google_mvp_prd.md` - Google-specific MVP requirements
+### Product & Business (source of truth for non-technical context)
+- **`lib/docs/MVP_PRD_2025.md`** - Product requirements, target users, features, roadmap
+- `lib/docs/GTM_STRATEGY.md` - Go-to-market strategy
+- `lib/docs/PRICING_STRATEGY.md` - Pricing strategy
+
+### Technical Guides (`.claude/` directory)
+- `.claude/tanstack-query-guide.md` - TanStack Query patterns
+- `.claude/form-architecture-guide.md` - Form handling patterns
+- `.claude/navigation-guide.md` - Breadcrumb/navigation patterns
+- `.claude/commands/` - Task-specific guidance (backend, frontend, forms, tanstack-query)
 
 ## Anti-Patterns (NEVER DO)
 

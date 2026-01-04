@@ -13,7 +13,7 @@ export function FeaturesPreview() {
     {
       icon: Users,
       title: "Built for Communities",
-      description: "Diaspora groups, Greek life, gyms, VIP lists. Made for real people.",
+      description: "Clubs, teams, churches, gyms, VIP lists, and more. Made for real people.",
     },
     {
       icon: Bell,
