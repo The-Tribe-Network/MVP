@@ -11,8 +11,9 @@ import {
   UserCog,
   Settings,
   Users,
-  BarChart3,
+  Lock,
   type LucideIcon,
+  BarChart3,
 } from "lucide-react";
 import Image from "next/image";
 import { useTheme } from "next-themes";
@@ -101,7 +102,7 @@ export function SolutionSection() {
       icon: Calendar,
       title: "Structured Events",
       description:
-        "Stop using Google Forms for RSVPs. Tribe's event system provides the infrastructure you need to coordinate in real life.",
+        "Stop using Google Forms for RSVPs. Tribe's event system provides the infrastructure you need to coordinate in real life — including private, invite-only events.",
       highlight: "Event Coordination",
       image: `/app-screenshots-1024/event_detail_${currentTheme}.png`,
       subFeatures: [
@@ -114,6 +115,11 @@ export function SolutionSection() {
           icon: BarChart3,
           title: "Event Polling",
           description: "Pizza or wings? Keep it democratic, let the community decide.",
+        },
+        {
+          icon: Lock,
+          title: "Private Events & Invites",
+          description: "Host invite-only events for select members. Perfect for exec meetings, VIP gatherings, or smaller groups.",
         },
         {
           icon: Users,

@@ -9,6 +9,7 @@ import {
   Check,
   X,
   HelpCircle,
+  Lock,
 } from "lucide-react";
 import Image from "next/image";
 
@@ -29,16 +30,22 @@ export function EventRSVPFeature() {
         "Going, not going, maybe. See exactly who's attending with clear commitment tracking.",
     },
     {
-      icon: Users,
-      title: "Capacity Limits & Waitlists",
-      description:
-        "Set max attendees and automatically manage waitlists. First come, first served — fairly.",
-    },
-    {
       icon: Vote,
       title: "Date Polling",
       description:
         "Can't decide on a date? Let members vote. Find the time that works for everyone.",
+    },
+    {
+      icon: Lock,
+      title: "Private Events & Invites",
+      description:
+        "Host invite-only events for select members. Perfect for exec meetings, VIP gatherings, or smaller groups within your community.",
+    },
+    {
+      icon: Users,
+      title: "Capacity Limits & Waitlists",
+      description:
+        "Set max attendees and automatically manage waitlists. First come, first served — fairly.",
     },
     {
       icon: Clock,
