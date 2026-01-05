@@ -89,9 +89,12 @@ export {
   messageRead,
 } from "@/lib/database/schemas/message";
 
-// Waitlist table
+// Waitlist tables and enums
 export {
   waitlist,
+  waitlistSurvey,
+  surveyRoleEnum,
+  surveyPricingEnum,
 } from "@/lib/database/schemas/waitlist";
 
 // Relations

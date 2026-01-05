@@ -18,11 +18,20 @@ export const metadata: Metadata = {
     title: "Features - Tribe",
     description:
       "Photo archives, event RSVPs, activity feeds, and granular permissions. Everything your community needs, nothing it doesn't.",
+    images: [
+      {
+        url: "/app-screenshots-1024/media_browse_light.png",
+        width: 1024,
+        height: 768,
+        alt: "Tribe media browser showing organized photo albums and galleries",
+      },
+    ],
   },
   twitter: {
     title: "Features - Tribe",
     description:
       "Photo archives, event RSVPs, activity feeds, and granular permissions for your community.",
+    images: ["/app-screenshots-1024/media_browse_light.png"],
   },
 };
 

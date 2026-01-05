@@ -1,6 +1,12 @@
 import { appName } from '../../client';
 
-export function generateWaitlistEmailText() {
+export function generateWaitlistEmailText({
+  to
+}: {
+  to: string;
+}) {
+  const surveyUrl = `https://tribehq.io/survey?email=${encodeURIComponent(to)}`;
+
   return `
 Welcome to the ${appName} Waitlist!
 
@@ -13,11 +19,11 @@ What to expect:
 - Exclusive updates on our progress
 - A chance to shape the product
 
-In the meantime, stay tuned for updates!
+Help us build ${appName} for you!
 
-Want to learn more about ${appName}? Visit our homepage to discover how we're helping communities thrive.
+Take our quick 2-minute survey to share your needs. Your feedback will directly shape the features we build.
 
-Learn more: https://tribehq.io
+Take the survey: ${surveyUrl}
 
 The ${appName} Team
 

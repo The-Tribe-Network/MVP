@@ -50,11 +50,20 @@ export const metadata: Metadata = {
     title: "Tribe - Community Organization, Perfected",
     description: "The privacy-first platform for communities that deserve better than GroupMe chaos and Instagram ephemerality.",
     siteName: "Tribe",
+    images: [
+      {
+        url: "/app-screenshots-1024/tribe_dashboard_light.png",
+        width: 1024,
+        height: 768,
+        alt: "Tribe community dashboard showing posts, events, and member activity",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Tribe - Community Organization, Perfected",
     description: "Privacy-first community platform with photo archives, event management, and granular permissions.",
+    images: ["/app-screenshots-1024/tribe_dashboard_light.png"],
   },
   robots: {
     index: true,

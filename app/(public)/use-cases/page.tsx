@@ -22,11 +22,20 @@ export const metadata: Metadata = {
     title: "Use Cases - Tribe",
     description:
       "For groups and communities that gather in person. See how Tribe works for communities like yours.",
+    images: [
+      {
+        url: "/app-screenshots-1024/event_detail_light.png",
+        width: 1024,
+        height: 768,
+        alt: "Tribe event detail page showing RSVPs and event coordination",
+      },
+    ],
   },
   twitter: {
     title: "Use Cases - Tribe",
     description:
       "For groups and communities that gather in person. See how Tribe works for you.",
+    images: ["/app-screenshots-1024/event_detail_light.png"],
   },
 };
 

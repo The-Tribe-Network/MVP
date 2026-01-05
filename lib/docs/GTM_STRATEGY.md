@@ -250,6 +250,18 @@ Content supports all channels by providing shareable material.
 **DM - Soft pitch:**
 > Thanks for sharing your experience! We're actually building a platform called Tribe specifically for communities like yours. It's focused on photo organization, event coordination, and giving groups a single home instead of being scattered across platforms. Would love your feedback if you have a minute to check it out: [waitlist link]
 
+### Website SEO Content
+
+For website meta descriptions, keywords, and marketing page content, follow the SEO Content Guidelines:
+
+**Reference:** `.claude/seo-guide.md`
+
+**Key principles:**
+- **Short-form content** (meta descriptions, OG/Twitter tags, hero subheadings): Use general terms only ("groups and communities that gather in person")
+- **Long-form content** (keyword arrays, FAQs, body copy): Can include specific niche examples for SEO value
+- **Keyword ordering**: General terms first, niche terms last in keyword arrays
+- **No single community type should dominate** short-form messaging
+
 ---
 
 ## Waitlist Goals
