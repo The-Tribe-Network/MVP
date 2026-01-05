@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
@@ -13,7 +14,8 @@ import {
 } from "@/components/ui/form";
 import { useWaitlistSignup } from "@/lib/hooks/use-waitlist";
 import { waitlistSchema, type WaitlistInput } from "@/lib/validations/waitlist";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, ClipboardList } from "lucide-react";
+import Link from "next/link";
 
 interface WaitlistFormProps {
   source?: string;
@@ -26,6 +28,7 @@ export function WaitlistForm({
   variant = "inline",
   className = "",
 }: WaitlistFormProps) {
+  const [submittedEmail, setSubmittedEmail] = useState<string | null>(null);
   const { mutate: signup, isPending, isSuccess } = useWaitlistSignup();
 
   const form = useForm<WaitlistInput>({
@@ -34,6 +37,8 @@ export function WaitlistForm({
   });
 
   const onSubmit = (data: WaitlistInput) => {
+    // Store the email before resetting the form
+    setSubmittedEmail(data.email);
     signup(data, {
       onSuccess: () => {
         form.reset({ email: "", source });
@@ -41,16 +46,23 @@ export function WaitlistForm({
     });
   };
 
-  if (isSuccess) {
+  if (isSuccess && submittedEmail) {
+    const surveyUrl = `/survey?email=${encodeURIComponent(submittedEmail)}`;
     return (
       <div className={`text-center py-6 ${className}`}>
         <div className="flex items-center justify-center gap-3 mb-2">
           <CheckCircle2 className="w-6 h-6 text-primary" />
           <p className="text-lg font-medium text-primary">You're on the list!</p>
         </div>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground mb-4">
           Check your email for confirmation.
         </p>
+        <Link href={surveyUrl}>
+          <Button variant="outline" size="sm" className="gap-2">
+            <ClipboardList className="w-4 h-4" />
+            Help us build Tribe for you (2 min survey)
+          </Button>
+        </Link>
       </div>
     );
   }

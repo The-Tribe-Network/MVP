@@ -667,6 +667,7 @@ There is a `socket-server/` directory for real-time messaging (Socket.IO). This 
 - `.claude/tanstack-query-guide.md` - TanStack Query patterns
 - `.claude/form-architecture-guide.md` - Form handling patterns
 - `.claude/navigation-guide.md` - Breadcrumb/navigation patterns
+- `.claude/seo-guide.md` - SEO content and keyword placement strategy
 - `.claude/commands/` - Task-specific guidance (backend, frontend, forms, tanstack-query)
 
 ## Anti-Patterns (NEVER DO)

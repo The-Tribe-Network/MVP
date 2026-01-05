@@ -5,12 +5,12 @@ import { generateWaitlistEmailText } from './template-text';
 
 export async function sendWaitlistEmail(data: WaitlistEmailData) {
   const { to } = data;
-  
+
   return await resend.emails.send({
     from: fromEmail,
     to,
     subject: `Welcome to the ${appName} Waitlist!`,
     html: generateWaitlistEmailHtml({ to }),
-    text: generateWaitlistEmailText(),
+    text: generateWaitlistEmailText({ to }),
   });
 }

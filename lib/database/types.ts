@@ -45,6 +45,9 @@ import {
   message,
   messageRead,
 } from "./schemas/message";
+import {
+  waitlistSurvey,
+} from "./schemas/waitlist";
 import { auth } from "@/lib/clients/auth";
 import { session, user } from "./schemas/auth";
 
@@ -493,4 +496,10 @@ export type SessionWithDevice = SelectSession & {
   isCurrentSession: boolean;
   lastActive: Date;
 };
+
+// ============================================
+// Waitlist Survey types
+// ============================================
+export type WaitlistSurvey = InferSelectModel<typeof waitlistSurvey>;
+export type WaitlistSurveyInsert = InferInsertModel<typeof waitlistSurvey>;
 

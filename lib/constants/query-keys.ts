@@ -153,6 +153,7 @@ export const queryKeys = {
   // Waitlist queries
   waitlist: {
     all: ["waitlist"] as const,
+    survey: (email: string) => ["waitlist", "survey", email] as const,
   },
 } as const;
 

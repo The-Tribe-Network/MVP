@@ -1,10 +1,12 @@
 import { appName } from '../../client';
 
-export function generateWaitlistEmailHtml({ 
-  to 
-}: { 
-  to: string; 
+export function generateWaitlistEmailHtml({
+  to
+}: {
+  to: string;
 }) {
+  const surveyUrl = `https://tribehq.io/survey?email=${encodeURIComponent(to)}`;
+
   return `
     <!DOCTYPE html>
     <html>
@@ -53,15 +55,15 @@ export function generateWaitlistEmailHtml({
           </ul>
 
           <p>
-            In the meantime, stay tuned for updates!
+            <strong>Help us build ${appName} for you!</strong>
           </p>
 
           <p>
-            Want to learn more about ${appName}? Visit our homepage to discover how we're helping communities thrive.
+            Take our quick 2-minute survey to share your needs. Your feedback will directly shape the features we build.
           </p>
 
           <div class="button-container">
-            <a href="https://tribehq.io" class="button">Learn More About ${appName}</a>
+            <a href="${surveyUrl}" class="button">Take a Quick Survey (2 min)</a>
           </div>
 
           <div class="footer">

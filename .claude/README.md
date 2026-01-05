@@ -68,6 +68,15 @@ Specialized for building forms with react-hook-form:
 
 ## Guides (Reference Documentation)
 
+### SEO Guide
+Content and keyword placement strategy for marketing pages:
+- Short-form vs long-form content rules
+- General terms vs niche examples placement
+- Keyword array ordering
+- SEO file locations
+
+**Reference:** `.claude/seo-guide.md`
+
 ### Navigation Guide
 Comprehensive guide for subpage headers and breadcrumb navigation:
 - SubpageHeader component usage

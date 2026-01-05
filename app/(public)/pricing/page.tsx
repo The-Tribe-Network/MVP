@@ -15,11 +15,20 @@ export const metadata: Metadata = {
     title: "Pricing - Tribe",
     description:
       "Simple, transparent pricing. Start free, scale when you need to. No hidden fees.",
+    images: [
+      {
+        url: "/app-screenshots-1024/rbac_light.png",
+        width: 1024,
+        height: 768,
+        alt: "Tribe permission controls and role-based access settings",
+      },
+    ],
   },
   twitter: {
     title: "Pricing - Tribe",
     description:
       "Simple, transparent pricing for your community. Start free today.",
+    images: ["/app-screenshots-1024/rbac_light.png"],
   },
 };
 
