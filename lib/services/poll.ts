@@ -1,7 +1,7 @@
 import { db } from "@/lib/database/client";
 import { poll, pollOption, pollVote } from "@/lib/database/schemas/poll";
 import { user } from "@/lib/database/schemas/auth";
-import { eq, and, sql, inArray } from "drizzle-orm";
+import { eq, and, sql, inArray, type SQL } from "drizzle-orm";
 import type { PollWithDetails, PollOptionWithVotes } from "@/lib/database/types";
 
 /**
@@ -10,6 +10,24 @@ import type { PollWithDetails, PollOptionWithVotes } from "@/lib/database/types"
  */
 export async function getEventPolls(
   eventId: string,
+  currentUserId?: string
+): Promise<PollWithDetails[]> {
+  return loadPollsWithDetails(eq(poll.eventId, eventId), currentUserId);
+}
+
+/**
+ * Get polls by id with options, vote counts and the caller's votes (posts that share a poll)
+ */
+export async function getPollsByIds(
+  pollIds: string[],
+  currentUserId?: string
+): Promise<PollWithDetails[]> {
+  if (pollIds.length === 0) return [];
+  return loadPollsWithDetails(inArray(poll.id, pollIds), currentUserId);
+}
+
+async function loadPollsWithDetails(
+  condition: SQL,
   currentUserId?: string
 ): Promise<PollWithDetails[]> {
   // 1. Fetch polls with creator info
@@ -37,7 +55,7 @@ export async function getEventPolls(
     })
     .from(poll)
     .innerJoin(user, eq(poll.createdBy, user.id))
-    .where(eq(poll.eventId, eventId));
+    .where(condition);
 
   if (polls.length === 0) return [];
 

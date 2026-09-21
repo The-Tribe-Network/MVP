@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
-import { createPost, getTribePosts } from "@/lib/services/post";
+import { createPost, getTribePosts, PostInputError } from "@/lib/services/post";
 import { checkTribeMembership } from "@/lib/services/permissions";
-import { createPostSchema, tribeIdParamSchema, validateApiRequest } from "@/lib/validations/post";
+import { createPostSchema, listPostsQuerySchema, tribeIdParamSchema, validateApiRequest } from "@/lib/validations/post";
 
 export async function GET(
   request: NextRequest,
@@ -37,10 +37,19 @@ export async function GET(
 
     // Get pagination and filter params
     const searchParams = request.nextUrl.searchParams;
-    const limit = parseInt(searchParams.get("limit") || "20", 10);
-    const offset = parseInt(searchParams.get("offset") || "0", 10);
-    const sort = (searchParams.get("sort") || "new") as "new" | "hot" | "top";
-    const contentType = (searchParams.get("contentType") || "all") as "all" | "text" | "media" | "announcements";
+    const queryValidation = validateApiRequest(listPostsQuerySchema, {
+      limit: searchParams.get("limit") ?? undefined,
+      offset: searchParams.get("offset") ?? undefined,
+      sort: searchParams.get("sort") ?? undefined,
+      contentType: searchParams.get("contentType") ?? undefined,
+    });
+    if (!queryValidation.success) {
+      return NextResponse.json(
+        { error: "Invalid query parameters", details: queryValidation.error },
+        { status: 400 }
+      );
+    }
+    const { limit, offset, sort, contentType } = queryValidation.data;
 
     // Fetch posts
     const posts = await getTribePosts(
@@ -95,18 +104,13 @@ export async function POST(
     }
 
     // Create post (permission check is done inside createPost)
-    const newPost = await createPost(
-      tribeValidation.data.tribe_id,
-      user.id,
-      validation.data.content,
-      validation.data.addToAlbum,
-      validation.data.mediaId || null,
-      validation.data.albumId || null,
-      validation.data.linkedAlbumId || null,
-    );
+    const newPost = await createPost(tribeValidation.data.tribe_id, user.id, validation.data);
 
     return NextResponse.json(newPost, { status: 201 });
   } catch (error) {
+    if (error instanceof PostInputError) {
+      return NextResponse.json({ error: error.message, code: error.code }, { status: 400 });
+    }
     console.error("Error creating post:", error);
     if (error instanceof Error) {
       if (error.message.includes("permission")) {
