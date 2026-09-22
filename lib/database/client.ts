@@ -11,7 +11,16 @@ config({ path: ".env" }); // or .env.local
 const { DATABASE_URL } = process.env;
 
 const sql = neon(DATABASE_URL!);
-export const db = drizzle({ client: sql, schema });
+const httpDb = drizzle({ client: sql, schema });
+
+/**
+ * HTTP driver for single-statement queries.
+ *
+ * neon-http cannot run transactions: drizzle throws "No transactions support in neon-http driver"
+ * at runtime (TRI-185). `transaction` is removed from the type so the misuse fails typecheck —
+ * multi-statement writes go through `getDbTransaction().transaction(...)` instead.
+ */
+export const db: Omit<typeof httpDb, "transaction"> = httpDb;
 
 let dbTransaction: ReturnType<typeof drizzleServerless> | null = null;
 

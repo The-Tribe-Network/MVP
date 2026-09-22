@@ -1,4 +1,4 @@
-import { db } from "@/lib/database/client";
+import { db, getDbTransaction } from "@/lib/database/client";
 import { tribeInvitation, tribeMember, tribe } from "@/lib/database/schemas/tribe";
 import { user } from "@/lib/database/schemas/auth";
 import { media } from "@/lib/database/schemas/media";
@@ -286,7 +286,8 @@ export async function acceptInvitation(
 
   // Add user as member and update invitation in a transaction
   // OPTIMIZED: Wrapped in transaction to ensure data consistency
-  await db.transaction(async (tx) => {
+  // Must use the WebSocket driver — the neon-http `db` has no transaction support
+  await getDbTransaction().transaction(async (tx) => {
     await tx.insert(tribeMember).values({
       tribeId: invitation.tribeId,
       userId: userId,
