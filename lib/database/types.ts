@@ -334,6 +334,7 @@ export type EventWithDetails = EventWithAttendees & {
   waitlistEnabled?: boolean;
   capacityLimit?: number | null;
   rsvpDeadline?: Date | null;
+  attendeeVisibility?: "all_members" | "count_only" | "hidden";
 };
 
 // Event settings extended types

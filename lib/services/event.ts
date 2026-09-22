@@ -30,6 +30,7 @@ type RsvpRules = {
   capacityLimit: number | null;
   waitlistEnabled: boolean;
   rsvpDeadline: Date | null;
+  attendeeVisibility: "all_members" | "count_only" | "hidden";
 };
 
 // event_settings is created lazily by the web app, so most events have no row: these are the defaults.
@@ -40,6 +41,7 @@ async function rsvpRulesFor(eventId: string): Promise<RsvpRules> {
       capacityLimit: eventSettings.capacityLimit,
       enableWaitlist: eventSettings.enableWaitlist,
       rsvpDeadline: eventSettings.rsvpDeadline,
+      attendeeVisibility: eventSettings.attendeeVisibility,
     })
     .from(eventSettings)
     .where(eq(eventSettings.eventId, eventId))
@@ -49,6 +51,7 @@ async function rsvpRulesFor(eventId: string): Promise<RsvpRules> {
     capacityLimit: row?.capacityLimit ?? null,
     waitlistEnabled: row?.enableWaitlist ?? true,
     rsvpDeadline: row?.rsvpDeadline ?? null,
+    attendeeVisibility: row?.attendeeVisibility ?? "all_members",
   };
 }
 
@@ -380,6 +383,8 @@ export async function getEventById(
     waitlistEnabled: rules.waitlistEnabled,
     capacityLimit: rules.capacityLimit,
     rsvpDeadline: rules.rsvpDeadline,
+    // EVT-17: who may see the list (all members / count only / hidden)
+    attendeeVisibility: rules.attendeeVisibility,
     attendees: [], // Fetch separately if needed
   } as unknown as EventWithDetails;
 }
