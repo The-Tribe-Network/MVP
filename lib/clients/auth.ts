@@ -1,5 +1,6 @@
 import { betterAuth } from "better-auth"
-import { emailOTP, username } from "better-auth/plugins"
+import { emailOTP, username, bearer } from "better-auth/plugins"
+import { expo } from "@better-auth/expo"
 import { nextCookies } from "better-auth/next-js"
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { isProduction } from "@/lib/utils"
@@ -15,7 +16,8 @@ if (!LOCAL_ORIGIN || LOCAL_ORIGIN === undefined || LOCAL_ORIGIN === '' && NODE_E
 };
 
 export const auth = betterAuth({
-  trustedOrigins: [LOCAL_ORIGIN, "http://localhost:3000"],
+  // App schemes for Tribe Mobile (Expo); see tribe-mobile/docs/AUTH.md
+  trustedOrigins: [LOCAL_ORIGIN, "http://localhost:3000", "tribe://", "tribe-dev://", "tribe-preview://", "exp://"],
   database: drizzleAdapter(db, {
     provider: "pg",
     schema: {
@@ -90,7 +92,8 @@ export const auth = betterAuth({
     },
   },
   plugins: [
-    nextCookies(),
+    expo(),
+    bearer(),
     // username({
     //   maxUsernameLength: 30,
 
@@ -112,6 +115,7 @@ export const auth = betterAuth({
         }
       },
     }),
+    nextCookies(), // must stay last so cookies set by other plugins reach Next
   ],
   secret: process.env.BETTER_AUTH_SECRET as string,
   baseURL: process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_APP_URL,

@@ -1,7 +1,7 @@
 "use client"
 
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { signIn, signUp, forgetPassword, resetPassword, signOut } from "@/lib/clients/auth-client"
+import { signIn, signUp, requestPasswordReset, resetPassword, signOut } from "@/lib/clients/auth-client"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { AUTH_MESSAGES } from "@/lib/constants/auth"
@@ -70,7 +70,7 @@ export function useSignUpMutation() {
 export function useForgotPasswordMutation() {
   return useMutation({
     mutationFn: async (data: { email: string }) => {
-      const result = await forgetPassword(data)
+      const result = await requestPasswordReset(data)
       if (result.error) {
         throw new Error(result.error.message)
       }
