@@ -36,6 +36,9 @@ export const postKind = pgEnum("post_kind", [
   "announcement",
 ]);
 
+// What a saved draft is building (TRI-168); the payload is the matching create input in progress
+export const draftKind = pgEnum("draft_kind", ["post", "event"]);
+
 export const invitationStatus = pgEnum("invitation_status", [
   "pending",
   "accepted",

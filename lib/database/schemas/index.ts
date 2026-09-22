@@ -23,6 +23,7 @@ export {
   attendeeListVisibility,
   pollCreationPermission,
   pollResultsVisibility,
+  draftKind,
 } from "@/lib/database/schemas/enums";
 
 // Tribe tables
@@ -79,6 +80,9 @@ export {
   notification,
 } from "@/lib/database/schemas/activity";
 
+// Draft tables
+export { draft } from "@/lib/database/schemas/draft";
+
 // Hashtag tables
 export {
   hashtag,
@@ -132,5 +136,6 @@ export {
   pollRelations,
   pollOptionRelations,
   pollVoteRelations,
+  draftRelations,
 } from "@/lib/database/schemas/relations";
 

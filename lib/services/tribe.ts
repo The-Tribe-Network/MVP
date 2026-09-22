@@ -1,4 +1,5 @@
 import { db, getDbTransaction } from "@/lib/database/client";
+import { deleteDraftsForMember } from "@/lib/services/draft";
 import { tribe, tribeMember, tribeMemberPermission, tribeSettings } from "@/lib/database/schemas/tribe";
 import { user } from "@/lib/database/schemas/auth";
 import { media } from "@/lib/database/schemas/media";
@@ -217,10 +218,11 @@ export async function leaveTribe(
     };
   }
 
-  // Delete the member record
+  // Delete the member record, and the drafts they were writing for this tribe (TRI-168)
   await db
     .delete(tribeMember)
     .where(and(eq(tribeMember.tribeId, tribeId), eq(tribeMember.userId, userId)));
+  await deleteDraftsForMember(userId, tribeId);
 
   return { success: true };
 }
