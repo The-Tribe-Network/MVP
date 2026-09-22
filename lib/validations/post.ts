@@ -8,6 +8,11 @@ export const POST_MAX_PHOTOS = 10;
 // Create post schema
 // `mediaIds` is the canonical photo list; `mediaId` is the legacy single-image field and is read
 // only when `mediaIds` is absent. Content may be empty when the post carries an attachment.
+//
+// `addToAlbum` decides whether the photos also go into the tribe's media library (`album_media`),
+// which is what `GET /tribes/{tribeId}/media` lists. With `albumId` they are filed in that album;
+// without one they land in the general library (`album_id` null, `GET /media?albumId=null`).
+// `false` leaves them on the post only. No album picker is needed for the default case.
 export const createPostSchema = z
   .object({
     content: z
