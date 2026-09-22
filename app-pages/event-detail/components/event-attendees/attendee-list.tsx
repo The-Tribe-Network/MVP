@@ -1,11 +1,11 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Crown } from 'lucide-react'
-import type { EventAttendee, User } from '@/lib/database/types'
+import type { EventAttendeeWithUser } from '@/lib/database/types'
 
 interface AttendeeListProps {
-  goingAttendees: (EventAttendee & { user: User })[]
-  maybeAttendees: (EventAttendee & { user: User })[]
+  goingAttendees: EventAttendeeWithUser[]
+  maybeAttendees: EventAttendeeWithUser[]
 }
 
 export function AttendeeList({ goingAttendees, maybeAttendees }: AttendeeListProps) {

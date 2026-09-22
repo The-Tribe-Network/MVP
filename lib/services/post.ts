@@ -12,6 +12,7 @@ import type { CreatePostInput } from "@/lib/validations/post";
 import { getMemberWithPermissions } from "./permissions";
 import { getTribeSettings } from "./tribe-settings";
 import { getPollsByIds } from "./poll";
+import { userWithUsernameColumns } from "@/lib/database/user-columns";
 
 /**
  * Check if user can post in a tribe
@@ -284,20 +285,7 @@ const postColumns = {
   updatedAt: post.updatedAt,
 };
 
-const authorColumns = {
-  id: user.id,
-  name: user.name,
-  email: user.email,
-  emailVerified: user.emailVerified,
-  image: user.image,
-  username: user.username,
-  createdAt: user.createdAt,
-  updatedAt: user.updatedAt,
-  displayName: user.displayName,
-  bio: user.bio,
-  location: user.location,
-  profileCompleted: user.profileCompleted,
-};
+const authorColumns = userWithUsernameColumns;
 
 // `kind` is written by createPost, so every feed filter is a plain WHERE and pages stay stable
 function contentTypeCondition(contentType: PostContentType): SQL | undefined {
@@ -550,7 +538,7 @@ export async function getTribePosts(
   const posts = await postsQuery.limit(limit).offset(offset);
 
   return attachPostMetadata(
-    posts.map((p) => ({ ...p, author: { ...p.author, profileCompleted: p.author.profileCompleted || false } })),
+    posts,
     currentUserId
   );
 }
@@ -570,10 +558,7 @@ export async function getPostById(postId: string): Promise<PostWithAuthor | null
     return null;
   }
 
-  return {
-    ...postData,
-    author: { ...postData.author, profileCompleted: postData.author.profileCompleted || false },
-  };
+  return postData;
 }
 
 /**

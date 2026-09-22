@@ -5,6 +5,7 @@ import { tribe } from "@/lib/database/schemas/tribe";
 import { post } from "@/lib/database/schemas/post";
 import { eq, desc, and, inArray } from "drizzle-orm";
 import type { Activity, ActivityInsert, ActivityWithUser } from "@/lib/database/types";
+import { userPreviewColumns } from "@/lib/database/user-columns";
 
 /**
  * Check if a like count is a milestone (1, 5, 10, 15, 20, etc.)
@@ -158,20 +159,7 @@ export async function getTribeActivities(
       action: activity.action,
       preview: activity.preview,
       createdAt: activity.createdAt,
-      user: {
-        id: user.id,
-        name: user.name,
-        image: user.image,
-        username: user.username,
-        displayName: user.displayName,
-        bio: user.bio,
-        location: user.location,
-        profileCompleted: user.profileCompleted,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-        email: user.email,
-        emailVerified: user.emailVerified,
-      },
+      user: userPreviewColumns,
       tribe: {
         id: tribe.id,
         name: tribe.name,
@@ -232,20 +220,7 @@ export async function getUserTribesActivities(
       action: activity.action,
       preview: activity.preview,
       createdAt: activity.createdAt,
-      user: {
-        id: user.id,
-        name: user.name,
-        image: user.image,
-        username: user.username,
-        displayName: user.displayName,
-        bio: user.bio,
-        location: user.location,
-        profileCompleted: user.profileCompleted,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-        email: user.email,
-        emailVerified: user.emailVerified,
-      },
+      user: userPreviewColumns,
       tribe: {
         id: tribe.id,
         name: tribe.name,
@@ -311,20 +286,7 @@ export async function getUserActivities(
       action: activity.action,
       preview: activity.preview,
       createdAt: activity.createdAt,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        emailVerified: user.emailVerified,
-        image: user.image,
-        username: user.username,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-        displayName: user.displayName,
-        bio: user.bio,
-        location: user.location,
-        profileCompleted: user.profileCompleted,
-      },
+      user: userPreviewColumns,
       tribe: {
         id: tribe.id,
         name: tribe.name,

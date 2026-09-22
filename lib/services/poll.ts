@@ -3,6 +3,7 @@ import { poll, pollOption, pollVote } from "@/lib/database/schemas/poll";
 import { user } from "@/lib/database/schemas/auth";
 import { eq, and, sql, inArray, type SQL } from "drizzle-orm";
 import type { PollWithDetails, PollOptionWithVotes } from "@/lib/database/types";
+import { userPreviewColumns } from "@/lib/database/user-columns";
 
 /**
  * Get all polls for an event with vote details
@@ -42,16 +43,7 @@ async function loadPollsWithDetails(
       createdBy: poll.createdBy,
       createdAt: poll.createdAt,
       updatedAt: poll.updatedAt,
-      creator: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        emailVerified: user.emailVerified,
-        image: user.image,
-        username: user.username,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-      },
+      creator: userPreviewColumns,
     })
     .from(poll)
     .innerJoin(user, eq(poll.createdBy, user.id))
@@ -89,16 +81,7 @@ async function loadPollsWithDetails(
           .select({
             optionId: pollVote.optionId,
             pollId: pollVote.pollId,
-            user: {
-              id: user.id,
-              name: user.name,
-              email: user.email,
-              emailVerified: user.emailVerified,
-              image: user.image,
-              username: user.username,
-              createdAt: user.createdAt,
-              updatedAt: user.updatedAt,
-            },
+            user: userPreviewColumns,
           })
           .from(pollVote)
           .innerJoin(user, eq(pollVote.userId, user.id))

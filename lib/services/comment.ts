@@ -8,6 +8,7 @@ import type { Comment, CommentInsert, CommentWithAuthor } from "@/lib/database/t
 import { getMemberWithPermissions } from "./permissions";
 import { getPostById } from "./post";
 import { getEventById } from "./event";
+import { userWithProfileColumns } from "@/lib/database/user-columns";
 
 /**
  * Check if user can moderate comments (can edit/delete any comment)
@@ -90,20 +91,7 @@ export async function getPostComments(
       parentCommentId: comment.parentCommentId,
       createdAt: comment.createdAt,
       updatedAt: comment.updatedAt,
-      author: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        emailVerified: user.emailVerified,
-        image: user.image,
-        username: user.username,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-        displayName: user.displayName,
-        bio: user.bio,
-        location: user.location,
-        profileCompleted: user.profileCompleted,
-      },
+      author: userWithProfileColumns,
     })
     .from(comment)
     .innerJoin(user, eq(comment.authorId, user.id))
@@ -169,20 +157,7 @@ export async function getCommentById(commentId: string): Promise<CommentWithAuth
       parentCommentId: comment.parentCommentId,
       createdAt: comment.createdAt,
       updatedAt: comment.updatedAt,
-      author: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        emailVerified: user.emailVerified,
-        image: user.image,
-        username: user.username,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-        displayName: user.displayName,
-        bio: user.bio,
-        location: user.location,
-        profileCompleted: user.profileCompleted,
-      },
+      author: userWithProfileColumns,
     })
     .from(comment)
     .innerJoin(user, eq(comment.authorId, user.id))
@@ -227,20 +202,7 @@ export async function updateComment(
       parentCommentId: comment.parentCommentId,
       createdAt: comment.createdAt,
       updatedAt: comment.updatedAt,
-      author: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        emailVerified: user.emailVerified,
-        image: user.image,
-        username: user.username,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-        displayName: user.displayName,
-        bio: user.bio,
-        location: user.location,
-        profileCompleted: user.profileCompleted,
-      },
+      author: userWithProfileColumns,
       post: {
         tribeId: post.tribeId,
       },
@@ -426,20 +388,7 @@ export async function getEventComments(
       parentCommentId: comment.parentCommentId,
       createdAt: comment.createdAt,
       updatedAt: comment.updatedAt,
-      author: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        emailVerified: user.emailVerified,
-        image: user.image,
-        username: user.username,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-        displayName: user.displayName,
-        bio: user.bio,
-        location: user.location,
-        profileCompleted: user.profileCompleted,
-      },
+      author: userWithProfileColumns,
     })
     .from(comment)
     .innerJoin(user, eq(comment.authorId, user.id))

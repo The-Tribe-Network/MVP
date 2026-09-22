@@ -6,6 +6,7 @@ import { poll, pollOption } from "@/lib/database/schemas/poll";
 import { activity } from "@/lib/database/schemas/activity";
 import { eq, and, desc, sql, inArray, count, asc } from "drizzle-orm";
 import { createActivity } from "./activity";
+import { userPreviewColumns, userWithUsernameColumns } from "@/lib/database/user-columns";
 import type {
   EventWithCreator,
   EventWithDetails,
@@ -113,16 +114,7 @@ export async function createEvent(
         createdBy: event.createdBy,
         createdAt: event.createdAt,
         updatedAt: event.updatedAt,
-        creator: {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          emailVerified: user.emailVerified,
-          image: user.image,
-          username: user.username,
-          createdAt: user.createdAt,
-          updatedAt: user.updatedAt,
-        },
+        creator: userPreviewColumns,
         tribe: {
           id: tribe.id,
           name: tribe.name,
@@ -187,16 +179,7 @@ export async function getTribeEvents(
       createdBy: event.createdBy,
       createdAt: event.createdAt,
       updatedAt: event.updatedAt,
-      creator: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        emailVerified: user.emailVerified,
-        image: user.image,
-        username: user.username,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-      },
+      creator: userPreviewColumns,
       tribe: {
         id: tribe.id,
         name: tribe.name,
@@ -293,16 +276,7 @@ export async function getEventById(
         createdBy: event.createdBy,
         createdAt: event.createdAt,
         updatedAt: event.updatedAt,
-        creator: {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          emailVerified: user.emailVerified,
-          image: user.image,
-          username: user.username,
-          createdAt: user.createdAt,
-          updatedAt: user.updatedAt,
-        },
+        creator: userPreviewColumns,
         tribe: {
           id: tribe.id,
           name: tribe.name,
@@ -491,16 +465,7 @@ export async function getEventAttendees(eventId: string): Promise<EventAttendeeW
       status: eventAttendee.status,
       createdAt: eventAttendee.createdAt,
       updatedAt: eventAttendee.updatedAt,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        emailVerified: user.emailVerified,
-        image: user.image,
-        username: user.username,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-      },
+      user: userWithUsernameColumns,
     })
     .from(eventAttendee)
     .innerJoin(user, eq(eventAttendee.userId, user.id))

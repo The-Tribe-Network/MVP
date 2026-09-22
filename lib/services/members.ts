@@ -6,6 +6,7 @@ import { getMemberWithPermissions } from "./permissions";
 import { checkPermission } from "./role-permissions";
 import type { PaginatedMembers, MemberListItem } from "@/lib/database/types";
 import type { MemberListQuery, UpdateMemberPermissionsInput } from "@/lib/validations/members";
+import { userBasicColumns } from "@/lib/database/user-columns";
 
 /**
  * Role hierarchy for permission checks
@@ -120,13 +121,7 @@ export async function getAllTribeMembers(
       id: tribeMember.id,
       role: tribeMember.role,
       joinedAt: tribeMember.joinedAt,
-      user: {
-        id: user.id,
-        name: user.name,
-        username: user.username,
-        email: user.email,
-        image: user.image,
-      },
+      user: userBasicColumns,
       hasCustomPermissions: sql<boolean>`CASE WHEN ${tribeMemberPermission.id} IS NOT NULL THEN true ELSE false END`,
       restrictionReason: tribeMemberPermission.restrictionReason,
     })

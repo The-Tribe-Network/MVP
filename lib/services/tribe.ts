@@ -7,6 +7,7 @@ import { eq, count, and, inArray, aliasedTable, sql } from "drizzle-orm";
 import type { TribeInsert, TribeWithCreator, TribeWithMembers, Tribe } from "@/lib/database/types";
 import { getMemberWithPermissions } from "./permissions";
 import type { UpdateTribeInput } from "@/lib/validations/tribe";
+import { userPreviewColumns } from "@/lib/database/user-columns";
 
 /**
  * Create a new tribe and add the creator as owner
@@ -120,20 +121,7 @@ export async function getTribeById(id: string, includeAvatar: boolean = false): 
       updatedAt: tribe.updatedAt,
       avatarUrl: avatarMedia.fileUrl,
       bannerUrl: bannerMedia.fileUrl,
-      creator: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        emailVerified: user.emailVerified,
-        image: user.image,
-        username: user.username,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-        displayName: user.displayName,
-        bio: user.bio,
-        location: user.location,
-        profileCompleted: user.profileCompleted,
-      },
+      creator: userPreviewColumns,
     })
     .from(tribe)
     .leftJoin(avatarMedia, eq(tribe.avatar, avatarMedia.id))
