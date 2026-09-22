@@ -466,6 +466,23 @@ export async function getTribePosts(
 }
 
 /**
+ * Posts by id with author, counts, like state, photos, linked album, event and poll — the shape
+ * of a feed row — in no particular order. A constant number of queries for any number of posts.
+ */
+export async function getPostsByIds(
+  postIds: string[],
+  currentUserId?: string
+): Promise<PostWithMetadata[]> {
+  if (postIds.length === 0) return [];
+  const posts = await db
+    .select({ ...postColumns, author: authorColumns })
+    .from(post)
+    .innerJoin(user, eq(post.authorId, user.id))
+    .where(inArray(post.id, postIds));
+  return attachPostMetadata(posts, currentUserId);
+}
+
+/**
  * Get a single post by ID with author info
  */
 export async function getPostById(postId: string): Promise<PostWithAuthor | null> {

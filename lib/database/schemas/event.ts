@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, unique, uuid, integer, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, unique, uuid, integer, boolean, index } from "drizzle-orm/pg-core";
 import { tribe } from "./tribe";
 import { user } from "./auth";
 import { album } from "./media";
@@ -31,7 +31,10 @@ export const event = pgTable("event", {
     .defaultNow()
     .$onUpdate(() => new Date())
     .notNull(),
-});
+}, (table) => ({
+  // GET /me/agenda: the caller's tribes × a date range (TRI-6, migrations/tri6-agenda-index.sql)
+  tribeStartIdx: index("idx_event_tribe_start").on(table.tribeId, table.startDate),
+}));
 
 export const eventAttendee = pgTable("event_attendee", {
   id: uuid("id").primaryKey().defaultRandom(),

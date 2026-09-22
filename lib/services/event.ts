@@ -4,8 +4,9 @@ import { user } from "@/lib/database/schemas/auth";
 import { tribe } from "@/lib/database/schemas/tribe";
 import { media } from "@/lib/database/schemas/media";
 import { poll, pollOption } from "@/lib/database/schemas/poll";
+import { comment } from "@/lib/database/schemas/post";
 import { activity } from "@/lib/database/schemas/activity";
-import { eq, and, desc, sql, inArray, asc } from "drizzle-orm";
+import { eq, and, desc, sql, inArray, asc, or, isNull, gt, lte } from "drizzle-orm";
 import { createActivity } from "./activity";
 import { userPreviewColumns, userWithUsernameColumns } from "@/lib/database/user-columns";
 import type {
@@ -81,6 +82,11 @@ async function rsvpCountsFor(eventIds: string[]): Promise<Map<string, RsvpCounts
   return counts;
 }
 
+/** How many attendee avatars an event card stacks (mobile contract: AgendaItem.attendeePreview). */
+export const ATTENDEE_PREVIEW_SIZE = 4;
+
+export type UserPreview = { id: string; name: string; image: string | null };
+
 /**
  * An event as a card (mobile contract: AgendaItem) — used wherever an event is embedded rather than
  * opened: a post that links an event, a tribe's next event, and the agenda. Counts come from
@@ -88,7 +94,7 @@ async function rsvpCountsFor(eventIds: string[]): Promise<Map<string, RsvpCounts
  */
 export type AgendaItemPreview = {
   id: string;
-  tribe: { id: string; name: string; avatar: string | null };
+  tribe: { id: string; name: string; avatar: string | null; color: string | null };
   title: string;
   location: string | null;
   coverImageUrl: string | null;
@@ -98,6 +104,12 @@ export type AgendaItemPreview = {
   goingCount: number;
   maybeCount: number;
   myRsvp: string | null;
+  host: UserPreview;
+  // The first ATTENDEE_PREVIEW_SIZE members going, in RSVP order (avatar stack)
+  attendeePreview: UserPreview[];
+  // The oldest poll on the event that has not closed, or null
+  openPoll: { id: string; question: string; endsAt: Date | null } | null;
+  commentCount: number;
 };
 
 /**
@@ -111,7 +123,18 @@ export async function getAgendaItems(
   const previews = new Map<string, AgendaItemPreview>();
   if (eventIds.length === 0) return previews;
 
-  const [events, counts, myRsvps] = await Promise.all([
+  // Going RSVPs numbered per event, oldest first, so the preview is stable as people join
+  const rankedGoing = db
+    .select({
+      eventId: eventAttendee.eventId,
+      userId: eventAttendee.userId,
+      rank: sql<number>`row_number() over (partition by ${eventAttendee.eventId} order by ${eventAttendee.createdAt}, ${eventAttendee.id})`.as("rank"),
+    })
+    .from(eventAttendee)
+    .where(and(inArray(eventAttendee.eventId, eventIds), eq(eventAttendee.status, "going")))
+    .as("ranked_going");
+
+  const [events, counts, myRsvps, previewRows, openPolls, commentCounts] = await Promise.all([
     db
       .select({
         id: event.id,
@@ -124,9 +147,12 @@ export async function getAgendaItems(
         tribeId: tribe.id,
         tribeName: tribe.name,
         tribeAvatarUrl: media.fileUrl,
+        tribeColor: tribe.color,
+        host: userPreviewColumns,
       })
       .from(event)
       .innerJoin(tribe, eq(event.tribeId, tribe.id))
+      .innerJoin(user, eq(event.createdBy, user.id))
       .leftJoin(media, eq(tribe.avatar, media.id))
       .where(inArray(event.id, eventIds)),
     rsvpCountsFor(eventIds),
@@ -136,14 +162,50 @@ export async function getAgendaItems(
         .from(eventAttendee)
         .where(and(inArray(eventAttendee.eventId, eventIds), eq(eventAttendee.userId, currentUserId)))
       : Promise.resolve([]),
+    db
+      .select({ eventId: rankedGoing.eventId, rank: rankedGoing.rank, user: userPreviewColumns })
+      .from(rankedGoing)
+      .innerJoin(user, eq(rankedGoing.userId, user.id))
+      .where(lte(rankedGoing.rank, ATTENDEE_PREVIEW_SIZE))
+      .orderBy(asc(rankedGoing.eventId), asc(rankedGoing.rank)),
+    db
+      .selectDistinctOn([poll.eventId], {
+        eventId: poll.eventId,
+        id: poll.id,
+        question: poll.question,
+        endsAt: poll.endsAt,
+      })
+      .from(poll)
+      .where(
+        and(
+          inArray(poll.eventId, eventIds),
+          or(isNull(poll.endsAt), gt(poll.endsAt, sql`now()`))
+        )
+      )
+      .orderBy(poll.eventId, asc(poll.createdAt)),
+    db
+      .select({ eventId: comment.eventId, count: sql<number>`count(*)::int` })
+      .from(comment)
+      .where(inArray(comment.eventId, eventIds))
+      .groupBy(comment.eventId),
   ]);
 
   const myRsvpMap = new Map(myRsvps.map((r) => [r.eventId, r.status]));
+  const previewMap = new Map<string, UserPreview[]>();
+  for (const row of previewRows) {
+    const list = previewMap.get(row.eventId) ?? [];
+    list.push(row.user);
+    previewMap.set(row.eventId, list);
+  }
+  const openPollMap = new Map(
+    openPolls.map((p) => [p.eventId as string, { id: p.id, question: p.question, endsAt: p.endsAt }])
+  );
+  const commentCountMap = new Map(commentCounts.map((c) => [c.eventId as string, c.count]));
 
   for (const e of events) {
     previews.set(e.id, {
       id: e.id,
-      tribe: { id: e.tribeId, name: e.tribeName, avatar: e.tribeAvatarUrl || null },
+      tribe: { id: e.tribeId, name: e.tribeName, avatar: e.tribeAvatarUrl || null, color: e.tribeColor ?? null },
       title: e.title,
       location: e.location,
       coverImageUrl: e.coverImageUrl,
@@ -153,6 +215,10 @@ export async function getAgendaItems(
       goingCount: counts.get(e.id)?.going ?? 0,
       maybeCount: counts.get(e.id)?.maybe ?? 0,
       myRsvp: myRsvpMap.get(e.id) ?? null,
+      host: e.host,
+      attendeePreview: previewMap.get(e.id) ?? [],
+      openPoll: openPollMap.get(e.id) ?? null,
+      commentCount: commentCountMap.get(e.id) ?? 0,
     });
   }
 
