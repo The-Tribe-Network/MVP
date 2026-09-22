@@ -1,19 +1,27 @@
 import { db, getDbTransaction } from "@/lib/database/client";
-import { post, postLike, postMedia, comment } from "@/lib/database/schemas/post";
+import { post, postLike, postMedia, comment, commentLike } from "@/lib/database/schemas/post";
 import { event, eventAttendee } from "@/lib/database/schemas/event";
 import { poll } from "@/lib/database/schemas/poll";
 import { postKind } from "@/lib/database/schemas/enums";
 import { tribe, tribeMember, tribeMemberPermission } from "@/lib/database/schemas/tribe";
 import { user } from "@/lib/database/schemas/auth";
 import { album, albumMedia, media } from "@/lib/database/schemas/media";
-import { eq, and, desc, count, inArray, sql, isNotNull, isNull, asc, type SQL } from "drizzle-orm";
-import type { Post, PostInsert, PostWithAuthor, LinkedAlbumPreview, PollWithDetails } from "@/lib/database/types";
+import { eq, and, desc, count, inArray, sql, isNotNull, isNull, asc, lte, type SQL } from "drizzle-orm";
+import type {
+  Post,
+  PostInsert,
+  PostWithAuthor,
+  LinkedAlbumPreview,
+  PollWithDetails,
+  CommentWithStats,
+  UserPreview,
+} from "@/lib/database/types";
 import type { CreatePostInput } from "@/lib/validations/post";
 import { getMemberWithPermissions } from "./permissions";
 import { getTribeSettings } from "./tribe-settings";
 import { getPollsByIds } from "./poll";
 import { getAgendaItems, type AgendaItemPreview } from "./event";
-import { userWithUsernameColumns } from "@/lib/database/user-columns";
+import { userPreviewColumns, userWithProfileColumns, userWithUsernameColumns } from "@/lib/database/user-columns";
 
 /**
  * Check if user can post in a tribe
@@ -266,6 +274,10 @@ export type PostWithMetadata = PostWithAuthor & {
   linkedAlbum: LinkedAlbumPreview | null;
   event: AgendaItemPreview | null;
   poll: PollWithDetails | null;
+  // POST-01 preview: the comment with the most likes, newest on a tie (TRI-149)
+  topComment: CommentWithStats | null;
+  // POST-02 "Liked by A, B and N others": the three most recent likers (TRI-149)
+  likers: UserPreview[];
 };
 
 const postColumns = {
@@ -347,6 +359,118 @@ async function getLinkedAlbumPreviews(albumIds: string[]): Promise<Map<string, L
 }
 
 /**
+ * Top comment per post: most liked, newest on a tie. One windowed query over the page's post ids.
+ */
+async function getTopComments(
+  postIds: string[],
+  currentUserId?: string
+): Promise<Map<string, CommentWithStats>> {
+  const topComments = new Map<string, CommentWithStats>();
+  if (postIds.length === 0) return topComments;
+
+  const commentLikeCounts = db
+    .select({
+      commentId: commentLike.commentId,
+      likeCount: count(commentLike.id).as('like_count'),
+    })
+    .from(commentLike)
+    .groupBy(commentLike.commentId)
+    .as('comment_like_counts');
+
+  const rankedComments = db
+    .select({
+      id: comment.id,
+      postId: comment.postId,
+      eventId: comment.eventId,
+      authorId: comment.authorId,
+      content: comment.content,
+      parentCommentId: comment.parentCommentId,
+      createdAt: comment.createdAt,
+      updatedAt: comment.updatedAt,
+      likeCount: sql<number>`COALESCE(${commentLikeCounts.likeCount}, 0)`.as('top_like_count'),
+      rank: sql<number>`ROW_NUMBER() OVER (PARTITION BY ${comment.postId} ORDER BY COALESCE(${commentLikeCounts.likeCount}, 0) DESC, ${comment.createdAt} DESC, ${comment.id})`.as('rank'),
+    })
+    .from(comment)
+    .leftJoin(commentLikeCounts, eq(comment.id, commentLikeCounts.commentId))
+    .where(inArray(comment.postId, postIds))
+    .as('ranked_comments');
+
+  const rows = await db
+    .select({
+      id: rankedComments.id,
+      postId: rankedComments.postId,
+      eventId: rankedComments.eventId,
+      authorId: rankedComments.authorId,
+      content: rankedComments.content,
+      parentCommentId: rankedComments.parentCommentId,
+      createdAt: rankedComments.createdAt,
+      updatedAt: rankedComments.updatedAt,
+      likeCount: rankedComments.likeCount,
+      author: userWithProfileColumns,
+      isLiked: currentUserId
+        ? sql<boolean>`EXISTS (SELECT 1 FROM ${commentLike} WHERE ${commentLike.commentId} = ${rankedComments.id} AND ${commentLike.userId} = ${currentUserId})`
+        : sql<boolean>`false`,
+    })
+    .from(rankedComments)
+    .innerJoin(user, eq(rankedComments.authorId, user.id))
+    .where(eq(rankedComments.rank, 1));
+
+  for (const c of rows) {
+    if (!c.postId) continue;
+    topComments.set(c.postId, {
+      id: c.id,
+      postId: c.postId,
+      eventId: c.eventId,
+      authorId: c.authorId,
+      content: c.content,
+      parentCommentId: c.parentCommentId,
+      createdAt: c.createdAt,
+      updatedAt: c.updatedAt,
+      author: c.author,
+      likeCount: Number(c.likeCount) || 0,
+      isLiked: c.isLiked === true,
+    });
+  }
+
+  return topComments;
+}
+
+/** Up to three most recent likers per post, as UserPreview. One windowed query over the page. */
+async function getPostLikers(postIds: string[]): Promise<Map<string, UserPreview[]>> {
+  const likers = new Map<string, UserPreview[]>();
+  if (postIds.length === 0) return likers;
+
+  const rankedLikes = db
+    .select({
+      postId: postLike.postId,
+      userId: postLike.userId,
+      rank: sql<number>`ROW_NUMBER() OVER (PARTITION BY ${postLike.postId} ORDER BY ${postLike.createdAt} DESC, ${postLike.id})`.as('rank'),
+    })
+    .from(postLike)
+    .where(inArray(postLike.postId, postIds))
+    .as('ranked_likes');
+
+  const rows = await db
+    .select({
+      postId: rankedLikes.postId,
+      rank: rankedLikes.rank,
+      ...userPreviewColumns,
+    })
+    .from(rankedLikes)
+    .innerJoin(user, eq(rankedLikes.userId, user.id))
+    .where(lte(rankedLikes.rank, 3))
+    .orderBy(asc(rankedLikes.postId), asc(rankedLikes.rank));
+
+  for (const row of rows) {
+    const list = likers.get(row.postId) ?? [];
+    list.push({ id: row.id, name: row.name, image: row.image });
+    likers.set(row.postId, list);
+  }
+
+  return likers;
+}
+
+/**
  * Attach counts, like state, photos, linked album, event and poll to a page of posts.
  * One query per relation for the whole page, never per post.
  */
@@ -362,7 +486,7 @@ async function attachPostMetadata(
   const eventIds = [...new Set(posts.map((p) => p.eventId).filter(present))];
   const pollIds = [...new Set(posts.map((p) => p.pollId).filter(present))];
 
-  const [likeCounts, commentCounts, userLikes, photos, albumPreviews, eventPreviews, polls] = await Promise.all([
+  const [likeCounts, commentCounts, userLikes, photos, albumPreviews, eventPreviews, polls, topComments, likers] = await Promise.all([
     db
       .select({ postId: postLike.postId, count: count() })
       .from(postLike)
@@ -394,6 +518,8 @@ async function attachPostMetadata(
     getLinkedAlbumPreviews(albumIds),
     getAgendaItems(eventIds, currentUserId),
     getPollsByIds(pollIds, currentUserId),
+    getTopComments(postIds, currentUserId),
+    getPostLikers(postIds),
   ]);
 
   const likeCountMap = new Map(likeCounts.map((lc) => [lc.postId, Number(lc.count)]));
@@ -420,8 +546,32 @@ async function attachPostMetadata(
       linkedAlbum: p.linkedAlbumId ? albumPreviews.get(p.linkedAlbumId) || null : null,
       event: p.eventId ? eventPreviews.get(p.eventId) || null : null,
       poll: p.pollId ? pollMap.get(p.pollId) || null : null,
+      topComment: topComments.get(p.id) ?? null,
+      likers: likers.get(p.id) ?? [],
     };
   });
+}
+
+/**
+ * The tribe's announcement: its most recently pinned post, shaped like any feed post.
+ * Served on the tribe detail response for the TRIBE-01 banner (idx_post_tribe_pinned_created).
+ */
+export async function getTribeAnnouncement(
+  tribeId: string,
+  currentUserId?: string
+): Promise<PostWithMetadata | null> {
+  const [pinned] = await db
+    .select({ ...postColumns, author: authorColumns })
+    .from(post)
+    .innerJoin(user, eq(post.authorId, user.id))
+    .where(and(eq(post.tribeId, tribeId), eq(post.isPinned, true)))
+    .orderBy(sql`${post.pinnedAt} DESC NULLS LAST`, desc(post.createdAt))
+    .limit(1);
+
+  if (!pinned) return null;
+
+  const [withMetadata] = await attachPostMetadata([pinned], currentUserId);
+  return withMetadata ?? null;
 }
 
 /**
