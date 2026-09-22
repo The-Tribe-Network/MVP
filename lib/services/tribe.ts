@@ -210,9 +210,69 @@ export type TribeSummary = {
   nextEvent: AgendaItemPreview | null;
 };
 
-// Until catch-up is written (TRI-6), and for anyone who has never tapped "Done", unread means the
-// last week — never more than the member has been in the tribe.
+// For anyone who has never tapped "Done" on catch-up, unread means the last week — never more than
+// the member has been in the tribe. Catch-up (lib/services/agenda.ts) defaults `since` the same way.
+export const CATCH_UP_FALLBACK_DAYS = 7;
 const UNREAD_FALLBACK = sql`now() - interval '7 days'`;
+
+/**
+ * Posts by other members since the caller last finished catch-up, per tribe id (TribeSummary and
+ * TribeUnreadSummary `unreadCount`). One query for all memberships; tribes with nothing new are absent.
+ */
+export async function getUnreadPostCounts(userId: string): Promise<Map<string, number>> {
+  const rows = await db
+    .select({ tribeId: tribeMember.tribeId, count: sql<number>`count(${post.id})::int` })
+    .from(tribeMember)
+    .leftJoin(tribeMemberPreference, eq(tribeMemberPreference.tribeMemberId, tribeMember.id))
+    .innerJoin(
+      post,
+      and(
+        eq(post.tribeId, tribeMember.tribeId),
+        ne(post.authorId, tribeMember.userId),
+        sql`${post.createdAt} > greatest(coalesce(${tribeMemberPreference.lastCatchUpAt}, ${UNREAD_FALLBACK}), ${tribeMember.joinedAt})`
+      )
+    )
+    .where(eq(tribeMember.userId, userId))
+    .groupBy(tribeMember.tribeId);
+  return new Map(rows.map((r) => [r.tribeId, Number(r.count)]));
+}
+
+/**
+ * HOME-03 "Done": record that the caller has caught up on every tribe they belong to (or one tribe)
+ * by stamping `tribe_member_preference.last_catch_up_at`. The preference row is created lazily by
+ * the web app, so members without one get a row here. Returns the stamped time, or null when
+ * `tribeId` names a tribe the caller is not in.
+ */
+export async function markCatchUpDone(userId: string, tribeId?: string): Promise<Date | null> {
+  const markedAt = new Date();
+  const memberships = await db
+    .select({ id: tribeMember.id })
+    .from(tribeMember)
+    .where(
+      tribeId
+        ? and(eq(tribeMember.userId, userId), eq(tribeMember.tribeId, tribeId))
+        : eq(tribeMember.userId, userId)
+    );
+  if (tribeId && memberships.length === 0) return null;
+  if (memberships.length === 0) return markedAt;
+  const memberIds = memberships.map((m) => m.id);
+
+  await getDbTransaction().transaction(async (tx) => {
+    const updated = await tx
+      .update(tribeMemberPreference)
+      .set({ lastCatchUpAt: markedAt })
+      .where(inArray(tribeMemberPreference.tribeMemberId, memberIds))
+      .returning({ tribeMemberId: tribeMemberPreference.tribeMemberId });
+    const stamped = new Set(updated.map((u) => u.tribeMemberId));
+    const missing = memberIds.filter((id) => !stamped.has(id));
+    if (missing.length > 0) {
+      await tx
+        .insert(tribeMemberPreference)
+        .values(missing.map((tribeMemberId) => ({ tribeMemberId, userId, lastCatchUpAt: markedAt })));
+    }
+  });
+  return markedAt;
+}
 
 /**
  * The caller's tribes with the counts the tribe list shows. A constant number of queries however
@@ -250,20 +310,7 @@ export async function getMyTribeSummaries(userId: string): Promise<TribeSummary[
       .from(tribeMember)
       .where(inArray(tribeMember.tribeId, tribeIds))
       .groupBy(tribeMember.tribeId),
-    db
-      .select({ tribeId: tribeMember.tribeId, count: sql<number>`count(${post.id})::int` })
-      .from(tribeMember)
-      .leftJoin(tribeMemberPreference, eq(tribeMemberPreference.tribeMemberId, tribeMember.id))
-      .innerJoin(
-        post,
-        and(
-          eq(post.tribeId, tribeMember.tribeId),
-          ne(post.authorId, tribeMember.userId),
-          sql`${post.createdAt} > greatest(coalesce(${tribeMemberPreference.lastCatchUpAt}, ${UNREAD_FALLBACK}), ${tribeMember.joinedAt})`
-        )
-      )
-      .where(eq(tribeMember.userId, userId))
-      .groupBy(tribeMember.tribeId),
+    getUnreadPostCounts(userId),
     lastCreated(post),
     lastCreated(event),
     lastCreated(media),
@@ -283,7 +330,7 @@ export async function getMyTribeSummaries(userId: string): Promise<TribeSummary[
   const agenda = await getAgendaItems(nextEvents.map((e) => e.id), userId);
 
   const memberCountMap = new Map(memberCounts.map((r) => [r.tribeId, Number(r.count)]));
-  const unreadMap = new Map(unread.map((r) => [r.tribeId, Number(r.count)]));
+  const unreadMap = unread;
   const nextEventMap = new Map(nextEvents.map((e) => [e.tribeId, agenda.get(e.id) ?? null]));
 
   const lastActivityMap = new Map<string, Date>();
