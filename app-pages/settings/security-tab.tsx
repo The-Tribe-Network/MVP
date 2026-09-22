@@ -79,9 +79,11 @@ export function SecurityTab() {
   const handleDisconnect = async (provider: 'google' | 'discord') => {
     setLoading((prev) => ({ ...prev, [provider]: true }))
     try {
-      await authClient.unlinkAccount({
-        providerId: provider,
-      })
+      // better-auth 1.7 unlinks by account row id, not provider name
+      const linked = await authClient.listAccounts()
+      const account = linked.data?.find((a: any) => (a.providerId || a.provider) === provider)
+      if (!account) throw new Error(`No linked ${provider} account`)
+      await authClient.unlinkAccount({ accountId: account.id })
       // Refresh the accounts list to ensure accurate state
       const accounts = await authClient.listAccounts()
       if (accounts.data && accounts.data.length > 0) {
