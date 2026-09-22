@@ -35,10 +35,35 @@ type RsvpRules = {
   attendeeVisibility: "all_members" | "count_only" | "hidden";
 };
 
-// event_settings is created lazily by the web app, so most events have no row: these are the defaults.
-async function rsvpRulesFor(eventId: string): Promise<RsvpRules> {
-  const [row] = await db
+const DEFAULT_RSVP_RULES: RsvpRules = {
+  guestAllowance: 0,
+  capacityLimit: null,
+  waitlistEnabled: true,
+  rsvpDeadline: null,
+  attendeeVisibility: "all_members",
+};
+
+/**
+ * The RSVP-facing slice of `event_settings` for a set of events, keyed by event id, in one query.
+ * The row is created lazily (first GET /settings, or the web app), so most events have none and
+ * get `DEFAULT_RSVP_RULES`.
+ *
+ * Shape decision (TRI-161): these ride on the event payload as FLAT fields (`capacityLimit`,
+ * `rsvpDeadline`, `guestAllowance`, `waitlistEnabled`, `attendeeVisibility`), not as a nested
+ * `settings` preview object. Reasons: the mobile contract already declares them flat on `Event`;
+ * the detail has shipped them flat since TRI-10/TRI-13; a nested `settings` would collide with
+ * `EventWithSettings.settings` (the full bundle behind GET /settings) and read as "the settings
+ * row" when it is only the always-rendered slice; and the fields are renamed for the reader
+ * (`waitlistEnabled`, not the column's `enableWaitlist`), which a row-shaped object would not do.
+ * Precedent for TRI-155: a settings field the screen always draws goes flat on the parent payload
+ * with a defaulted value; anything edit-only stays behind its settings route.
+ */
+async function rsvpRulesForMany(eventIds: string[]): Promise<Map<string, RsvpRules>> {
+  const rules = new Map<string, RsvpRules>();
+  if (eventIds.length === 0) return rules;
+  const rows = await db
     .select({
+      eventId: eventSettings.eventId,
       guestAllowance: eventSettings.guestAllowance,
       capacityLimit: eventSettings.capacityLimit,
       enableWaitlist: eventSettings.enableWaitlist,
@@ -46,15 +71,51 @@ async function rsvpRulesFor(eventId: string): Promise<RsvpRules> {
       attendeeVisibility: eventSettings.attendeeVisibility,
     })
     .from(eventSettings)
-    .where(eq(eventSettings.eventId, eventId))
-    .limit(1);
-  return {
-    guestAllowance: row?.guestAllowance ?? 0,
-    capacityLimit: row?.capacityLimit ?? null,
-    waitlistEnabled: row?.enableWaitlist ?? true,
-    rsvpDeadline: row?.rsvpDeadline ?? null,
-    attendeeVisibility: row?.attendeeVisibility ?? "all_members",
-  };
+    .where(inArray(eventSettings.eventId, eventIds));
+  for (const row of rows) {
+    rules.set(row.eventId, {
+      guestAllowance: row.guestAllowance ?? DEFAULT_RSVP_RULES.guestAllowance,
+      capacityLimit: row.capacityLimit ?? DEFAULT_RSVP_RULES.capacityLimit,
+      waitlistEnabled: row.enableWaitlist ?? DEFAULT_RSVP_RULES.waitlistEnabled,
+      rsvpDeadline: row.rsvpDeadline ?? DEFAULT_RSVP_RULES.rsvpDeadline,
+      attendeeVisibility: row.attendeeVisibility ?? DEFAULT_RSVP_RULES.attendeeVisibility,
+    });
+  }
+  return rules;
+}
+
+async function rsvpRulesFor(eventId: string): Promise<RsvpRules> {
+  return (await rsvpRulesForMany([eventId])).get(eventId) ?? DEFAULT_RSVP_RULES;
+}
+
+type EventCounts = { pollCount: number; commentCount: number };
+
+/**
+ * Polls and comments per event (contract `Event.pollCount` / `Event.commentCount`, EVT-16), keyed by
+ * event id: two grouped queries for any number of events, the way post counts are batched in
+ * `lib/services/post.ts`. Every poll counts (open or closed) and every comment counts (replies too),
+ * matching what the event's poll and discussion tabs list. Events with none are simply absent, so
+ * callers default to 0.
+ */
+async function eventCountsFor(eventIds: string[]): Promise<Map<string, EventCounts>> {
+  const counts = new Map<string, EventCounts>();
+  if (eventIds.length === 0) return counts;
+  const [pollRows, commentRows] = await Promise.all([
+    db
+      .select({ eventId: poll.eventId, count: sql<number>`count(*)::int` })
+      .from(poll)
+      .where(inArray(poll.eventId, eventIds))
+      .groupBy(poll.eventId),
+    db
+      .select({ eventId: comment.eventId, count: sql<number>`count(*)::int` })
+      .from(comment)
+      .where(inArray(comment.eventId, eventIds))
+      .groupBy(comment.eventId),
+  ]);
+  const get = (id: string) => counts.get(id) ?? { pollCount: 0, commentCount: 0 };
+  for (const row of pollRows) counts.set(row.eventId as string, { ...get(row.eventId as string), pollCount: row.count });
+  for (const row of commentRows) counts.set(row.eventId as string, { ...get(row.eventId as string), commentCount: row.count });
+  return counts;
 }
 
 type RsvpCounts = { going: number; maybe: number };
@@ -91,6 +152,10 @@ export type UserPreview = { id: string; name: string; image: string | null };
  * An event as a card (mobile contract: AgendaItem) — used wherever an event is embedded rather than
  * opened: a post that links an event, a tribe's next event, and the agenda. Counts come from
  * `rsvpCountsFor`, so `goingCount` includes guests exactly as the event detail does.
+ *
+ * Deliberately narrower than `Event` (TRI-161): the card draws the one open poll, not a poll count,
+ * and never a capacity line, so `pollCount` and the settings slice stay on `Event`. `commentCount`
+ * is on both because both screens draw it.
  */
 export type AgendaItemPreview = {
   id: string;
@@ -249,11 +314,11 @@ export async function createEvent(
     coverImageUrl?: string | null;
     poll?: CreateEventPollData;
   }
-): Promise<EventWithCreator> {
+): Promise<EventWithDetails> {
   const dbTx = getDbTransaction();
 
   // Use transaction for event + poll creation
-  return await dbTx.transaction(async (tx) => {
+  const created = await dbTx.transaction(async (tx) => {
     // 1. Create event
     const [newEvent] = await tx
       .insert(event)
@@ -349,6 +414,10 @@ export async function createEvent(
 
     return eventWithCreator as EventWithCreator;
   });
+
+  // Re-read through the detail path so POST answers the contract's full `Event` (counts, the
+  // creator's own RSVP, the settings slice) rather than a bare row — the client caches it as one.
+  return (await getEventById(created.id, userId)) ?? (created as EventWithDetails);
 }
 
 /**
@@ -417,25 +486,31 @@ export async function getTribeEvents(
 
   const events = await query;
   const eventIds = events.map((e) => e.id);
-  const counts = await rsvpCountsFor(eventIds);
 
-  // The caller's own status per event (contract `myRsvp`; `isUserAttending` kept for the web app)
-  const mine = new Map<string, RsvpStatus>();
-  if (options?.userId && eventIds.length > 0) {
-    const rows = await db
-      .select({ eventId: eventAttendee.eventId, status: eventAttendee.status })
-      .from(eventAttendee)
-      .where(
-        and(
-          inArray(eventAttendee.eventId, eventIds),
-          eq(eventAttendee.userId, options.userId)
+  // Everything else is per page, not per row: RSVP counts, the caller's own RSVP, the RSVP rules
+  // slice of event_settings and the poll/comment counts (TRI-161, for the EVT-16 preview sheet).
+  const [counts, myRows, rules, eventCounts] = await Promise.all([
+    rsvpCountsFor(eventIds),
+    // The caller's own status per event (contract `myRsvp`; `isUserAttending` kept for the web app)
+    options?.userId && eventIds.length > 0
+      ? db
+        .select({ eventId: eventAttendee.eventId, status: eventAttendee.status })
+        .from(eventAttendee)
+        .where(
+          and(
+            inArray(eventAttendee.eventId, eventIds),
+            eq(eventAttendee.userId, options.userId)
+          )
         )
-      );
-    for (const row of rows) mine.set(row.eventId, row.status);
-  }
+      : Promise.resolve([]),
+    rsvpRulesForMany(eventIds),
+    eventCountsFor(eventIds),
+  ]);
+  const mine = new Map<string, RsvpStatus>(myRows.map((row) => [row.eventId, row.status]));
 
   return events.map((event) => {
     const status = mine.get(event.id) ?? null;
+    const eventRules = rules.get(event.id) ?? DEFAULT_RSVP_RULES;
     return {
       ...event,
       attendees: [], // Empty array for list view
@@ -443,6 +518,14 @@ export async function getTribeEvents(
       maybeCount: counts.get(event.id)?.maybe ?? 0,
       myRsvp: options?.userId ? status : undefined,
       isUserAttending: options?.userId ? status === "going" : undefined,
+      pollCount: eventCounts.get(event.id)?.pollCount ?? 0,
+      commentCount: eventCounts.get(event.id)?.commentCount ?? 0,
+      // Same flat settings slice as the detail, so a card can show "full" without a second call
+      guestAllowance: eventRules.guestAllowance,
+      waitlistEnabled: eventRules.waitlistEnabled,
+      capacityLimit: eventRules.capacityLimit,
+      rsvpDeadline: eventRules.rsvpDeadline,
+      attendeeVisibility: eventRules.attendeeVisibility,
     };
   }) as unknown as EventWithDetails[];
 }
@@ -455,7 +538,7 @@ export async function getEventById(
   eventId: string,
   userId?: string
 ): Promise<EventWithDetails | null> {
-  const [eventData, counts, userAttendance, rules] = await Promise.all([
+  const [eventData, counts, userAttendance, rules, eventCounts] = await Promise.all([
     // Event with creator
     db
       .select({
@@ -513,6 +596,9 @@ export async function getEventById(
 
     // Guest allowance, capacity and waitlist for the RSVP sheet (defaults when no settings row)
     rsvpRulesFor(eventId),
+
+    // Poll and comment counts for the preview sheet (TRI-161)
+    eventCountsFor([eventId]),
   ]);
 
   if (!eventData[0]) return null;
@@ -524,6 +610,8 @@ export async function getEventById(
     maybeCount: counts.get(eventId)?.maybe ?? 0,
     myRsvp: userId ? (mine?.status ?? null) : undefined,
     isUserAttending: mine?.status === "going",
+    pollCount: eventCounts.get(eventId)?.pollCount ?? 0,
+    commentCount: eventCounts.get(eventId)?.commentCount ?? 0,
     guestAllowance: rules.guestAllowance,
     waitlistEnabled: rules.waitlistEnabled,
     capacityLimit: rules.capacityLimit,

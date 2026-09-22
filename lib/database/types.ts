@@ -330,6 +330,10 @@ export type EventWithDetails = EventWithAttendees & {
   maybeCount?: number;
   myRsvp?: "going" | "maybe" | "not_going" | null;
   isUserAttending?: boolean;
+  // Polls and comments on the event (EVT-16 preview sheet, TRI-161); 0 when none
+  pollCount?: number;
+  commentCount?: number;
+  // Flat slice of event_settings, defaulted when the row does not exist (see rsvpRulesForMany)
   guestAllowance?: number;
   waitlistEnabled?: boolean;
   capacityLimit?: number | null;
