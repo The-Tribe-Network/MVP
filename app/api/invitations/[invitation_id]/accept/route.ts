@@ -36,7 +36,7 @@ export async function POST(
     if (!result.success) {
       return NextResponse.json(
         { error: result.error || "Failed to accept invitation" },
-        { status: 400 }
+        { status: result.status ?? 400 }
       );
     }
 

@@ -236,13 +236,21 @@ export async function cancelTribeInvitation(
 }
 
 /**
+ * Whether the signed-in user is the person the invitation was addressed to.
+ * Emails compare case-insensitively: the inviter typed the address, the user signed up with it.
+ */
+function isInvitee(userEmail: string | null | undefined, invitation: TribeInvitation): boolean {
+  return !!userEmail && userEmail.trim().toLowerCase() === invitation.email.trim().toLowerCase();
+}
+
+/**
  * Accept an invitation
  * OPTIMIZED: Reduces from 7 DB calls to 4 DB calls (with 2 in parallel)
  */
 export async function acceptInvitation(
   invitationId: string,
   userId: string
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; error?: string; status?: number }> {
   const invitation = await getInvitationById(invitationId);
 
   if (!invitation) {
@@ -273,6 +281,12 @@ export async function acceptInvitation(
       .where(eq(user.id, userId))
       .limit(1),
   ]);
+
+  // Only the invitee may accept (TRI-196). Checked before the already-a-member branch so a
+  // stranger can't flip someone else's invitation to accepted either.
+  if (!acceptedUser[0] || !isInvitee(acceptedUser[0].email, invitation)) {
+    return { success: false, error: "You are not authorized to accept this invitation", status: 403 };
+  }
 
   if (existingMember[0]) {
     // Update invitation status to accepted
@@ -371,7 +385,7 @@ export async function getUserPendingInvitations(userEmail: string) {
 export async function rejectInvitation(
   invitationId: string,
   userId: string
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; error?: string; status?: number }> {
   const invitation = await getInvitationById(invitationId);
 
   if (!invitation) {
@@ -389,8 +403,8 @@ export async function rejectInvitation(
     .where(eq(user.id, userId))
     .limit(1);
 
-  if (!currentUser || currentUser.email !== invitation.email) {
-    return { success: false, error: "You are not authorized to reject this invitation" };
+  if (!currentUser || !isInvitee(currentUser.email, invitation)) {
+    return { success: false, error: "You are not authorized to reject this invitation", status: 403 };
   }
 
   // Update invitation status and get tribe/inviter info in parallel
