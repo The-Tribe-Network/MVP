@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
-import { getTribeById, updateTribe, deleteTribe } from "@/lib/services/tribe";
+import { getTribeDetail, updateTribe, deleteTribe } from "@/lib/services/tribe";
 import { checkTribeMembership } from "@/lib/services/permissions";
 import {
   tribeIdParamSchema,
@@ -32,7 +32,7 @@ export async function GET(
     }
 
     // Fetch tribe
-    const tribeData = await getTribeById(validation.data.id);
+    const tribeData = await getTribeDetail(validation.data.id, user.id);
 
     if (!tribeData) {
       return NextResponse.json({ error: "Tribe not found" }, { status: 404 });

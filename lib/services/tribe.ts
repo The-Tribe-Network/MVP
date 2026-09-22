@@ -11,6 +11,7 @@ import { getMemberWithPermissions } from "./permissions";
 import type { UpdateTribeInput } from "@/lib/validations/tribe";
 import { userPreviewColumns } from "@/lib/database/user-columns";
 import { getAgendaItems, type AgendaItemPreview } from "./event";
+import { getTribeAnnouncement, type PostWithMetadata } from "./post";
 
 /**
  * Create a new tribe and add the creator as owner
@@ -166,6 +167,28 @@ export async function getTribeById(id: string, includeAvatar: boolean = false): 
     eventCount: eventCountResult[0]?.count || 0,
     mediaCount: mediaCountResult[0]?.count || 0,
   };
+}
+
+/** TribeWithCounts in the mobile contract: the detail payload plus the TRIBE-01 announcement. */
+export type TribeDetail = TribeWithMembers & {
+  announcement: PostWithMetadata | null;
+};
+
+/**
+ * Tribe detail for GET /tribes/{id}: counts plus the latest pinned post as `announcement` (TRI-149).
+ * `currentUserId` drives the announcement's isLiked / poll vote state.
+ */
+export async function getTribeDetail(id: string, currentUserId?: string): Promise<TribeDetail | null> {
+  const [tribeData, announcement] = await Promise.all([
+    getTribeById(id),
+    getTribeAnnouncement(id, currentUserId),
+  ]);
+
+  if (!tribeData) {
+    return null;
+  }
+
+  return { ...tribeData, announcement };
 }
 
 /**
