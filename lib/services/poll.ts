@@ -1,5 +1,6 @@
-import { db } from "@/lib/database/client";
+import { db, getDbTransaction } from "@/lib/database/client";
 import { poll, pollOption, pollVote } from "@/lib/database/schemas/poll";
+import { eventSettings } from "@/lib/database/schemas/event";
 import { user } from "@/lib/database/schemas/auth";
 import { eq, and, sql, inArray, type SQL } from "drizzle-orm";
 import type { PollWithDetails, PollOptionWithVotes } from "@/lib/database/types";
@@ -52,6 +53,17 @@ async function loadPollsWithDetails(
   if (polls.length === 0) return [];
 
   const pollIds = polls.map((p) => p.id);
+
+  // Results visibility comes from the event's settings (default after_voting); post polls have no event.
+  const eventIds = [...new Set(polls.map((p) => p.eventId).filter((id): id is string => !!id))];
+  const visibilityRows =
+    eventIds.length > 0
+      ? await db
+          .select({ eventId: eventSettings.eventId, visibility: eventSettings.pollResultsVisibility })
+          .from(eventSettings)
+          .where(inArray(eventSettings.eventId, eventIds))
+      : [];
+  const visibilityByEvent = new Map(visibilityRows.map((row) => [row.eventId, row.visibility]));
 
   // 2. Fetch all options for these polls
   const options = await db
@@ -137,6 +149,7 @@ async function loadPollsWithDetails(
     const totalVotes = pollOptions.reduce((sum, opt) => sum + opt.votes, 0);
 
     return {
+      resultsVisibility: (p.eventId && visibilityByEvent.get(p.eventId)) || "after_voting",
       ...p,
       options: pollOptions,
       userVotes: userVotesMap.get(p.id) || [],
@@ -160,7 +173,8 @@ export async function createPoll(
     endsAt?: Date;
   }
 ): Promise<PollWithDetails> {
-  return await db.transaction(async (tx) => {
+  // The default neon-http client has no transactions (TRI-13 found this returning 500).
+  return await getDbTransaction().transaction(async (tx) => {
     // 1. Create poll
     const [newPoll] = await tx
       .insert(poll)
@@ -216,7 +230,7 @@ export async function votePoll(
   userId: string,
   optionIds: string[]
 ): Promise<void> {
-  return await db.transaction(async (tx) => {
+  return await getDbTransaction().transaction(async (tx) => {
     // 1. Get poll to check allowMultiple
     const [pollData] = await tx
       .select()
