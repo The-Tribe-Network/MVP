@@ -13,6 +13,7 @@ export {
   tribeCategory,
   activityType,
   mediaType,
+  postKind,
   invitationStatus,
   eventStatus,
   messageType,
@@ -42,6 +43,7 @@ export {
 // Post tables
 export {
   post,
+  postMedia,
   postLike,
   comment,
   commentLike,
@@ -118,6 +120,7 @@ export {
   postHashtagRelations,
   hashtagRelations,
   postLikeRelations,
+  postMediaRelations,
   sessionRelations,
   tribeInvitationRelations,
   tribeMemberRelations,

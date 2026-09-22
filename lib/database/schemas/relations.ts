@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { user, account, event, tribe, activity, media, post, comment, commentLike, eventAttendee, eventSettings, eventCoHost, eventLink, message, messageRead, notification, hashtag, postHashtag, postLike, session, tribeInvitation, tribeMember, tribeMemberPermission, album, mediaLike, tribeMemberPreference, albumMedia, poll, pollOption, pollVote } from "@/lib/database/schemas";
+import { user, account, event, tribe, activity, media, post, comment, commentLike, eventAttendee, eventSettings, eventCoHost, eventLink, message, messageRead, notification, hashtag, postHashtag, postLike, postMedia, session, tribeInvitation, tribeMember, tribeMemberPermission, album, mediaLike, tribeMemberPreference, albumMedia, poll, pollOption, pollVote } from "@/lib/database/schemas";
 
 export const accountRelations = relations(account, ({ one }) => ({
 	user: one(user, {
@@ -209,6 +209,26 @@ export const postRelations = relations(post, ({ one, many }) => ({
 	postHashtags: many(postHashtag),
 	postLikes: many(postLike),
 	media: many(media),
+	postMedia: many(postMedia),
+	event: one(event, {
+		fields: [post.eventId],
+		references: [event.id]
+	}),
+	poll: one(poll, {
+		fields: [post.pollId],
+		references: [poll.id]
+	}),
+}));
+
+export const postMediaRelations = relations(postMedia, ({ one }) => ({
+	post: one(post, {
+		fields: [postMedia.postId],
+		references: [post.id]
+	}),
+	media: one(media, {
+		fields: [postMedia.mediaId],
+		references: [media.id]
+	}),
 }));
 
 export const commentRelations = relations(comment, ({ one, many }) => ({

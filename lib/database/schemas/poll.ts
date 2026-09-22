@@ -1,12 +1,16 @@
-import { pgTable, text, timestamp, boolean, uuid, integer, unique } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean, uuid, integer, unique, check } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { event } from "./event";
 import { user } from "./auth";
+import { post } from "./post";
 
 export const poll = pgTable("poll", {
   id: uuid("id").primaryKey().defaultRandom(),
+  // A poll belongs to an event or to a post, never both (poll_owner_check)
   eventId: uuid("event_id")
-    .notNull()
     .references(() => event.id, { onDelete: "cascade" }),
+  postId: uuid("post_id")
+    .references((): any => post.id, { onDelete: "cascade" }),
   createdBy: uuid("created_by")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
@@ -19,7 +23,9 @@ export const poll = pgTable("poll", {
     .defaultNow()
     .$onUpdate(() => new Date())
     .notNull(),
-});
+}, (table) => ({
+  ownerCheck: check("poll_owner_check", sql`(${table.eventId} IS NOT NULL) <> (${table.postId} IS NOT NULL)`),
+}));
 
 export const pollOption = pgTable("poll_option", {
   id: uuid("id").primaryKey().defaultRandom(),

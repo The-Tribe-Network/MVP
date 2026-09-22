@@ -24,6 +24,18 @@ export const activityType = pgEnum("activity_type", [
 
 export const mediaType = pgEnum("media_type", ["image", "video", "document"]);
 
+// Derived on write from what the post carries; denormalized so the feed can filter in SQL
+export const postKind = pgEnum("post_kind", [
+  "text",
+  "photo",
+  "photos",
+  "event",
+  "poll",
+  "album",
+  "video",
+  "announcement",
+]);
+
 export const invitationStatus = pgEnum("invitation_status", [
   "pending",
   "accepted",
