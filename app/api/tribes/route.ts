@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
-import { createTribe, getUserTribes } from "@/lib/services/tribe";
+import { createTribe, getMyTribeSummaries } from "@/lib/services/tribe";
 import type { TribeWithCreator } from "@/lib/database/types";
 import { createTribeSchema, validateApiRequest } from "@/lib/validations/tribe";
 
@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch user's tribes
-    const userTribes = await getUserTribes(user.id);
+    const userTribes = await getMyTribeSummaries(user.id);
 
     return NextResponse.json(userTribes);
   } catch (error) {

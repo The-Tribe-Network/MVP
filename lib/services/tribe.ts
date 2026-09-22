@@ -1,14 +1,16 @@
 import { db, getDbTransaction } from "@/lib/database/client";
 import { deleteDraftsForMember } from "@/lib/services/draft";
-import { tribe, tribeMember, tribeMemberPermission, tribeSettings } from "@/lib/database/schemas/tribe";
+import { tribe, tribeMember, tribeMemberPermission, tribeMemberPreference, tribeSettings } from "@/lib/database/schemas/tribe";
 import { user } from "@/lib/database/schemas/auth";
 import { media } from "@/lib/database/schemas/media";
 import { event } from "@/lib/database/schemas/event";
-import { eq, count, and, inArray, aliasedTable, sql } from "drizzle-orm";
+import { post } from "@/lib/database/schemas/post";
+import { eq, ne, asc, count, and, inArray, aliasedTable, sql } from "drizzle-orm";
 import type { TribeInsert, TribeWithCreator, TribeWithMembers, Tribe } from "@/lib/database/types";
 import { getMemberWithPermissions } from "./permissions";
 import type { UpdateTribeInput } from "@/lib/validations/tribe";
 import { userPreviewColumns } from "@/lib/database/user-columns";
+import { getAgendaItems, type AgendaItemPreview } from "./event";
 
 /**
  * Create a new tribe and add the creator as owner
@@ -111,6 +113,7 @@ export async function getTribeById(id: string, includeAvatar: boolean = false): 
       description: tribe.description,
       avatar: tribe.avatar,
       banner: tribe.banner,
+      color: tribe.color,
       location: tribe.location,
       privacy: tribe.privacy,
       category: tribe.category,
@@ -187,6 +190,117 @@ export async function getUserTribes(userId: string): Promise<Array<{ id: string;
   return userTribes.map(({ avatarUrl, avatar, ...rest }) => ({
     ...rest,
     avatar: avatarUrl || avatar, // Use URL if available, otherwise keep original (null or ID)
+  }));
+}
+
+/**
+ * A tribe as the caller sees it in their tribe list (mobile contract: TribeSummary) — NAV-01 drawer
+ * and HOME catch-up rows.
+ */
+export type TribeSummary = {
+  id: string;
+  name: string;
+  avatar: string | null;
+  color: string | null;
+  myRole: (typeof tribeMember.$inferSelect)["role"];
+  memberCount: number;
+  // Posts by other members since the caller last finished catch-up (DATA-MODEL-DELTA §4)
+  unreadCount: number;
+  lastActivityAt: Date | null;
+  nextEvent: AgendaItemPreview | null;
+};
+
+// Until catch-up is written (TRI-6), and for anyone who has never tapped "Done", unread means the
+// last week — never more than the member has been in the tribe.
+const UNREAD_FALLBACK = sql`now() - interval '7 days'`;
+
+/**
+ * The caller's tribes with the counts the tribe list shows. A constant number of queries however
+ * many tribes the caller belongs to.
+ */
+export async function getMyTribeSummaries(userId: string): Promise<TribeSummary[]> {
+  const memberships = await db
+    .select({
+      id: tribe.id,
+      name: tribe.name,
+      avatar: tribe.avatar,
+      avatarUrl: media.fileUrl,
+      color: tribe.color,
+      myRole: tribeMember.role,
+    })
+    .from(tribeMember)
+    .innerJoin(tribe, eq(tribeMember.tribeId, tribe.id))
+    .leftJoin(media, eq(tribe.avatar, media.id))
+    .where(eq(tribeMember.userId, userId))
+    .orderBy(asc(tribeMember.joinedAt));
+
+  if (memberships.length === 0) return [];
+  const tribeIds = memberships.map((m) => m.id);
+
+  const lastCreated = (table: typeof post | typeof event | typeof media) =>
+    db
+      .select({ tribeId: table.tribeId, at: sql<Date | string | null>`max(${table.createdAt})` })
+      .from(table)
+      .where(inArray(table.tribeId, tribeIds))
+      .groupBy(table.tribeId);
+
+  const [memberCounts, unread, lastPosts, lastEvents, lastMedia, nextEvents] = await Promise.all([
+    db
+      .select({ tribeId: tribeMember.tribeId, count: count() })
+      .from(tribeMember)
+      .where(inArray(tribeMember.tribeId, tribeIds))
+      .groupBy(tribeMember.tribeId),
+    db
+      .select({ tribeId: tribeMember.tribeId, count: sql<number>`count(${post.id})::int` })
+      .from(tribeMember)
+      .leftJoin(tribeMemberPreference, eq(tribeMemberPreference.tribeMemberId, tribeMember.id))
+      .innerJoin(
+        post,
+        and(
+          eq(post.tribeId, tribeMember.tribeId),
+          ne(post.authorId, tribeMember.userId),
+          sql`${post.createdAt} > greatest(coalesce(${tribeMemberPreference.lastCatchUpAt}, ${UNREAD_FALLBACK}), ${tribeMember.joinedAt})`
+        )
+      )
+      .where(eq(tribeMember.userId, userId))
+      .groupBy(tribeMember.tribeId),
+    lastCreated(post),
+    lastCreated(event),
+    lastCreated(media),
+    db
+      .selectDistinctOn([event.tribeId], { id: event.id, tribeId: event.tribeId })
+      .from(event)
+      .where(
+        and(
+          inArray(event.tribeId, tribeIds),
+          sql`${event.startDate} >= now()`,
+          ne(event.status, "cancelled")
+        )
+      )
+      .orderBy(event.tribeId, asc(event.startDate)),
+  ]);
+
+  const agenda = await getAgendaItems(nextEvents.map((e) => e.id), userId);
+
+  const memberCountMap = new Map(memberCounts.map((r) => [r.tribeId, Number(r.count)]));
+  const unreadMap = new Map(unread.map((r) => [r.tribeId, Number(r.count)]));
+  const nextEventMap = new Map(nextEvents.map((e) => [e.tribeId, agenda.get(e.id) ?? null]));
+
+  const lastActivityMap = new Map<string, Date>();
+  for (const row of [...lastPosts, ...lastEvents, ...lastMedia]) {
+    if (!row.tribeId || !row.at) continue;
+    const at = new Date(row.at);
+    const current = lastActivityMap.get(row.tribeId);
+    if (!current || at > current) lastActivityMap.set(row.tribeId, at);
+  }
+
+  return memberships.map(({ avatarUrl, avatar, ...m }) => ({
+    ...m,
+    avatar: avatarUrl || avatar, // Use URL if available, otherwise keep original (null or ID)
+    memberCount: memberCountMap.get(m.id) ?? 0,
+    unreadCount: unreadMap.get(m.id) ?? 0,
+    lastActivityAt: lastActivityMap.get(m.id) ?? null,
+    nextEvent: nextEventMap.get(m.id) ?? null,
   }));
 }
 

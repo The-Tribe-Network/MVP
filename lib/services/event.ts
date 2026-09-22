@@ -2,6 +2,7 @@ import { db, getDbTransaction } from "@/lib/database/client";
 import { event, eventAttendee, eventSettings } from "@/lib/database/schemas/event";
 import { user } from "@/lib/database/schemas/auth";
 import { tribe } from "@/lib/database/schemas/tribe";
+import { media } from "@/lib/database/schemas/media";
 import { poll, pollOption } from "@/lib/database/schemas/poll";
 import { activity } from "@/lib/database/schemas/activity";
 import { eq, and, desc, sql, inArray, asc } from "drizzle-orm";
@@ -78,6 +79,84 @@ async function rsvpCountsFor(eventIds: string[]): Promise<Map<string, RsvpCounts
     counts.set(row.eventId, current);
   }
   return counts;
+}
+
+/**
+ * An event as a card (mobile contract: AgendaItem) — used wherever an event is embedded rather than
+ * opened: a post that links an event, a tribe's next event, and the agenda. Counts come from
+ * `rsvpCountsFor`, so `goingCount` includes guests exactly as the event detail does.
+ */
+export type AgendaItemPreview = {
+  id: string;
+  tribe: { id: string; name: string; avatar: string | null };
+  title: string;
+  location: string | null;
+  coverImageUrl: string | null;
+  startDate: Date;
+  endDate: Date | null;
+  status: (typeof event.$inferSelect)["status"];
+  goingCount: number;
+  maybeCount: number;
+  myRsvp: string | null;
+};
+
+/**
+ * Event cards for a set of event ids, keyed by event id. A constant number of queries for any
+ * number of events.
+ */
+export async function getAgendaItems(
+  eventIds: string[],
+  currentUserId?: string
+): Promise<Map<string, AgendaItemPreview>> {
+  const previews = new Map<string, AgendaItemPreview>();
+  if (eventIds.length === 0) return previews;
+
+  const [events, counts, myRsvps] = await Promise.all([
+    db
+      .select({
+        id: event.id,
+        title: event.title,
+        location: event.location,
+        coverImageUrl: event.coverImageUrl,
+        startDate: event.startDate,
+        endDate: event.endDate,
+        status: event.status,
+        tribeId: tribe.id,
+        tribeName: tribe.name,
+        tribeAvatarUrl: media.fileUrl,
+      })
+      .from(event)
+      .innerJoin(tribe, eq(event.tribeId, tribe.id))
+      .leftJoin(media, eq(tribe.avatar, media.id))
+      .where(inArray(event.id, eventIds)),
+    rsvpCountsFor(eventIds),
+    currentUserId
+      ? db
+        .select({ eventId: eventAttendee.eventId, status: eventAttendee.status })
+        .from(eventAttendee)
+        .where(and(inArray(eventAttendee.eventId, eventIds), eq(eventAttendee.userId, currentUserId)))
+      : Promise.resolve([]),
+  ]);
+
+  const myRsvpMap = new Map(myRsvps.map((r) => [r.eventId, r.status]));
+
+  for (const e of events) {
+    previews.set(e.id, {
+      id: e.id,
+      tribe: { id: e.tribeId, name: e.tribeName, avatar: e.tribeAvatarUrl || null },
+      title: e.title,
+      location: e.location,
+      coverImageUrl: e.coverImageUrl,
+      startDate: e.startDate,
+      endDate: e.endDate,
+      status: e.status,
+      goingCount: counts.get(e.id)?.going ?? 0,
+      maybeCount: counts.get(e.id)?.maybe ?? 0,
+      myRsvp: myRsvpMap.get(e.id) ?? null,
+    });
+  }
+
+  return previews;
 }
 
 type CreateEventPollData = {

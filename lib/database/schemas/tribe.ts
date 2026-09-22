@@ -22,6 +22,7 @@ export const tribe = pgTable("tribe", {
   description: text("description"),
   avatar: uuid("avatar"),
   banner: uuid("banner"), // 16:9 aspect ratio banner image - references media.id
+  color: text("color"), // Optional brand colour (HOME-02 calendar dots); null → the client hashes the tribe id
   featuredMediaId: uuid("featured_media_id"), // References media.id - for tribe media highlights page
   location: text("location"),
   privacy: privacyType("privacy").notNull().default("private"),
@@ -124,6 +125,9 @@ export const tribeMemberPreference = pgTable("tribe_member_preference", {
 
   // Determines if the user wants to automatically add media to an album when they make a post
   autoAddPostMediaToTribe: boolean("auto_add_post_media_to_tribe").default(true).notNull(),
+
+  // When the member last tapped "Done" on HOME-03 catch-up; TribeSummary.unreadCount counts posts since then
+  lastCatchUpAt: timestamp("last_catch_up_at"),
 
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")

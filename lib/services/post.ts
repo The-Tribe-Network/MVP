@@ -12,6 +12,7 @@ import type { CreatePostInput } from "@/lib/validations/post";
 import { getMemberWithPermissions } from "./permissions";
 import { getTribeSettings } from "./tribe-settings";
 import { getPollsByIds } from "./poll";
+import { getAgendaItems, type AgendaItemPreview } from "./event";
 import { userWithUsernameColumns } from "@/lib/database/user-columns";
 
 /**
@@ -242,21 +243,6 @@ export type PostContentType = 'all' | 'text' | 'media' | 'announcements' | 'even
 
 export type PostImage = { id: string; url: string; width?: number; height?: number };
 
-// The event card a post carries (mobile contract: AgendaItem)
-export type PostEventPreview = {
-  id: string;
-  tribe: { id: string; name: string; avatar: string | null };
-  title: string;
-  location: string | null;
-  coverImageUrl: string | null;
-  startDate: Date;
-  endDate: Date | null;
-  status: (typeof event.$inferSelect)["status"];
-  goingCount: number;
-  maybeCount: number;
-  myRsvp: string | null;
-};
-
 export type PostWithMetadata = PostWithAuthor & {
   likeCount: number;
   commentCount: number;
@@ -265,7 +251,7 @@ export type PostWithMetadata = PostWithAuthor & {
   image: PostImage | null;
   media: PostImage[];
   linkedAlbum: LinkedAlbumPreview | null;
-  event: PostEventPreview | null;
+  event: AgendaItemPreview | null;
   poll: PollWithDetails | null;
 };
 
@@ -303,70 +289,6 @@ function contentTypeCondition(contentType: PostContentType): SQL | undefined {
     default:
       return undefined;
   }
-}
-
-/**
- * Event cards for posts that link an event, keyed by event id
- */
-async function getPostEventPreviews(
-  eventIds: string[],
-  currentUserId?: string
-): Promise<Map<string, PostEventPreview>> {
-  const previews = new Map<string, PostEventPreview>();
-  if (eventIds.length === 0) return previews;
-
-  const [events, rsvpCounts, myRsvps] = await Promise.all([
-    db
-      .select({
-        id: event.id,
-        title: event.title,
-        location: event.location,
-        coverImageUrl: event.coverImageUrl,
-        startDate: event.startDate,
-        endDate: event.endDate,
-        status: event.status,
-        tribeId: tribe.id,
-        tribeName: tribe.name,
-        tribeAvatarUrl: media.fileUrl,
-      })
-      .from(event)
-      .innerJoin(tribe, eq(event.tribeId, tribe.id))
-      .leftJoin(media, eq(tribe.avatar, media.id))
-      .where(inArray(event.id, eventIds)),
-    db
-      .select({ eventId: eventAttendee.eventId, status: eventAttendee.status, count: count() })
-      .from(eventAttendee)
-      .where(inArray(eventAttendee.eventId, eventIds))
-      .groupBy(eventAttendee.eventId, eventAttendee.status),
-    currentUserId
-      ? db
-        .select({ eventId: eventAttendee.eventId, status: eventAttendee.status })
-        .from(eventAttendee)
-        .where(and(inArray(eventAttendee.eventId, eventIds), eq(eventAttendee.userId, currentUserId)))
-      : Promise.resolve([]),
-  ]);
-
-  const countFor = (eventId: string, status: string) =>
-    Number(rsvpCounts.find((c) => c.eventId === eventId && c.status === status)?.count ?? 0);
-  const myRsvpMap = new Map(myRsvps.map((r) => [r.eventId, r.status]));
-
-  for (const e of events) {
-    previews.set(e.id, {
-      id: e.id,
-      tribe: { id: e.tribeId, name: e.tribeName, avatar: e.tribeAvatarUrl || null },
-      title: e.title,
-      location: e.location,
-      coverImageUrl: e.coverImageUrl,
-      startDate: e.startDate,
-      endDate: e.endDate,
-      status: e.status,
-      goingCount: countFor(e.id, 'going'),
-      maybeCount: countFor(e.id, 'maybe'),
-      myRsvp: myRsvpMap.get(e.id) ?? null,
-    });
-  }
-
-  return previews;
 }
 
 /**
@@ -457,7 +379,7 @@ async function attachPostMetadata(
       .where(and(inArray(postMedia.postId, postIds), eq(media.fileType, 'image')))
       .orderBy(asc(postMedia.displayOrder)),
     getLinkedAlbumPreviews(albumIds),
-    getPostEventPreviews(eventIds, currentUserId),
+    getAgendaItems(eventIds, currentUserId),
     getPollsByIds(pollIds, currentUserId),
   ]);
 
