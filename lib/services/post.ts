@@ -64,7 +64,7 @@ async function canUserModeratePosts(tribeId: string, userId: string): Promise<bo
  */
 export class PostInputError extends Error {
   constructor(
-    public readonly code: "INVALID_MEDIA" | "INVALID_EVENT" | "INVALID_POLL",
+    public readonly code: "INVALID_MEDIA" | "INVALID_EVENT" | "INVALID_POLL" | "INVALID_ALBUM",
     message: string,
   ) {
     super(message);
@@ -108,6 +108,7 @@ export async function createPost(
 
   const content = input.content.trim();
   const linkedAlbumId = input.linkedAlbumId || null;
+  const albumId = input.albumId || null;
   const eventId = input.eventId || null;
   const pollId = input.pollId || null;
   const isPinned = input.isPinned === true;
@@ -171,6 +172,18 @@ export async function createPost(
     }
   }
 
+  // Both album references must be albums of this tribe. `albumId` null means the general album.
+  const albumIds = [...new Set([linkedAlbumId, albumId].filter((id): id is string => id !== null))];
+  if (albumIds.length > 0) {
+    const rows = await db
+      .select({ id: album.id })
+      .from(album)
+      .where(and(inArray(album.id, albumIds), eq(album.tribeId, tribeId)));
+    if (rows.length !== albumIds.length) {
+      throw new PostInputError("INVALID_ALBUM", "Album not found in this tribe");
+    }
+  }
+
   const kind = derivePostKind({ isPinned, eventId, pollId, mediaCount: mediaIds.length, linkedAlbumId });
 
   const createdPost = await getDbTransaction().transaction(async (tx) => {
@@ -211,7 +224,7 @@ export async function createPost(
         await tx.insert(albumMedia).values(
           mediaIds.map((mediaId) => ({
             addedAt,
-            albumId: input.albumId || null, // If albumId is null, the media will be added to the general album
+            albumId, // null means the general album
             mediaId,
             addedBy: userId,
           })),
