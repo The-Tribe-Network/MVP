@@ -2,7 +2,8 @@ import { db, getDbTransaction } from "@/lib/database/client";
 import { tribeInvitation, tribeMember, tribe } from "@/lib/database/schemas/tribe";
 import { user } from "@/lib/database/schemas/auth";
 import { media } from "@/lib/database/schemas/media";
-import { eq, and, or, gt, isNull, desc, inArray } from "drizzle-orm";
+import { event } from "@/lib/database/schemas/event";
+import { eq, and, or, gt, isNull, desc, inArray, sql, aliasedTable } from "drizzle-orm";
 import type { TribeInvitation } from "@/lib/database/types";
 import { sendTribeInvitationEmail } from "@/lib/email/templates/tribe-invitation/send-tribe-invitation-email";
 import { sendTribeInvitationRejectedEmail } from "@/lib/email/templates/tribe-invitation-rejected/send-tribe-invitation-rejected-email";
@@ -337,22 +338,65 @@ export async function acceptInvitation(
   return { success: true };
 }
 
+/** Rows of `count(*)` per tribe id, as a map with 0 for tribes that have none. */
+function countMap(rows: { tribeId: string | null; count: number }[]): Map<string, number> {
+  return new Map(rows.filter((r) => r.tribeId !== null).map((r) => [r.tribeId as string, r.count]));
+}
+
 /**
- * Get pending invitations for a user by email
- * Returns invitations with tribe and inviter information
+ * Pending invitations addressed to `userEmail` (mobile contract: `PendingInvitation[]`, TRIBE-02).
+ *
+ * Each item carries the flat legacy fields the web app reads (`tribeName`, `tribeAvatar`,
+ * `invitedBy`, `inviterId`) plus, for the mobile invite screen (TRI-147):
+ * - `tribe`: the contract's `TribeWithCounts` — the tribe row with `avatarUrl` / `bannerUrl`
+ *   resolved, its creator as a UserPreview, and `memberCount` / `eventCount` / `mediaCount`.
+ *   The three counts are one grouped query each over every tribe on the page, never per row.
+ * - `inviter`: the inviter as a UserPreview (name and avatar; `id`, `name`, `image` only —
+ *   never the email).
  */
 export async function getUserPendingInvitations(userEmail: string) {
-  const pendingInvitations = await db
+  const avatarMedia = aliasedTable(media, "avatar_media");
+  const bannerMedia = aliasedTable(media, "banner_media");
+  const inviter = aliasedTable(user, "inviter");
+  const creator = aliasedTable(user, "creator");
+
+  const rows = await db
     .select({
-      invitation: tribeInvitation,
-      tribe: tribe,
-      tribeAvatar: media.fileUrl,
-      inviter: userPreviewColumns,
+      invitation: {
+        id: tribeInvitation.id,
+        tribeId: tribeInvitation.tribeId,
+        role: tribeInvitation.role,
+        createdAt: tribeInvitation.createdAt,
+        expiresAt: tribeInvitation.expiresAt,
+      },
+      tribe: {
+        id: tribe.id,
+        name: tribe.name,
+        description: tribe.description,
+        avatar: tribe.avatar,
+        banner: tribe.banner,
+        color: tribe.color,
+        featuredMediaId: tribe.featuredMediaId,
+        location: tribe.location,
+        privacy: tribe.privacy,
+        category: tribe.category,
+        isFeatured: tribe.isFeatured,
+        isTrending: tribe.isTrending,
+        createdBy: tribe.createdBy,
+        createdAt: tribe.createdAt,
+        updatedAt: tribe.updatedAt,
+      },
+      avatarUrl: avatarMedia.fileUrl,
+      bannerUrl: bannerMedia.fileUrl,
+      creator: { id: creator.id, name: creator.name, image: creator.image },
+      inviter: { id: inviter.id, name: inviter.name, image: inviter.image },
     })
     .from(tribeInvitation)
     .innerJoin(tribe, eq(tribeInvitation.tribeId, tribe.id))
-    .leftJoin(media, eq(tribe.avatar, media.id))
-    .innerJoin(user, eq(tribeInvitation.invitedBy, user.id))
+    .leftJoin(avatarMedia, eq(tribe.avatar, avatarMedia.id))
+    .leftJoin(bannerMedia, eq(tribe.banner, bannerMedia.id))
+    .innerJoin(creator, eq(tribe.createdBy, creator.id))
+    .innerJoin(inviter, eq(tribeInvitation.invitedBy, inviter.id))
     .where(
       and(
         eq(tribeInvitation.email, userEmail),
@@ -365,16 +409,51 @@ export async function getUserPendingInvitations(userEmail: string) {
     )
     .orderBy(desc(tribeInvitation.createdAt));
 
-  return pendingInvitations.map((item) => ({
+  // TribeWithCounts: three grouped counts over the page's tribes (a constant number of queries)
+  const tribeIds = [...new Set(rows.map((r) => r.tribe.id))];
+  const [memberCounts, eventCounts, mediaCounts] = tribeIds.length === 0
+    ? [[], [], []]
+    : await Promise.all([
+      db
+        .select({ tribeId: tribeMember.tribeId, count: sql<number>`count(*)::int` })
+        .from(tribeMember)
+        .where(inArray(tribeMember.tribeId, tribeIds))
+        .groupBy(tribeMember.tribeId),
+      db
+        .select({ tribeId: event.tribeId, count: sql<number>`count(*)::int` })
+        .from(event)
+        .where(inArray(event.tribeId, tribeIds))
+        .groupBy(event.tribeId),
+      db
+        .select({ tribeId: media.tribeId, count: sql<number>`count(*)::int` })
+        .from(media)
+        .where(inArray(media.tribeId, tribeIds))
+        .groupBy(media.tribeId),
+    ]);
+  const members = countMap(memberCounts);
+  const events = countMap(eventCounts);
+  const mediaItems = countMap(mediaCounts);
+
+  return rows.map((item) => ({
     id: item.invitation.id,
     tribeId: item.invitation.tribeId,
     tribeName: item.tribe.name,
-    tribeAvatar: item.tribeAvatar || item.tribe.avatar,
+    tribeAvatar: item.avatarUrl || item.tribe.avatar,
     invitedBy: item.inviter.name || "Someone",
     inviterId: item.inviter.id,
     role: item.invitation.role,
     createdAt: item.invitation.createdAt,
     expiresAt: item.invitation.expiresAt,
+    inviter: item.inviter,
+    tribe: {
+      ...item.tribe,
+      avatarUrl: item.avatarUrl ?? null,
+      bannerUrl: item.bannerUrl ?? null,
+      creator: item.creator,
+      memberCount: members.get(item.tribe.id) ?? 0,
+      eventCount: events.get(item.tribe.id) ?? 0,
+      mediaCount: mediaItems.get(item.tribe.id) ?? 0,
+    },
   }));
 }
 
