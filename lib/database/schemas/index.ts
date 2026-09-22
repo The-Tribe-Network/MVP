@@ -24,6 +24,7 @@ export {
   pollCreationPermission,
   pollResultsVisibility,
   draftKind,
+  rsvpStatus,
 } from "@/lib/database/schemas/enums";
 
 // Tribe tables

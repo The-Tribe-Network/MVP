@@ -110,3 +110,11 @@ export const createEventWithPollSchema = z.object({
 );
 
 export type CreateEventWithPollInput = z.infer<typeof createEventWithPollSchema>;
+
+// EVT-18 RSVP (TRI-10). `guestCount` is clamped to the event's guestAllowance in the service.
+export const rsvpSchema = z.object({
+  status: z.enum(["going", "maybe", "not_going"]),
+  guestCount: z.number().int().min(0).max(10).default(0),
+  note: z.string().trim().max(200, "Note must be at most 200 characters").optional(),
+});
+export type RsvpInput = z.infer<typeof rsvpSchema>;
