@@ -1,8 +1,8 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import type { User } from '@/lib/database/types'
+import type { UserPreview } from '@/lib/database/types'
 
 interface AttendeeAvatarProps {
-  user: User
+  user: UserPreview
 }
 
 export function AttendeeAvatar({ user }: AttendeeAvatarProps) {

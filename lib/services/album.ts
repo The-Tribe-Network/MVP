@@ -5,6 +5,7 @@ import { tribe } from "@/lib/database/schemas/tribe";
 import { eq, and, desc, sql, count, inArray, asc } from "drizzle-orm";
 import { canUserCreateAlbums } from "./permissions";
 import type { AlbumMedia, AlbumWithMedia, Media } from "@/lib/database/types";
+import { userPreviewColumns } from "@/lib/database/user-columns";
 
 export interface CreateAlbumData {
   tribeId: string;
@@ -72,20 +73,7 @@ export async function getAlbumById(albumId: string): Promise<AlbumWithMedia | nu
       createdAt: album.createdAt,
       updatedAt: album.updatedAt,
       createdBy: album.createdBy,
-      creator: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        emailVerified: user.emailVerified,
-        image: user.image,
-        username: user.username,
-        displayName: user.displayName,
-        bio: user.bio,
-        location: user.location,
-        profileCompleted: user.profileCompleted,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-      },
+      creator: userPreviewColumns,
       tribe: {
         id: tribe.id,
         name: tribe.name,
@@ -182,20 +170,7 @@ export async function getAlbumsByTribe(
       createdAt: album.createdAt,
       updatedAt: album.updatedAt,
       createdBy: album.createdBy,
-      creator: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        emailVerified: user.emailVerified,
-        image: user.image,
-        username: user.username,
-        displayName: user.displayName,
-        bio: user.bio,
-        location: user.location,
-        profileCompleted: user.profileCompleted,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-      },
+      creator: userPreviewColumns,
       tribe: {
         id: tribe.id,
         name: tribe.name,

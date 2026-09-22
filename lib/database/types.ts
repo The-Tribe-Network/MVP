@@ -206,6 +206,7 @@ export type MessageReadInsert = InferInsertModel<typeof messageRead>;
 // Utility type to pick specific user fields (for partial user objects)
 export type UserPreview = Pick<User, 'id' | 'name' | 'image'>;
 export type UserWithUsername = Pick<User, 'id' | 'name' | 'username' | 'image'>;
+export type UserWithProfile = Pick<User, 'id' | 'name' | 'username' | 'image' | 'displayName'>;
 export type UserBasic = Pick<User, 'id' | 'name' | 'email' | 'image' | 'username'>;
 
 // ============================================
@@ -214,7 +215,7 @@ export type UserBasic = Pick<User, 'id' | 'name' | 'email' | 'image' | 'username
 
 // Tribe extended types
 export type TribeWithCreator = Tribe & {
-  creator: User;
+  creator: UserPreview;
 };
 
 export type TribeWithMembers = TribeWithCreator & {
@@ -229,7 +230,7 @@ export type TribeMemberWithUser = TribeMember & {
 };
 
 export type TribeMemberWithPermissions = TribeMember & {
-  user: User;
+  user: UserWithUsername;
   permissions: TribeMemberPermission | null;
 };
 
@@ -288,7 +289,7 @@ export type TribeMemberWithPermissionsExtended = TribeMember & {
 
 // Post extended types
 export type PostWithAuthor = Post & {
-  author: User;
+  author: UserWithUsername;
 };
 
 export type PostWithAuthorAndTribe = PostWithAuthor & {
@@ -297,7 +298,7 @@ export type PostWithAuthorAndTribe = PostWithAuthor & {
 
 // Comment extended types
 export type CommentWithAuthor = Comment & {
-  author: User;
+  author: UserWithProfile;
 };
 
 export type CommentWithStats = CommentWithAuthor & {
@@ -311,12 +312,12 @@ export type CommentWithAuthorAndReplies = CommentWithAuthor & {
 
 // Event extended types - build up progressively
 export type EventWithCreator = Event & {
-  creator: User;
+  creator: UserPreview;
   tribe: Tribe;
 };
 
 export type EventAttendeeWithUser = EventAttendee & {
-  user: User;
+  user: UserWithUsername;
 };
 
 export type EventWithAttendees = EventWithCreator & {
@@ -354,11 +355,11 @@ export type EventWithSettings = EventWithDetails & {
 // Poll extended types
 export type PollOptionWithVotes = PollOption & {
   votes: number;
-  voters: User[];
+  voters: UserPreview[];
 };
 
 export type PollWithDetails = Poll & {
-  creator: User;
+  creator: UserPreview;
   options: PollOptionWithVotes[];
   userVotes: string[];
   totalVotes: number;
@@ -370,13 +371,13 @@ export type EventWithPolls = EventWithCreator & {
 
 // Media extended types
 export type MediaWithUploader = Media & {
-  uploader: User;
+  uploader: UserPreview;
   tribe: Tribe;
 };
 
 // Album extended types - build up progressively
 export type AlbumWithCreator = Album & {
-  creator: User;
+  creator: UserPreview;
   tribe: Tribe;
   coverUrl?: string | null; // Resolved from coverId
   photoCount?: number;
@@ -396,12 +397,12 @@ export type MessageWithSender = Message & {
 
 // Activity extended types
 export type ActivityWithUser = Activity & {
-  user: User;
+  user: UserPreview;
   tribe?: Tribe;
   post?: Post;
   event?: Event;
   media?: Media;
-  targetUser?: User;
+  targetUser?: UserPreview;
 };
 
 // ============================================

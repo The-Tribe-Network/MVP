@@ -7,6 +7,7 @@ import type { TribeInvitation } from "@/lib/database/types";
 import { sendTribeInvitationEmail } from "@/lib/email/templates/tribe-invitation/send-tribe-invitation-email";
 import { sendTribeInvitationRejectedEmail } from "@/lib/email/templates/tribe-invitation-rejected/send-tribe-invitation-rejected-email";
 import { sendTribeInvitationAcceptedEmail } from "@/lib/email/templates/tribe-invitation-accepted/send-tribe-invitation-accepted-email";
+import { userPreviewColumns } from "@/lib/database/user-columns";
 
 /**
  * Create invitations for a tribe
@@ -331,12 +332,7 @@ export async function getUserPendingInvitations(userEmail: string) {
       invitation: tribeInvitation,
       tribe: tribe,
       tribeAvatar: media.fileUrl,
-      inviter: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        image: user.image,
-      },
+      inviter: userPreviewColumns,
     })
     .from(tribeInvitation)
     .innerJoin(tribe, eq(tribeInvitation.tribeId, tribe.id))
@@ -359,7 +355,7 @@ export async function getUserPendingInvitations(userEmail: string) {
     tribeId: item.invitation.tribeId,
     tribeName: item.tribe.name,
     tribeAvatar: item.tribeAvatar || item.tribe.avatar,
-    invitedBy: item.inviter.name || item.inviter.email || "Someone",
+    invitedBy: item.inviter.name || "Someone",
     inviterId: item.inviter.id,
     role: item.invitation.role,
     createdAt: item.invitation.createdAt,
