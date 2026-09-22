@@ -367,6 +367,8 @@ export type PollOptionWithVotes = PollOption & {
 };
 
 export type PollWithDetails = Poll & {
+  // From the event's settings (TRI-13); post polls answer the default.
+  resultsVisibility?: "immediate" | "after_voting" | "after_close" | "hidden";
   creator: UserPreview;
   options: PollOptionWithVotes[];
   userVotes: string[];

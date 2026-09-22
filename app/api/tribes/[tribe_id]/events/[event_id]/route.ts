@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
 import { getEventById, updateEvent, deleteEvent } from "@/lib/services/event";
+import { eventEditability } from "@/lib/services/event-settings";
 import { getMemberWithPermissions } from "@/lib/services/permissions";
 import { updateEventDetailsSchema } from "@/lib/validations/event";
 
@@ -29,7 +30,9 @@ export async function GET(
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
 
-    return NextResponse.json(event);
+    // EVT-02 ⋯ Manage / EVT-04 gate: who may edit, from one place (TRI-13, DATA-MODEL-DELTA §6)
+    const { isUserCoHost, canUserEdit } = await eventEditability(event, memberData, user.id);
+    return NextResponse.json({ ...event, isUserCoHost, canUserEdit });
   } catch (error) {
     console.error("Error fetching event:", error);
     return NextResponse.json(
@@ -63,13 +66,9 @@ export async function PUT(
       return NextResponse.json({ error: "Not a member" }, { status: 403 });
     }
 
-    // Can edit if: creator OR has edit permission OR is owner/admin
-    const canEdit =
-      existingEvent.createdBy === user.id ||
-      memberData.permissions?.canEditEvents === true ||
-      ["owner", "admin"].includes(memberData.member.role);
-
-    if (!canEdit) {
+    // Creator, co-hosts, or whoever `event_settings.editPermission` allows (TRI-13)
+    const { canUserEdit } = await eventEditability(existingEvent, memberData, user.id);
+    if (!canUserEdit) {
       return NextResponse.json(
         { error: "No permission to edit event" },
         { status: 403 }
