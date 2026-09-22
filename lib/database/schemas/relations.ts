@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { user, account, event, tribe, activity, media, post, comment, commentLike, eventAttendee, eventSettings, eventCoHost, eventLink, message, messageRead, notification, hashtag, postHashtag, postLike, postMedia, session, tribeInvitation, tribeMember, tribeMemberPermission, album, mediaLike, tribeMemberPreference, albumMedia, poll, pollOption, pollVote } from "@/lib/database/schemas";
+import { user, account, event, tribe, activity, media, post, comment, commentLike, eventAttendee, eventSettings, eventCoHost, eventLink, message, messageRead, notification, hashtag, postHashtag, postLike, postMedia, session, tribeInvitation, tribeMember, tribeMemberPermission, album, mediaLike, tribeMemberPreference, albumMedia, poll, pollOption, pollVote, draft } from "@/lib/database/schemas";
 
 export const accountRelations = relations(account, ({ one }) => ({
 	user: one(user, {
@@ -473,5 +473,16 @@ export const pollVoteRelations = relations(pollVote, ({ one }) => ({
 	user: one(user, {
 		fields: [pollVote.userId],
 		references: [user.id]
+	}),
+}));
+
+export const draftRelations = relations(draft, ({ one }) => ({
+	user: one(user, {
+		fields: [draft.userId],
+		references: [user.id]
+	}),
+	tribe: one(tribe, {
+		fields: [draft.tribeId],
+		references: [tribe.id]
 	}),
 }));

@@ -1,4 +1,5 @@
 import { db, getDbTransaction } from "@/lib/database/client";
+import { deleteDraftsForMember } from "@/lib/services/draft";
 import { tribeMember, tribeMemberPermission } from "@/lib/database/schemas/tribe";
 import { user } from "@/lib/database/schemas/auth";
 import { eq, and, like, or, count, gte, lte, sql } from "drizzle-orm";
@@ -238,8 +239,12 @@ export async function removeMember(
     throw new Error(managementCheck.reason || 'Cannot remove this member');
   }
 
-  // Delete member record (cascade will handle permissions)
-  await db.delete(tribeMember).where(eq(tribeMember.id, targetMemberId));
+  // Delete member record (cascade will handle permissions), then their drafts for this tribe (TRI-168)
+  const [removed] = await db
+    .delete(tribeMember)
+    .where(eq(tribeMember.id, targetMemberId))
+    .returning({ userId: tribeMember.userId });
+  if (removed) await deleteDraftsForMember(removed.userId, tribeId);
 }
 
 /**
