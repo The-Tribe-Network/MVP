@@ -29,6 +29,8 @@ export const tribe = pgTable("tribe", {
   category: tribeCategory("category").notNull().default("other"),
   isFeatured: boolean("is_featured").notNull().default(false),
   isTrending: boolean("is_trending").notNull().default(false),
+  inviteCode: text("invite_code").unique(), // 10-char Crockford base32 (TRI-14); null until first shared
+  inviteCodeExpiresAt: timestamp("invite_code_expires_at"), // null → never expires; rotation retires the code
   createdBy: uuid("created_by")
     .notNull()
     .references(() => user.id, { onDelete: "restrict" }),

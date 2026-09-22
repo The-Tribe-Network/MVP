@@ -214,7 +214,11 @@ export type UserBasic = Pick<User, 'id' | 'name' | 'email' | 'image' | 'username
 // ============================================
 
 // Tribe extended types
-export type TribeWithCreator = Tribe & {
+// The invite code is the secret behind `POST /tribes/join/{code}` and only reaches callers with
+// `canInviteMembers` via the invite-link route, so the public tribe shape leaves both columns out.
+export type PublicTribe = Omit<Tribe, "inviteCode" | "inviteCodeExpiresAt">;
+
+export type TribeWithCreator = PublicTribe & {
   creator: UserPreview;
 };
 
