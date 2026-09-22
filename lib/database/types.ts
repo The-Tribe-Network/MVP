@@ -325,8 +325,15 @@ export type EventWithAttendees = EventWithCreator & {
 };
 
 export type EventWithDetails = EventWithAttendees & {
+  // going (people + guests), per the mobile contract
   attendeeCount: number;
+  maybeCount?: number;
+  myRsvp?: "going" | "maybe" | "not_going" | null;
   isUserAttending?: boolean;
+  guestAllowance?: number;
+  waitlistEnabled?: boolean;
+  capacityLimit?: number | null;
+  rsvpDeadline?: Date | null;
 };
 
 // Event settings extended types

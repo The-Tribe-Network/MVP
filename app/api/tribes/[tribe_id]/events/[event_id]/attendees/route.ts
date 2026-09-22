@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
-import { addEventAttendee, removeEventAttendee, getEventAttendees } from "@/lib/services/event";
+import {
+  addEventAttendee,
+  EventFullError,
+  getEventAttendees,
+  removeEventAttendee,
+} from "@/lib/services/event";
+import { rsvpSchema } from "@/lib/validations/event";
 import { getMemberWithPermissions } from "@/lib/services/permissions";
 
 // GET /api/tribes/[tribe_id]/events/[event_id]/attendees
@@ -50,12 +56,27 @@ export async function POST(
       return NextResponse.json({ error: "Not a member" }, { status: 403 });
     }
 
-    const body = await request.json();
-    const status = body.status || "going"; // going, maybe, not_going
+    // Web sends `{ status }` only; mobile adds guestCount and note (EVT-18, TRI-10).
+    const body = (await request.json().catch(() => ({}))) as unknown;
+    const parsed = rsvpSchema.safeParse(
+      body && typeof body === "object" && !("status" in body) ? { ...body, status: "going" } : body
+    );
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Validation failed", details: parsed.error.flatten() },
+        { status: 400 }
+      );
+    }
 
-    await addEventAttendee(event_id, user.id, status);
+    await addEventAttendee(event_id, user.id, parsed.data);
     return NextResponse.json({ success: true });
   } catch (error) {
+    if (error instanceof EventFullError) {
+      return NextResponse.json(
+        { error: error.message, code: "EVENT_FULL", waitlisted: error.waitlisted },
+        { status: 409 }
+      );
+    }
     console.error("Error adding attendee:", error);
     return NextResponse.json(
       { error: "Failed to RSVP" },

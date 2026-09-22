@@ -8,6 +8,7 @@ import {
   pollCreationPermission,
   pollResultsVisibility,
   eventEditPermission,
+  rsvpStatus,
 } from "./enums";
 
 export const event = pgTable("event", {
@@ -40,7 +41,10 @@ export const eventAttendee = pgTable("event_attendee", {
   userId: uuid("user_id")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
-  status: text("status").notNull().default("going"),
+  status: rsvpStatus("status").notNull().default("going"),
+  // +1s this member brings (clamped to event_settings.guestAllowance) and a note for the host (TRI-10)
+  guestCount: integer("guest_count").notNull().default(0),
+  note: text("note"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .defaultNow()
