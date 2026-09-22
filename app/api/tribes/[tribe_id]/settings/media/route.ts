@@ -36,14 +36,6 @@ export async function GET(
       );
     }
 
-    // Check permission to view/edit tribe settings
-    if (!member.canEditTribeSettings && member.role !== "owner") {
-      return NextResponse.json(
-        { error: "You don't have permission to view tribe settings" },
-        { status: 403 }
-      );
-    }
-
     // Fetch media settings
     const settings = await getMediaSettings(tribe_id);
 
@@ -83,8 +75,12 @@ export async function PATCH(
       );
     }
 
-    // Check permission to edit tribe settings
-    if (!member.canEditTribeSettings && member.role !== "owner") {
+    // Overrides win; otherwise owners and admins may edit (same rule as settings/timeline)
+    const canEdit =
+      member.permissions?.canEditTribeSettings ??
+      (member.member.role === "owner" || member.member.role === "admin");
+
+    if (!canEdit) {
       return NextResponse.json(
         { error: "You don't have permission to edit tribe settings" },
         { status: 403 }

@@ -58,7 +58,8 @@ export function MediaSettings({ tribeId }: MediaSettingsProps) {
 
   // Check permissions
   const canEdit =
-    member?.member.role === 'owner' || member?.canEditTribeSettings === true;
+    member?.permissions?.canEditTribeSettings ??
+    (member?.member.role === 'owner' || member?.member.role === 'admin');
 
   // Handle loading state
   if (settingsLoading) {
