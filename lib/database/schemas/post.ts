@@ -86,7 +86,10 @@ export const comment = pgTable("comment", {
     .defaultNow()
     .$onUpdate(() => new Date())
     .notNull(),
-});
+}, (table) => ({
+  // Media.commentCount per listed media (TRI-207). tri207-media-list-indexes.sql
+  postIdIdx: index("idx_comment_post_id").on(table.postId),
+}));
 
 export const commentLike = pgTable("comment_like", {
   id: uuid("id").primaryKey().defaultRandom(),

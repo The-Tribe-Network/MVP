@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerUser } from '@/lib/services/auth';
-import { uploadTribeMedia, getMediaByTribe } from '@/lib/services/media';
+import { uploadTribeMedia, getMediaByTribe, countMediaByTribe } from '@/lib/services/media';
+import { mediaListQuerySchema, mediaListQueryInput } from '@/lib/validations/media';
 import { validateImageFile } from '@/lib/utils/image';
 import { checkTribeMembership } from '@/lib/services/permissions';
 import { multipartFileLimit, rejectOversizedBody } from '@/lib/services/multipart-limits';
@@ -8,7 +9,8 @@ import { InvalidAlbumError } from '@/lib/services/album';
 
 /**
  * GET /api/tribes/[tribe_id]/media
- * Get all media for a tribe with filters
+ * Album gallery items of a tribe (`listMedia`): filters albumId, type, uploadedBy, from/to; sort; paging.
+ * Returns `{ media, total, hasMore }`.
  */
 export async function GET(
   request: NextRequest,
@@ -31,21 +33,30 @@ export async function GET(
       );
     }
 
-    // Get query params
-    const url = new URL(request.url);
-    const albumId = url.searchParams.get('albumId');
-    const type = url.searchParams.get('type') as 'image' | 'video' | 'document' | null;
-    const limit = parseInt(url.searchParams.get('limit') || '50');
-    const offset = parseInt(url.searchParams.get('offset') || '0');
+    // Query params (TRI-207: uploadedBy, from, to, sort; docs/specs/TRI-207-list-media-filters.md)
+    const validation = mediaListQuerySchema.safeParse(mediaListQueryInput(request.nextUrl.searchParams));
+    if (!validation.success) {
+      const issue = validation.error.issues[0];
+      return NextResponse.json(
+        {
+          error: `Invalid query parameter \`${issue.path.join('.') || 'query'}\`: ${issue.message}`,
+          code: 'INVALID_QUERY',
+          details: validation.error.flatten(),
+        },
+        { status: 400 }
+      );
+    }
+    const filters = validation.data;
 
-    const media = await getMediaByTribe(tribe_id, {
-      albumId: albumId === 'null' ? null : albumId || undefined,
-      type: type || undefined,
-      limit,
-      offset,
-    });
+    const [media, total] = await Promise.all([
+      getMediaByTribe(tribe_id, filters),
+      countMediaByTribe(tribe_id, filters),
+    ]);
 
-    return NextResponse.json({ media }, { status: 200 });
+    return NextResponse.json(
+      { media, total, hasMore: filters.offset + media.length < total },
+      { status: 200 }
+    );
   } catch (error) {
     console.error('Error fetching media:', error);
     return NextResponse.json(
