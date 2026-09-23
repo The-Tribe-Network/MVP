@@ -1,11 +1,17 @@
 import { db } from "@/lib/database/client";
 import { album, albumMedia, media, mediaLike } from "@/lib/database/schemas/media";
 import { user } from "@/lib/database/schemas/auth";
-import { tribe } from "@/lib/database/schemas/tribe";
-import { eq, and, desc, sql, count, inArray, asc } from "drizzle-orm";
+import { tribe, tribeMember, tribeMemberPreference } from "@/lib/database/schemas/tribe";
+import { eq, and, desc, sql, count, countDistinct, inArray, asc, lte } from "drizzle-orm";
 import { canUserCreateAlbums } from "./permissions";
-import type { AlbumMedia, AlbumWithMedia, Media } from "@/lib/database/types";
+import type { AlbumMedia, AlbumWithMedia, UserPreview } from "@/lib/database/types";
 import { userPreviewColumns } from "@/lib/database/user-columns";
+
+/** How far back "new" reaches on a member's first visit to an album (MEDIA-02 "NEW TODAY"). */
+const FIRST_VISIT_NEW_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+/** How many contributors an album carries inline (the contract's `Album.contributors` maxItems). */
+const CONTRIBUTORS_LIMIT = 3;
 
 export interface CreateAlbumData {
   tribeId: string;
@@ -55,12 +61,30 @@ export async function createAlbum(
   return newAlbum[0];
 }
 
+export interface GetAlbumOptions {
+  /**
+   * The member viewing the album. When set, each media item gets `isNew` from the viewer's previous
+   * visit to this album and the visit is stamped (`tribe_member_preference.last_album_visit_at`).
+   * Internal callers (create, add/remove media) leave it unset: no stamp, `isNew` false throughout.
+   */
+  viewerId?: string;
+  /**
+   * The tribe id from the route. When it differs from the album's tribe the route answers 403, so
+   * nothing is marked or stamped for that request.
+   */
+  tribeId?: string;
+}
+
 /**
- * Get an album by ID with its media (using junction table)
+ * Get an album by ID with its media (using junction table), contributors and, for a viewer, `isNew`.
  * @param albumId - The album ID
+ * @param options - See GetAlbumOptions
  * @returns The album with media or null if not found
  */
-export async function getAlbumById(albumId: string): Promise<AlbumWithMedia | null> {
+export async function getAlbumById(
+  albumId: string,
+  options: GetAlbumOptions = {}
+): Promise<AlbumWithMedia | null> {
   // Get album with creator, tribe, and cover URL
   const albumRecord = await db
     .select({
@@ -100,7 +124,7 @@ export async function getAlbumById(albumId: string): Promise<AlbumWithMedia | nu
 
   if (!albumRecord[0]) return null;
 
-  // Get media in album via junction table
+  // Get media in album via junction table, with each item's uploader (one join, no per-item lookups)
   const albumMediaQuery = await db
     .select({
       id: media.id,
@@ -120,19 +144,108 @@ export async function getAlbumById(albumId: string): Promise<AlbumWithMedia | nu
       postId: media.postId,
       likeCount: count(mediaLike.id),
       displayOrder: albumMedia.displayOrder,
+      addedAt: albumMedia.addedAt,
+      uploader: userPreviewColumns,
     })
     .from(albumMedia)
     .innerJoin(media, eq(albumMedia.mediaId, media.id))
+    .innerJoin(user, eq(media.uploadedBy, user.id))
     .leftJoin(mediaLike, eq(media.id, mediaLike.mediaId))
     .where(eq(albumMedia.albumId, albumId))
-    .groupBy(media.id, albumMedia.displayOrder)
+    .groupBy(media.id, albumMedia.id, user.id)
     .orderBy(asc(albumMedia.displayOrder), desc(media.createdAt));
+
+  // "New" is relative to the viewer's previous visit; computed before the visit is stamped below so
+  // this response still shows the items, and the next GET shows them as seen.
+  const viewing =
+    options.viewerId && (!options.tribeId || options.tribeId === albumRecord[0].tribeId);
+  const visit = viewing ? await getAlbumVisit(options.viewerId!, albumRecord[0].tribeId) : null;
+  const newSince = visit ? newSinceFor(visit.lastAlbumVisitAt?.[albumId]) : null;
+
+  const mediaItems = albumMediaQuery.map(({ addedAt, ...item }) => ({
+    ...item,
+    isNew: newSince !== null && addedAt.getTime() > newSince.getTime(),
+  }));
+
+  if (visit) {
+    await stampAlbumVisit(visit, options.viewerId!, albumId);
+  }
 
   return {
     ...albumRecord[0],
-    media: albumMediaQuery,
-    photoCount: albumMediaQuery.length,
+    media: mediaItems,
+    photoCount: mediaItems.length,
+    ...contributorsFromMedia(albumMediaQuery),
   };
+}
+
+/** The viewer's membership row and preference row (if any) for the album's tribe. */
+interface AlbumVisit {
+  tribeMemberId: string;
+  preferenceId: string | null;
+  lastAlbumVisitAt: Record<string, string> | null;
+}
+
+async function getAlbumVisit(userId: string, tribeId: string): Promise<AlbumVisit | null> {
+  const rows = await db
+    .select({
+      tribeMemberId: tribeMember.id,
+      preferenceId: tribeMemberPreference.id,
+      lastAlbumVisitAt: tribeMemberPreference.lastAlbumVisitAt,
+    })
+    .from(tribeMember)
+    .leftJoin(tribeMemberPreference, eq(tribeMemberPreference.tribeMemberId, tribeMember.id))
+    .where(and(eq(tribeMember.tribeId, tribeId), eq(tribeMember.userId, userId)))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+/**
+ * The cut-off after which an album item counts as new for this viewer: their previous visit, or on a
+ * first visit (no stamp, or an unreadable one) the last 24 hours, so "NEW TODAY" means what it says.
+ */
+function newSinceFor(previousVisit: string | undefined): Date {
+  const previous = previousVisit ? new Date(previousVisit) : null;
+  if (previous && !Number.isNaN(previous.getTime())) return previous;
+  return new Date(Date.now() - FIRST_VISIT_NEW_WINDOW_MS);
+}
+
+/**
+ * Record that the viewer opened the album now. One statement: merges into the existing jsonb so a
+ * concurrent visit to another album in the same tribe is not clobbered; inserts the preference row
+ * when the member has none yet.
+ */
+async function stampAlbumVisit(visit: AlbumVisit, userId: string, albumId: string): Promise<void> {
+  const stamp = { [albumId]: new Date().toISOString() };
+  if (visit.preferenceId) {
+    await db
+      .update(tribeMemberPreference)
+      .set({
+        lastAlbumVisitAt: sql`COALESCE(${tribeMemberPreference.lastAlbumVisitAt}, '{}'::jsonb) || ${JSON.stringify(stamp)}::jsonb`,
+      })
+      .where(eq(tribeMemberPreference.id, visit.preferenceId));
+  } else {
+    await db
+      .insert(tribeMemberPreference)
+      .values({ tribeMemberId: visit.tribeMemberId, userId, lastAlbumVisitAt: stamp });
+  }
+}
+
+/** Distinct uploaders from an already-loaded media list, most recent contribution first. */
+function contributorsFromMedia(
+  items: { uploadedBy: string; addedAt: Date; uploader: UserPreview }[]
+): { contributors: UserPreview[]; contributorCount: number } {
+  const latest = new Map<string, { at: number; uploader: UserPreview }>();
+  for (const item of items) {
+    const at = item.addedAt.getTime();
+    const seen = latest.get(item.uploadedBy);
+    if (!seen || at > seen.at) latest.set(item.uploadedBy, { at, uploader: item.uploader });
+  }
+  const contributors = [...latest.values()]
+    .sort((a, b) => b.at - a.at)
+    .slice(0, CONTRIBUTORS_LIMIT)
+    .map((entry) => entry.uploader);
+  return { contributors, contributorCount: latest.size };
 }
 
 /**
@@ -140,7 +253,7 @@ export async function getAlbumById(albumId: string): Promise<AlbumWithMedia | nu
  * OPTIMIZED: Uses LEFT JOIN instead of subquery for media count
  * @param tribeId - The tribe ID
  * @param options - Pagination options
- * @returns Array of albums with media counts and cover image URLs
+ * @returns Array of albums with media counts, contributor counts, top contributors and cover image URLs
  */
 export async function getAlbumsByTribe(
   tribeId: string,
@@ -148,13 +261,15 @@ export async function getAlbumsByTribe(
 ) {
   const { limit = 50, offset = 0 } = options;
 
-  // Subquery to get media count per album
+  // Subquery to get media count and distinct uploader count per album
   const mediaCountSubquery = db
     .select({
       albumId: albumMedia.albumId,
       count: count(albumMedia.id).as('count'),
+      contributorCount: countDistinct(media.uploadedBy).as('contributor_count'),
     })
     .from(albumMedia)
+    .innerJoin(media, eq(albumMedia.mediaId, media.id))
     .groupBy(albumMedia.albumId)
     .as('media_counts');
 
@@ -187,7 +302,8 @@ export async function getAlbumsByTribe(
         createdAt: tribe.createdAt,
         updatedAt: tribe.updatedAt,
       },
-      photoCount: sql<number>`COALESCE(${mediaCountSubquery.count}, 0)`,
+      photoCount: sql<number>`COALESCE(${mediaCountSubquery.count}, 0)::int`,
+      contributorCount: sql<number>`COALESCE(${mediaCountSubquery.contributorCount}, 0)::int`,
       media: sql<any>`'[]'::json`, // Empty array for list view
     })
     .from(album)
@@ -200,7 +316,54 @@ export async function getAlbumsByTribe(
     .limit(limit)
     .offset(offset);
 
-  return albums;
+  const contributorsByAlbum = await getTopContributors(albums.map((a) => a.id));
+
+  return albums.map((a) => ({
+    ...a,
+    contributors: contributorsByAlbum.get(a.id) ?? [],
+  }));
+}
+
+/**
+ * Up to 3 distinct uploaders per album, most recent contribution first, for a page of albums in one
+ * grouped query: rank uploaders per album by their latest `album_media.added_at`, keep rank <= 3.
+ */
+async function getTopContributors(albumIds: string[]): Promise<Map<string, UserPreview[]>> {
+  const byAlbum = new Map<string, UserPreview[]>();
+  if (albumIds.length === 0) return byAlbum;
+
+  const ranked = db
+    .select({
+      albumId: albumMedia.albumId,
+      uploadedBy: media.uploadedBy,
+      rank: sql<number>`ROW_NUMBER() OVER (PARTITION BY ${albumMedia.albumId} ORDER BY MAX(${albumMedia.addedAt}) DESC)`.as('rank'),
+    })
+    .from(albumMedia)
+    .innerJoin(media, eq(albumMedia.mediaId, media.id))
+    .where(inArray(albumMedia.albumId, albumIds))
+    .groupBy(albumMedia.albumId, media.uploadedBy)
+    .as('ranked');
+
+  const rows = await db
+    .select({
+      albumId: ranked.albumId,
+      rank: ranked.rank,
+      id: user.id,
+      name: user.name,
+      image: user.image,
+    })
+    .from(ranked)
+    .innerJoin(user, eq(ranked.uploadedBy, user.id))
+    .where(lte(ranked.rank, CONTRIBUTORS_LIMIT))
+    .orderBy(asc(ranked.albumId), asc(ranked.rank));
+
+  for (const row of rows) {
+    if (!row.albumId) continue;
+    const list = byAlbum.get(row.albumId) ?? [];
+    list.push({ id: row.id, name: row.name, image: row.image });
+    byAlbum.set(row.albumId, list);
+  }
+  return byAlbum;
 }
 
 /**

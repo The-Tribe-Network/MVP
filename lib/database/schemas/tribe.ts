@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean, unique, uuid, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean, unique, uuid, integer, jsonb } from "drizzle-orm/pg-core";
 import { user } from "./auth";
 import {
   privacyType,
@@ -130,6 +130,9 @@ export const tribeMemberPreference = pgTable("tribe_member_preference", {
 
   // When the member last tapped "Done" on HOME-03 catch-up; TribeSummary.unreadCount counts posts since then
   lastCatchUpAt: timestamp("last_catch_up_at"),
+
+  // albumId -> ISO time of the member's last album detail view; album GET marks media.isNew from it (TRI-201)
+  lastAlbumVisitAt: jsonb("last_album_visit_at").$type<Record<string, string>>(),
 
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
