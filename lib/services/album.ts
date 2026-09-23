@@ -82,6 +82,42 @@ async function canUserEditAlbumContents(
   return canUserCreateAlbums(albumRecord.tribeId, userId);
 }
 
+/**
+ * A request named an album that is not an album of the tribe being written to: unknown id, malformed id,
+ * or an album of another tribe (TRI-197). Routes answer 400 `{ error, code: "INVALID_ALBUM" }`.
+ */
+export class InvalidAlbumError extends Error {
+  readonly code = "INVALID_ALBUM" as const;
+  constructor(message = "Album not found in this tribe") {
+    super(message);
+    this.name = "InvalidAlbumError";
+  }
+}
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * The one album-in-tribe check for every write that files media into an album (TRI-197): multipart and
+ * signed uploads, media reassignment, and posts. `null`/`undefined` means the general library and passes.
+ * Anything else must be a uuid naming an album whose `tribe_id` is `tribeId`, else `InvalidAlbumError`.
+ * Non-string values (a JSON body can carry them) fail the same way, and the uuid check happens first so a
+ * malformed id is a 400 and never reaches Postgres as a bad cast.
+ */
+export async function assertAlbumInTribe(albumId: unknown, tribeId: string): Promise<void> {
+  if (albumId === null || albumId === undefined) return;
+  if (typeof albumId !== "string" || !UUID_PATTERN.test(albumId)) {
+    throw new InvalidAlbumError();
+  }
+  const [row] = await db
+    .select({ id: album.id })
+    .from(album)
+    .where(and(eq(album.id, albumId), eq(album.tribeId, tribeId)))
+    .limit(1);
+  if (!row) {
+    throw new InvalidAlbumError();
+  }
+}
+
 /** Throws unless `coverId` is a media row in the tribe (the same rule `createAlbumWithMedia` applies). */
 async function assertCoverInTribe(coverId: string, tribeId: string): Promise<void> {
   const [coverMediaRecord] = await db

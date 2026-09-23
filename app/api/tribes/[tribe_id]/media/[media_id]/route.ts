@@ -7,10 +7,13 @@ import {
   updateMediaAlbumAssignment
 } from '@/lib/services/media';
 import { checkTribeMembership } from '@/lib/services/permissions';
+import { InvalidAlbumError } from '@/lib/services/album';
 
 /**
  * PATCH /api/tribes/[tribe_id]/media/[media_id]
  * Update media (change album assignment, alt text, etc.)
+ * The media must be in tribe_id (403 otherwise) and `albumId`, when set, must be an album of that tribe
+ * (400 INVALID_ALBUM; null keeps meaning the general library) — TRI-197.
  */
 export async function PATCH(
   request: NextRequest,
@@ -29,6 +32,18 @@ export async function PATCH(
     if (!isMember) {
       return NextResponse.json(
         { error: 'You are not a member of this tribe' },
+        { status: 403 }
+      );
+    }
+
+    // The media must be this tribe's, so the caller's membership in tribe_id is what gets checked.
+    const existingMedia = await getMediaById(media_id);
+    if (!existingMedia) {
+      return NextResponse.json({ error: 'Media not found' }, { status: 404 });
+    }
+    if (existingMedia.tribeId !== tribe_id) {
+      return NextResponse.json(
+        { error: 'Media does not belong to this tribe' },
         { status: 403 }
       );
     }
@@ -57,6 +72,10 @@ export async function PATCH(
 
     return NextResponse.json({ media: updatedMedia }, { status: 200 });
   } catch (error) {
+    if (error instanceof InvalidAlbumError) {
+      return NextResponse.json({ error: error.message, code: error.code }, { status: 400 });
+    }
+
     console.error('Error updating media:', error);
 
     if (error instanceof Error) {

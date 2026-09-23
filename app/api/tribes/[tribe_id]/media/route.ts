@@ -4,6 +4,7 @@ import { uploadTribeMedia, getMediaByTribe } from '@/lib/services/media';
 import { validateImageFile } from '@/lib/utils/image';
 import { checkTribeMembership } from '@/lib/services/permissions';
 import { multipartFileLimit, rejectOversizedBody } from '@/lib/services/multipart-limits';
+import { InvalidAlbumError } from '@/lib/services/album';
 
 /**
  * GET /api/tribes/[tribe_id]/media
@@ -129,6 +130,10 @@ export async function POST(
       mimeType: result.mimeType,
     });
   } catch (error) {
+    if (error instanceof InvalidAlbumError) {
+      return NextResponse.json({ error: error.message, code: error.code }, { status: 400 });
+    }
+
     console.error('Error uploading tribe media:', error);
 
     if (error instanceof Error) {

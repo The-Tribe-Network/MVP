@@ -16,10 +16,11 @@ import { randomBytes } from "node:crypto";
 import { and, eq, inArray } from "drizzle-orm";
 import { cloudinary } from "@/lib/clients/cloudinary";
 import { db, getDbTransaction } from "@/lib/database/client";
-import { album, albumMedia, media } from "@/lib/database/schemas/media";
+import { albumMedia, media } from "@/lib/database/schemas/media";
 import { user } from "@/lib/database/schemas/auth";
 import { getTribeSettings } from "./tribe-settings";
 import { canUserUploadMedia } from "./permissions";
+import { assertAlbumInTribe } from "./album";
 import { blurhashForCloudinaryImage } from "@/lib/utils/blurhash";
 import { MAX_UPLOAD_BYTES_HARD_CAP } from "@/lib/utils/image";
 import type { ConfirmAssetInput, MediaUploadPurpose } from "@/lib/validations/media-upload";
@@ -51,7 +52,6 @@ const PURPOSE_FOLDER: Record<MediaUploadPurpose, string> = {
 
 export type MediaUploadErrorCode =
   | "FORBIDDEN"
-  | "INVALID_ALBUM"
   | "INVALID_PUBLIC_ID"
   | "ASSET_NOT_FOUND"
   | "ASSET_MISMATCH"
@@ -180,16 +180,9 @@ export async function confirmMediaUploads(
     throw new MediaUploadError("FORBIDDEN", "User does not have permission to upload media");
   }
 
-  // The album must belong to this tribe (same rule as createPost's INVALID_ALBUM). Null = general album.
-  if (addToAlbum && albumId) {
-    const [row] = await db
-      .select({ id: album.id })
-      .from(album)
-      .where(and(eq(album.id, albumId), eq(album.tribeId, tribeId)))
-      .limit(1);
-    if (!row) {
-      throw new MediaUploadError("INVALID_ALBUM", "Album not found in this tribe");
-    }
+  // The album must belong to this tribe (throws InvalidAlbumError, the route's 400 INVALID_ALBUM). Null = general album.
+  if (addToAlbum) {
+    await assertAlbumInTribe(albumId, tribeId);
   }
 
   const prefix = tribeFolderPrefix(tribeId);

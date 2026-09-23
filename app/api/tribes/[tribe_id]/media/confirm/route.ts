@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
 import { checkTribeMembership } from "@/lib/services/permissions";
 import { MediaUploadError, confirmMediaUploads } from "@/lib/services/media-upload";
+import { InvalidAlbumError } from "@/lib/services/album";
 import { confirmMediaUploadSchema } from "@/lib/validations/media-upload";
 import { validateApiRequest } from "@/lib/validations/tribe";
 
@@ -33,6 +34,9 @@ export async function POST(request: NextRequest, ctx: RouteContext<"/api/tribes/
     const created = await confirmMediaUploads(tribe_id, user.id, assets, albumId, addToAlbum ?? true);
     return NextResponse.json({ media: created }, { status: 201 });
   } catch (error) {
+    if (error instanceof InvalidAlbumError) {
+      return NextResponse.json({ error: error.message, code: error.code }, { status: 400 });
+    }
     if (error instanceof MediaUploadError) {
       const status = error.code === "FORBIDDEN" ? 403 : error.code === "FILE_TOO_LARGE" ? 413 : 400;
       return NextResponse.json(
