@@ -401,8 +401,25 @@ export type AlbumWithCreator = Album & {
   photoCount?: number;
 };
 
-export type AlbumWithMedia = AlbumWithCreator & {
-  media: Media[];
+/** Album media item as album GET returns it: the row plus its uploader and the viewer's "new" flag (TRI-201). */
+export type AlbumMediaItem = Media & {
+  likeCount: number;
+  displayOrder: number | null;
+  uploader: UserPreview;
+  /** Added to the album after the viewer's previous visit (first visit: within the last 24 h). */
+  isNew: boolean;
+};
+
+/** Distinct uploaders of an album's media, for the MEDIA-02 header and the MEDIA-01 strip (TRI-201). */
+export type AlbumContributors = {
+  /** Up to 3 distinct uploaders, most recent contribution first. */
+  contributors: UserPreview[];
+  /** Number of distinct uploaders across the album. */
+  contributorCount: number;
+};
+
+export type AlbumWithMedia = AlbumWithCreator & AlbumContributors & {
+  media: AlbumMediaItem[];
   photoCount: number; // Override optional to required
 };
 
