@@ -6,6 +6,13 @@ import { cloudinary } from '@/lib/clients/cloudinary';
 import { eq, and, desc, isNull, count, sql } from 'drizzle-orm';
 import type { Media, MediaInsert } from '@/lib/database/types';
 import { canUserUploadMedia, canUserDeleteMedia } from './permissions';
+import { blurhashForCloudinaryImage } from '@/lib/utils/blurhash';
+
+/** Cloudinary public_id from a delivery URL (`/upload/v<ver>/<public_id>.<ext>`), or null. */
+export function publicIdFromCloudinaryUrl(url: string): string | null {
+  const match = url.match(/\/upload\/(?:[^/]+\/)*?v\d+\/(.+)\.[A-Za-z0-9]+$/);
+  return match ? match[1] : null;
+}
 
 export interface UploadAvatarResult {
   id: string;
@@ -56,6 +63,7 @@ export async function uploadAvatar(
     duration: null,
     thumbnailUrl: null,
     altText: null,
+    publicId: uploadResult.public_id,
   };
 
   const [createdMedia] = await db
@@ -110,6 +118,7 @@ export async function uploadTribeAvatar(
     duration: null,
     thumbnailUrl: null,
     altText: null,
+    publicId: uploadResult.public_id,
   };
 
   const [createdMedia] = await db
@@ -167,6 +176,8 @@ export async function uploadPostImage(
     duration: null,
     thumbnailUrl: null,
     altText: null,
+    publicId: uploadResult.public_id,
+    blurhash: await blurhashForCloudinaryImage(uploadResult.secure_url),
   };
 
   const [createdMedia] = await db
@@ -223,6 +234,8 @@ export async function uploadTribeBanner(
     duration: null,
     thumbnailUrl: null,
     altText: null,
+    publicId: uploadResult.public_id,
+    blurhash: await blurhashForCloudinaryImage(uploadResult.secure_url),
   };
 
   const [createdMedia] = await db
@@ -279,6 +292,8 @@ export async function uploadEventCover(
     duration: null,
     thumbnailUrl: null,
     altText: null,
+    publicId: uploadResult.public_id,
+    blurhash: await blurhashForCloudinaryImage(uploadResult.secure_url),
   };
 
   const [createdMedia] = await db
@@ -321,24 +336,13 @@ export async function deleteMedia(id: string): Promise<void> {
     return;
   }
 
-  // Extract public_id from Cloudinary URL
-  // Cloudinary URLs typically look like:
-  // https://res.cloudinary.com/{cloud_name}/image/upload/{folder}/{filename}
-  // We need to extract everything after /upload/ and remove the file extension
-  const url = mediaRecord.fileUrl;
-  const uploadIndex = url.indexOf('/upload/');
-  if (uploadIndex === -1) {
-    // If URL doesn't match expected format, try to delete from database anyway
-    console.warn('Could not extract public_id from URL:', url);
+  // Stored public_id (TRI-160); older rows without one fall back to parsing the delivery URL.
+  const publicId = mediaRecord.publicId ?? publicIdFromCloudinaryUrl(mediaRecord.fileUrl);
+  if (!publicId) {
+    console.warn('Could not determine Cloudinary public_id for media', id, mediaRecord.fileUrl);
     await db.delete(media).where(eq(media.id, id));
     return;
   }
-
-  const pathAfterUpload = url.substring(uploadIndex + '/upload/'.length);
-  // Remove file extension and any transformations
-  // Split by '.' and take first part, then split by '/' to handle transformations
-  const parts = pathAfterUpload.split('.');
-  const publicId = parts[0];
 
   // Delete from Cloudinary
   try {
@@ -437,6 +441,7 @@ export async function getMediaByTribe(
       duration: media.duration,
       thumbnailUrl: media.thumbnailUrl,
       altText: media.altText,
+      blurhash: media.blurhash,
       createdAt: media.createdAt,
       uploadedBy: media.uploadedBy,
       postId: media.postId,
@@ -489,6 +494,7 @@ export async function getLooseMedia(tribeId: string) {
       duration: media.duration,
       thumbnailUrl: media.thumbnailUrl,
       altText: media.altText,
+      blurhash: media.blurhash,
       createdAt: media.createdAt,
       uploadedBy: media.uploadedBy,
       postId: media.postId,
@@ -548,6 +554,7 @@ export async function getAllTribeMedia(
       duration: media.duration,
       thumbnailUrl: media.thumbnailUrl,
       altText: media.altText,
+      blurhash: media.blurhash,
       createdAt: media.createdAt,
       uploadedBy: media.uploadedBy,
       postId: media.postId,
@@ -745,6 +752,8 @@ export async function uploadTribeMedia(
     duration: null,
     thumbnailUrl: null,
     altText: null,
+    publicId: uploadResult.public_id,
+    blurhash: await blurhashForCloudinaryImage(uploadResult.secure_url),
   };
 
   const [createdMedia] = await db
@@ -822,6 +831,8 @@ export async function uploadTribeMediaBatch(
         duration: null,
         thumbnailUrl: null,
         altText: null,
+        publicId: uploadResult.public_id,
+        blurhash: await blurhashForCloudinaryImage(uploadResult.secure_url),
       };
 
       const [createdMedia] = await db

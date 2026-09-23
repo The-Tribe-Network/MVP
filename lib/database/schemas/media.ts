@@ -42,6 +42,11 @@ export const media = pgTable("media", {
   duration: integer("duration"),
   thumbnailUrl: text("thumbnail_url"),
   altText: text("alt_text"),
+  // Cloudinary public_id (TRI-160). Set by the confirm flow and the multipart uploads; backfilled from
+  // file_url for older rows. Null only when the asset is not a Cloudinary upload.
+  publicId: text("public_id").unique(),
+  // Placeholder hash (https://blurha.sh), computed from a 32px thumbnail on upload/confirm.
+  blurhash: text("blurhash"),
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
 

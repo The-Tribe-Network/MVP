@@ -3,6 +3,7 @@ import { getServerUser } from '@/lib/services/auth';
 import { uploadTribeMediaBatch } from '@/lib/services/media';
 import { validateImageFile } from '@/lib/utils/image';
 import { checkTribeMembership } from '@/lib/services/permissions';
+import { multipartFileLimit, rejectOversizedBody } from '@/lib/services/multipart-limits';
 
 /**
  * POST /api/tribes/[tribe_id]/media/batch
@@ -28,6 +29,9 @@ export async function POST(
         { status: 403 }
       );
     }
+
+    const oversized = rejectOversizedBody(request);
+    if (oversized) return oversized;
 
     // Parse form data
     const formData = await request.formData();
@@ -63,17 +67,19 @@ export async function POST(
 
     // Validate all files and convert to buffers
     const validatedFiles: { buffer: Buffer; mimeType: string; originalName: string }[] = [];
-    const validationErrors: { index: number; name: string; error: string }[] = [];
+    const validationErrors: { index: number; name: string; error: string; code?: string }[] = [];
 
+    const fileLimit = await multipartFileLimit(tribe_id);
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      const validation = validateImageFile(file);
+      const validation = validateImageFile(file, fileLimit);
 
       if (!validation.valid) {
         validationErrors.push({
           index: i,
           name: file.name,
           error: validation.error || 'Invalid file',
+          code: validation.code,
         });
         continue;
       }
@@ -109,7 +115,7 @@ export async function POST(
     return NextResponse.json({
       successful: result.successful,
       failed: [
-        ...validationErrors.map(e => ({ index: e.index, error: e.error, name: e.name })),
+        ...validationErrors.map(e => ({ index: e.index, error: e.error, name: e.name, code: e.code })),
         ...result.failed,
       ],
       totalUploaded: result.successful.length,

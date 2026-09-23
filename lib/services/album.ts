@@ -138,6 +138,7 @@ export async function getAlbumById(
       duration: media.duration,
       thumbnailUrl: media.thumbnailUrl,
       altText: media.altText,
+      blurhash: media.blurhash,
       createdAt: media.createdAt,
       uploadedBy: media.uploadedBy,
       postId: media.postId,

@@ -262,7 +262,7 @@ export async function createPost(
 export type PostSortOption = 'new' | 'hot' | 'top';
 export type PostContentType = 'all' | 'text' | 'media' | 'announcements' | 'events' | 'polls';
 
-export type PostImage = { id: string; url: string; width?: number; height?: number };
+export type PostImage = { id: string; url: string; width?: number; height?: number; blurhash?: string };
 
 export type PostWithMetadata = PostWithAuthor & {
   likeCount: number;
@@ -510,6 +510,7 @@ async function attachPostMetadata(
         fileUrl: media.fileUrl,
         width: media.width,
         height: media.height,
+        blurhash: media.blurhash,
       })
       .from(postMedia)
       .innerJoin(media, eq(postMedia.mediaId, media.id))
@@ -530,7 +531,13 @@ async function attachPostMetadata(
   const photosMap = new Map<string, PostImage[]>();
   for (const m of photos) {
     const list = photosMap.get(m.postId) ?? [];
-    list.push({ id: m.id, url: m.fileUrl, width: m.width || undefined, height: m.height || undefined });
+    list.push({
+      id: m.id,
+      url: m.fileUrl,
+      width: m.width || undefined,
+      height: m.height || undefined,
+      blurhash: m.blurhash || undefined,
+    });
     photosMap.set(m.postId, list);
   }
 

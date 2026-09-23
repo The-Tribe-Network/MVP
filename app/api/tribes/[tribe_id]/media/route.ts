@@ -3,6 +3,7 @@ import { getServerUser } from '@/lib/services/auth';
 import { uploadTribeMedia, getMediaByTribe } from '@/lib/services/media';
 import { validateImageFile } from '@/lib/utils/image';
 import { checkTribeMembership } from '@/lib/services/permissions';
+import { multipartFileLimit, rejectOversizedBody } from '@/lib/services/multipart-limits';
 
 /**
  * GET /api/tribes/[tribe_id]/media
@@ -69,6 +70,9 @@ export async function POST(
 
     const { tribe_id } = await ctx.params;
 
+    const oversized = rejectOversizedBody(request);
+    if (oversized) return oversized;
+
     // Parse form data
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
@@ -93,12 +97,12 @@ export async function POST(
       addToAlbum = Boolean(addToAlbumValue);
     }
 
-    // Validate file
-    const validation = validateImageFile(file);
+    // Validate file (type, and size against the tribe's maxMediaFileSize / platform limit)
+    const validation = validateImageFile(file, await multipartFileLimit(tribe_id));
     if (!validation.valid) {
       return NextResponse.json(
-        { error: validation.error },
-        { status: 400 }
+        { error: validation.error, code: validation.code },
+        { status: validation.code === 'FILE_TOO_LARGE' ? 413 : 400 }
       );
     }
 
