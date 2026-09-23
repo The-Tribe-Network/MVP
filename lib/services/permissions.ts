@@ -130,6 +130,9 @@ export async function canUserDeleteMedia(
 
   if (!memberData || !mediaRecord[0]) return false;
 
+  // The caller's rights in `tribeId` never reach media of another tribe (TRI-197).
+  if (mediaRecord[0].tribeId !== tribeId) return false;
+
   const isOwner = mediaRecord[0].uploadedBy === userId;
   const role = memberData.member.role;
 

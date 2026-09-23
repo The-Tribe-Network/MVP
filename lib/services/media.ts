@@ -6,6 +6,7 @@ import { cloudinary } from '@/lib/clients/cloudinary';
 import { eq, and, desc, isNull, count, sql } from 'drizzle-orm';
 import type { Media, MediaInsert } from '@/lib/database/types';
 import { canUserUploadMedia, canUserDeleteMedia } from './permissions';
+import { assertAlbumInTribe, InvalidAlbumError } from './album';
 import { blurhashForCloudinaryImage } from '@/lib/utils/blurhash';
 
 /** Cloudinary public_id from a delivery URL (`/upload/v<ver>/<public_id>.<ext>`), or null. */
@@ -724,6 +725,11 @@ export async function uploadTribeMedia(
     throw new Error('User does not have permission to upload media');
   }
 
+  // The album must be one of this tribe's (TRI-197), checked before any byte reaches Cloudinary.
+  if (addToAlbum) {
+    await assertAlbumInTribe(albumId, tribeId);
+  }
+
   // Upload to Cloudinary with transformations
   const base64Data = fileBuffer.toString('base64');
   const dataUri = `data:${mimeType};base64,${base64Data}`;
@@ -799,6 +805,12 @@ export async function uploadTribeMediaBatch(
   const hasPermission = await canUserUploadMedia(tribeId, userId);
   if (!hasPermission) {
     throw new Error('User does not have permission to upload media');
+  }
+
+  // One albumId covers the whole batch, so an album that is not this tribe's fails the request up front
+  // (InvalidAlbumError) before any file is uploaded, instead of once per file in `failed[]`.
+  if (addToAlbum) {
+    await assertAlbumInTribe(albumId, tribeId);
   }
 
   // Upload all files in parallel
@@ -963,6 +975,15 @@ export async function updateMediaAlbumAssignment(
   }
 
   if (addToAlbum) {
+    // The target album must be one of the media's own tribe (TRI-197); null/undefined = general album.
+    // Media with no tribe (avatars) cannot be filed into any album.
+    if (albumId !== null && albumId !== undefined) {
+      if (!mediaRecord.tribeId) {
+        throw new InvalidAlbumError();
+      }
+      await assertAlbumInTribe(albumId, mediaRecord.tribeId);
+    }
+
     // Add to album or change album
     return await addMediaToAlbumJunction(
       mediaId,

@@ -18,6 +18,7 @@ import type {
 } from "@/lib/database/types";
 import type { CreatePostInput } from "@/lib/validations/post";
 import { getMemberWithPermissions } from "./permissions";
+import { assertAlbumInTribe } from "./album";
 import { getTribeSettings } from "./tribe-settings";
 import { getPollsByIds } from "./poll";
 import { getAgendaItems, type AgendaItemPreview } from "./event";
@@ -72,7 +73,7 @@ async function canUserModeratePosts(tribeId: string, userId: string): Promise<bo
  */
 export class PostInputError extends Error {
   constructor(
-    public readonly code: "INVALID_MEDIA" | "INVALID_EVENT" | "INVALID_POLL" | "INVALID_ALBUM",
+    public readonly code: "INVALID_MEDIA" | "INVALID_EVENT" | "INVALID_POLL",
     message: string,
   ) {
     super(message);
@@ -180,17 +181,10 @@ export async function createPost(
     }
   }
 
-  // Both album references must be albums of this tribe. `albumId` null means the general album.
-  const albumIds = [...new Set([linkedAlbumId, albumId].filter((id): id is string => id !== null))];
-  if (albumIds.length > 0) {
-    const rows = await db
-      .select({ id: album.id })
-      .from(album)
-      .where(and(inArray(album.id, albumIds), eq(album.tribeId, tribeId)));
-    if (rows.length !== albumIds.length) {
-      throw new PostInputError("INVALID_ALBUM", "Album not found in this tribe");
-    }
-  }
+  // Both album references must be albums of this tribe (InvalidAlbumError → the route's 400 INVALID_ALBUM).
+  // `albumId` null means the general album.
+  await assertAlbumInTribe(linkedAlbumId, tribeId);
+  await assertAlbumInTribe(albumId, tribeId);
 
   const kind = derivePostKind({ isPinned, eventId, pollId, mediaCount: mediaIds.length, linkedAlbumId });
 
