@@ -48,7 +48,10 @@ export const media = pgTable("media", {
   // Placeholder hash (https://blurha.sh), computed from a 32px thumbnail on upload/confirm.
   blurhash: text("blurhash"),
   createdAt: timestamp("created_at").defaultNow().notNull()
-});
+}, (table) => ({
+  // listMedia (TRI-207): tribe's media by created_at, `id` tie-break. tri207-media-list-indexes.sql
+  tribeCreatedIdx: index("idx_media_tribe_created").on(table.tribeId, table.createdAt, table.id),
+}));
 
 // Junction table for many-to-many album-media relationship
 export const albumMedia = pgTable("album_media", {

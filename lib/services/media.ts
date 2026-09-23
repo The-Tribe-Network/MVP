@@ -3,7 +3,8 @@ import { albumMedia, media, mediaLike } from '@/lib/database/schemas';
 import { user } from '@/lib/database/schemas/auth';
 import { comment } from '@/lib/database/schemas/post';
 import { cloudinary } from '@/lib/clients/cloudinary';
-import { eq, and, desc, isNull, count, sql } from 'drizzle-orm';
+import { eq, and, asc, desc, exists, gte, inArray, isNull, lt, count, sql, type SQL } from 'drizzle-orm';
+import type { MediaListSort } from '@/lib/validations/media';
 import type { Media, MediaInsert } from '@/lib/database/types';
 import { canUserUploadMedia, canUserDeleteMedia } from './permissions';
 import { assertAlbumInTribe, InvalidAlbumError } from './album';
@@ -387,6 +388,14 @@ export async function deleteMediaWithoutChecks(mediaId: string): Promise<void> {
 export interface MediaFilters {
   albumId?: string | null;
   type?: "image" | "video" | "document";
+  /** Uploader user ids (TRI-207); matches any of them. An empty array matches nothing. */
+  uploadedBy?: string[];
+  /** Inclusive lower bound on media.created_at (TRI-207). */
+  createdFrom?: Date;
+  /** Exclusive upper bound on media.created_at (TRI-207). */
+  createdBefore?: Date;
+  /** Default `newest`. Every sort ends in unique keys so offset paging is stable (TRI-207). */
+  sort?: MediaListSort;
   limit?: number;
   offset?: number;
 }
@@ -397,42 +406,78 @@ export interface UpdateMediaData {
   // not through this interface. Use addMediaToAlbum() from album service instead.
 }
 
+/** Conditions on `media` shared by the listMedia page query and its count. */
+function mediaListConditions(tribeId: string, filters: MediaFilters) {
+  const { type, uploadedBy, createdFrom, createdBefore } = filters;
+  const conditions = [eq(media.tribeId, tribeId)];
+
+  if (type) conditions.push(eq(media.fileType, type));
+  if (uploadedBy) conditions.push(uploadedBy.length ? inArray(media.uploadedBy, uploadedBy) : sql`false`);
+  if (createdFrom) conditions.push(gte(media.createdAt, createdFrom));
+  if (createdBefore) conditions.push(lt(media.createdAt, createdBefore));
+
+  return conditions;
+}
+
 /**
- * Get album media by tribe with filters
- * Selects from albumMedia table (album gallery items), not general media table
- * OPTIMIZED: Replaced N+1 subquery with LEFT JOIN for comment counts
+ * Which album_media rows of the outer `media` row count: all of them, one album's, or the general library's
+ * (album_id is null). Used correlated, so it must be embedded where `media` is in scope.
+ */
+function albumMediaOfMedia(albumId: string | null | undefined) {
+  return and(
+    eq(albumMedia.mediaId, media.id),
+    albumId === undefined ? undefined : albumId === null ? isNull(albumMedia.albumId) : eq(albumMedia.albumId, albumId)
+  );
+}
+
+/** The outer `media` row has at least one album_media row the album filter allows. */
+function isFiled(albumId: string | null | undefined) {
+  return exists(db.select({ one: sql`1` }).from(albumMedia).where(albumMediaOfMedia(albumId)));
+}
+
+// Correlated counts: one index probe per row instead of joining likes x comments and grouping.
+const mediaLikeCount = sql<number>`(select count(*) from ${mediaLike} where ${mediaLike.mediaId} = ${media.id})`.mapWith(Number);
+const mediaCommentCount = sql<number>`(select count(*) from ${comment} where ${comment.postId} = ${media.postId})`.mapWith(Number);
+
+/**
+ * Photos of a tribe that are filed in the general library or an album (`GET /tribes/{tid}/media`, `listMedia`;
+ * also `/media/public`). One row per photo (TRI-207 dedupe): a photo filed in several albums is listed once,
+ * carrying its earliest album_media row (`added_at, id`) among those the album filter allows. `id` and `mediaId`
+ * are both the media id. Media never filed (e.g. avatars) is not listed.
+ * See docs/specs/TRI-207-list-media-filters.md.
  * @param tribeId - The tribe ID
- * @param filters - Optional filters for album media
- * @returns Array of album media records with like counts
+ * @param filters - Optional filters, sort and paging
+ * @returns One page of media records with album info and like / comment counts
  */
 export async function getMediaByTribe(
   tribeId: string,
   filters: MediaFilters = {}
 ) {
-  const { albumId, type, limit = 50, offset = 0 } = filters;
+  const { albumId, sort = "newest", limit = 50, offset = 0 } = filters;
 
-  // Build where conditions
-  const conditions = [eq(media.tribeId, tribeId)];
+  // The one album_media row reported per photo (earliest by added_at, id). Scalar subqueries in the select
+  // list, so Postgres evaluates them only for the returned page (a lateral join ran them for every row
+  // before the popular sort). Being filed at all is the EXISTS in the where clause.
+  const filedRow = <T extends typeof albumMedia.albumId | typeof albumMedia.addedAt>(column: T) =>
+    sql`(${db
+      .select({ value: column })
+      .from(albumMedia)
+      .where(albumMediaOfMedia(albumId))
+      .orderBy(asc(albumMedia.addedAt), asc(albumMedia.id))
+      .limit(1)})`.mapWith(column);
 
-  // Apply album filter
-  if (albumId !== undefined) {
-    if (albumId === null) {
-      // Get general album items (albumId is null in albumMedia table)
-      conditions.push(isNull(albumMedia.albumId));
-    } else {
-      // Get items in a specific album
-      conditions.push(eq(albumMedia.albumId, albumId));
-    }
-  }
+  // media.id is unique per row now, so every order ends in it and is total.
+  const orderBy =
+    sort === "oldest"
+      ? [asc(media.createdAt), asc(media.id)]
+      : sort === "popular"
+        ? [desc(mediaLikeCount), desc(media.createdAt), desc(media.id)]
+        : [desc(media.createdAt), desc(media.id)];
 
-  if (type) {
-    conditions.push(eq(media.fileType, type));
-  }
-
-  const query = db
+  return db
     .select({
-      id: albumMedia.id,
-      mediaId: albumMedia.mediaId,
+      id: media.id,
+      mediaId: media.id,
       fileUrl: media.fileUrl,
       fileType: media.fileType,
       fileSize: media.fileSize,
@@ -446,35 +491,37 @@ export async function getMediaByTribe(
       createdAt: media.createdAt,
       uploadedBy: media.uploadedBy,
       postId: media.postId,
-      albumId: albumMedia.albumId,
-      addedAt: albumMedia.addedAt,
+      albumId: filedRow(albumMedia.albumId) as SQL<string | null>,
+      addedAt: filedRow(albumMedia.addedAt) as SQL<Date>,
       tribeId: media.tribeId,
       uploader: {
         id: user.id,
         name: user.name,
         image: user.image,
       },
-      likeCount: count(sql`DISTINCT ${mediaLike.id}`),
-      commentCount: count(sql`DISTINCT ${comment.id}`),
+      likeCount: mediaLikeCount,
+      commentCount: mediaCommentCount,
     })
-    .from(albumMedia)
-    .leftJoin(media, eq(albumMedia.mediaId, media.id))
+    .from(media)
     .leftJoin(user, eq(media.uploadedBy, user.id))
-    .leftJoin(mediaLike, eq(media.id, mediaLike.mediaId))
-    .leftJoin(comment, eq(media.postId, comment.postId))
-    .where(and(...conditions));
-
-  const results = await query
-    .groupBy(
-      albumMedia.id,
-      media.id,
-      user.id,
-    )
-    .orderBy(desc(albumMedia.addedAt))
+    .where(and(...mediaListConditions(tribeId, filters), isFiled(albumId)))
+    .orderBy(...orderBy)
     .limit(limit)
     .offset(offset);
+}
 
-  return results;
+/** Photos `getMediaByTribe` would return for the same filters, ignoring sort, limit and offset (TRI-207 `total`). */
+export async function countMediaByTribe(tribeId: string, filters: MediaFilters = {}): Promise<number> {
+  const [row] = await db
+    .select({ total: count() })
+    .from(media)
+    .where(
+      and(
+        ...mediaListConditions(tribeId, filters),
+        isFiled(filters.albumId)
+      )
+    );
+  return row?.total ?? 0;
 }
 
 /**

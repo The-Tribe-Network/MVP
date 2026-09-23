@@ -469,7 +469,7 @@ export type MediaWithStats = Media & {
 
 // Media with album relationship (includes junction table data)
 export type MediaWithAlbumInfo = Media & {
-  mediaId: string; // Junction table ID
+  mediaId: string; // The media id (same as `id` on listMedia rows, TRI-207)
   albumId: string | null;
   uploader: UserPreview; // Now properly typed
   likeCount: number;
