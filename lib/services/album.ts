@@ -4,6 +4,7 @@ import { user } from "@/lib/database/schemas/auth";
 import { tribe, tribeMember, tribeMemberPreference } from "@/lib/database/schemas/tribe";
 import { eq, and, desc, sql, count, countDistinct, inArray, asc, lte } from "drizzle-orm";
 import { canUserCreateAlbums } from "./permissions";
+import { checkPermission } from "./role-permissions";
 import type { AlbumMedia, AlbumWithMedia, UserPreview } from "@/lib/database/types";
 import { userPreviewColumns } from "@/lib/database/user-columns";
 
@@ -24,9 +25,73 @@ export interface CreateAlbumData {
 export interface UpdateAlbumData {
   name?: string;
   description?: string;
-  coverImageUrl?: string;
   privacy?: "public" | "private" | "admin_only";
+  /** A media id in the album's tribe (MEDIA-07). */
   coverId?: string;
+}
+
+/**
+ * The permission key that lets a member who did not create an album manage it (TRI-205): update its
+ * details or cover, delete it, and add or remove its media. There is no album-specific moderation key in
+ * the role matrix (`canCreateAlbums` is the only album key, and it is a creation right), so this is
+ * `canDeleteAnyMedia`: the owner/admin tier that the mobile MEDIA-02 menu ("Manage", "Delete album")
+ * already gates on. Resolved through `checkPermission` (per-member override → tribe role → system default).
+ */
+export const ALBUM_MANAGE_PERMISSION = "canDeleteAnyMedia";
+
+/** The album columns the write guards need. */
+type AlbumWriteTarget = Pick<typeof album.$inferSelect, "id" | "tribeId" | "createdBy">;
+
+/**
+ * Load an album for a write. Throws "Album not found" (routes answer 404) and, when `tribeId` is given
+ * and differs from the album's tribe, "Album does not belong to this tribe" (routes answer 403) before
+ * any permission is resolved, so a caller's rights in tribe A never reach an album in tribe B.
+ */
+async function getAlbumForWrite(albumId: string, tribeId?: string) {
+  const [albumRecord] = await db.select().from(album).where(eq(album.id, albumId)).limit(1);
+  if (!albumRecord) {
+    throw new Error("Album not found");
+  }
+  if (tribeId !== undefined && albumRecord.tribeId !== tribeId) {
+    throw new Error("Album does not belong to this tribe");
+  }
+  return albumRecord;
+}
+
+/**
+ * Whether a user may manage an album: its creator, or a member of the album's tribe whose effective
+ * permissions include `ALBUM_MANAGE_PERMISSION`. Non-members resolve false.
+ */
+export async function canUserManageAlbum(
+  albumRecord: AlbumWriteTarget,
+  userId: string
+): Promise<boolean> {
+  if (albumRecord.createdBy === userId) return true;
+  return checkPermission(albumRecord.tribeId, userId, ALBUM_MANAGE_PERMISSION);
+}
+
+/**
+ * Whether a user may add media to or remove media from an album: anyone who may manage it, plus (the
+ * pre-existing, broader rule for album contents) any member who holds `canCreateAlbums`.
+ */
+async function canUserEditAlbumContents(
+  albumRecord: AlbumWriteTarget,
+  userId: string
+): Promise<boolean> {
+  if (await canUserManageAlbum(albumRecord, userId)) return true;
+  return canUserCreateAlbums(albumRecord.tribeId, userId);
+}
+
+/** Throws unless `coverId` is a media row in the tribe (the same rule `createAlbumWithMedia` applies). */
+async function assertCoverInTribe(coverId: string, tribeId: string): Promise<void> {
+  const [coverMediaRecord] = await db
+    .select({ id: media.id })
+    .from(media)
+    .where(and(eq(media.id, coverId), eq(media.tribeId, tribeId)))
+    .limit(1);
+  if (!coverMediaRecord) {
+    throw new Error("Cover image not found or not accessible");
+  }
 }
 
 /**
@@ -367,32 +432,27 @@ async function getTopContributors(albumIds: string[]): Promise<Map<string, UserP
 }
 
 /**
- * Update an album
+ * Update an album's details, privacy or cover
  * @param albumId - The album ID
- * @param userId - The user ID (must be creator or admin)
+ * @param userId - The user ID (creator, or a member with `ALBUM_MANAGE_PERMISSION`)
  * @param updateData - The data to update
+ * @param options.tribeId - The tribe id from the route; a mismatch throws before any permission check
  * @returns The updated album
  */
 export async function updateAlbum(
   albumId: string,
   userId: string,
-  updateData: UpdateAlbumData
+  updateData: UpdateAlbumData,
+  options: { tribeId?: string } = {}
 ) {
-  // Get the album to check ownership
-  const albumRecord = await db
-    .select()
-    .from(album)
-    .where(eq(album.id, albumId))
-    .limit(1);
+  const albumRecord = await getAlbumForWrite(albumId, options.tribeId);
 
-  if (!albumRecord[0]) {
-    throw new Error("Album not found");
+  if (!(await canUserManageAlbum(albumRecord, userId))) {
+    throw new Error("User does not have permission to update this album");
   }
 
-  // Check if user is the creator
-  // TODO: Add check for admin/mod permissions
-  if (albumRecord[0].createdBy !== userId) {
-    throw new Error("User does not have permission to update this album");
+  if (updateData.coverId !== undefined) {
+    await assertCoverInTribe(updateData.coverId, albumRecord.tribeId);
   }
 
   // Update the album
@@ -406,29 +466,22 @@ export async function updateAlbum(
 }
 
 /**
- * Delete an album (sets media albumId to null)
+ * Delete an album (its album_media rows cascade; the media rows stay)
  * @param albumId - The album ID
- * @param userId - The user ID (must be creator or admin)
+ * @param userId - The user ID (creator, or a member with `ALBUM_MANAGE_PERMISSION`)
+ * @param options.tribeId - The tribe id from the route; a mismatch throws before any permission check
  */
-export async function deleteAlbum(albumId: string, userId: string) {
-  // Get the album to check ownership
-  const albumRecord = await db
-    .select()
-    .from(album)
-    .where(eq(album.id, albumId))
-    .limit(1);
+export async function deleteAlbum(
+  albumId: string,
+  userId: string,
+  options: { tribeId?: string } = {}
+) {
+  const albumRecord = await getAlbumForWrite(albumId, options.tribeId);
 
-  if (!albumRecord[0]) {
-    throw new Error("Album not found");
-  }
-
-  // Check if user is the creator
-  // TODO: Add check for admin/mod permissions
-  if (albumRecord[0].createdBy !== userId) {
+  if (!(await canUserManageAlbum(albumRecord, userId))) {
     throw new Error("User does not have permission to delete this album");
   }
 
-  // Delete the album (media will have albumId set to null due to cascade)
   await db.delete(album).where(eq(album.id, albumId));
 }
 
@@ -457,30 +510,17 @@ export async function addMediaToAlbum(
  * Remove media from album (removes from junction table)
  * @param mediaId - The media ID
  * @param albumId - The album ID
- * @param userId - The user ID (must be album creator or admin)
+ * @param userId - The user ID (creator, `ALBUM_MANAGE_PERMISSION`, or `canCreateAlbums`)
  */
 export async function removeMediaFromAlbum(
   mediaId: string,
   albumId: string,
   userId: string
 ) {
-  // Get album to check permissions
-  const albumRecord = await db
-    .select()
-    .from(album)
-    .where(eq(album.id, albumId))
-    .limit(1);
+  const albumRecord = await getAlbumForWrite(albumId);
 
-  if (!albumRecord[0]) {
-    throw new Error("Album not found");
-  }
-
-  // Check permissions
-  if (albumRecord[0].createdBy !== userId) {
-    const hasPermission = await canUserCreateAlbums(albumRecord[0].tribeId, userId);
-    if (!hasPermission) {
-      throw new Error("User does not have permission to modify this album");
-    }
+  if (!(await canUserEditAlbumContents(albumRecord, userId))) {
+    throw new Error("User does not have permission to modify this album");
   }
 
   // Delete from junction table
@@ -518,7 +558,7 @@ export interface CreateAlbumWithMediaData {
  * Add multiple media items to an album in a single transaction
  * @param albumId - The album ID
  * @param mediaIds - Array of media IDs to add
- * @param userId - The user performing the action
+ * @param userId - The user performing the action (creator, `ALBUM_MANAGE_PERMISSION`, or `canCreateAlbums`)
  * @returns Array of created album_media records
  */
 export async function addMultipleMediaToAlbum(
@@ -526,23 +566,10 @@ export async function addMultipleMediaToAlbum(
   mediaIds: string[],
   userId: string
 ): Promise<AlbumMedia[]> {
-  // Validate album exists
-  const albumRecord = await db
-    .select()
-    .from(album)
-    .where(eq(album.id, albumId))
-    .limit(1);
+  const albumRecord = await getAlbumForWrite(albumId);
 
-  if (!albumRecord[0]) {
-    throw new Error("Album not found");
-  }
-
-  // Check permissions
-  if (albumRecord[0].createdBy !== userId) {
-    const hasPermission = await canUserCreateAlbums(albumRecord[0].tribeId, userId);
-    if (!hasPermission) {
-      throw new Error("User does not have permission to modify this album");
-    }
+  if (!(await canUserEditAlbumContents(albumRecord, userId))) {
+    throw new Error("User does not have permission to modify this album");
   }
 
   // Validate all media exist and belong to tribe
@@ -551,7 +578,7 @@ export async function addMultipleMediaToAlbum(
     .from(media)
     .where(and(
       inArray(media.id, mediaIds),
-      eq(media.tribeId, albumRecord[0].tribeId),
+      eq(media.tribeId, albumRecord.tribeId),
     ));
 
   if (mediaRecords.length !== mediaIds.length) {

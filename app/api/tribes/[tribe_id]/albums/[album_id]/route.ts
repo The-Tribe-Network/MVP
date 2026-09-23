@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerUser } from '@/lib/services/auth';
 import { getAlbumById, updateAlbum, deleteAlbum } from '@/lib/services/album';
 import { checkTribeMembership } from '@/lib/services/permissions';
+import { updateAlbumSchema, validateApiRequest } from '@/lib/validations/album';
 
 /**
  * GET /api/tribes/[tribe_id]/albums/[album_id]
@@ -56,7 +57,8 @@ export async function GET(
 
 /**
  * PUT /api/tribes/[tribe_id]/albums/[album_id]
- * Update an album
+ * Update an album's details, privacy or cover (`coverId`, a media id in this tribe).
+ * Allowed for the album's creator or a member holding `canDeleteAnyMedia` (TRI-205).
  */
 export async function PUT(
   request: NextRequest,
@@ -71,7 +73,13 @@ export async function PUT(
     const { tribe_id, album_id } = await ctx.params;
     const body = await request.json();
 
-    const { name, description, coverImageUrl, privacy } = body;
+    const validation = validateApiRequest(updateAlbumSchema, body);
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: 'Validation failed', details: validation.error },
+        { status: 400 }
+      );
+    }
 
     // Check tribe membership
     const isMember = await checkTribeMembership(tribe_id, user.id);
@@ -82,12 +90,8 @@ export async function PUT(
       );
     }
 
-    const album = await updateAlbum(album_id, user.id, {
-      name,
-      description,
-      coverImageUrl,
-      privacy,
-    });
+    // The service answers "not found" / "does not belong" / "permission" (mapped below)
+    const album = await updateAlbum(album_id, user.id, validation.data, { tribeId: tribe_id });
 
     return NextResponse.json({ album }, { status: 200 });
   } catch (error) {
@@ -97,8 +101,11 @@ export async function PUT(
       if (error.message === 'Album not found') {
         return NextResponse.json({ error: error.message }, { status: 404 });
       }
-      if (error.message.includes('permission')) {
+      if (error.message === 'Album does not belong to this tribe' || error.message.includes('permission')) {
         return NextResponse.json({ error: error.message }, { status: 403 });
+      }
+      if (error.message.includes('not accessible')) {
+        return NextResponse.json({ error: error.message }, { status: 400 });
       }
     }
 
@@ -111,7 +118,7 @@ export async function PUT(
 
 /**
  * DELETE /api/tribes/[tribe_id]/albums/[album_id]
- * Delete an album
+ * Delete an album. Allowed for the album's creator or a member holding `canDeleteAnyMedia` (TRI-205).
  */
 export async function DELETE(
   request: NextRequest,
@@ -134,7 +141,8 @@ export async function DELETE(
       );
     }
 
-    await deleteAlbum(album_id, user.id);
+    // The service answers "not found" / "does not belong" / "permission" (mapped below)
+    await deleteAlbum(album_id, user.id, { tribeId: tribe_id });
 
     return NextResponse.json(
       { message: 'Album deleted successfully' },
@@ -147,7 +155,7 @@ export async function DELETE(
       if (error.message === 'Album not found') {
         return NextResponse.json({ error: error.message }, { status: 404 });
       }
-      if (error.message.includes('permission')) {
+      if (error.message === 'Album does not belong to this tribe' || error.message.includes('permission')) {
         return NextResponse.json({ error: error.message }, { status: 403 });
       }
     }
