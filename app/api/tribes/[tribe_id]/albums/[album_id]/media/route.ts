@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerUser } from '@/lib/services/auth';
-import { addMultipleMediaToAlbum, removeMediaFromAlbum, getAlbumById } from '@/lib/services/album';
+import { addMultipleMediaToAlbum, removeMediaFromAlbum, getAlbumById, UUID_PATTERN } from '@/lib/services/album';
 import { checkTribeMembership } from '@/lib/services/permissions';
 
 /**
@@ -26,6 +26,11 @@ export async function POST(
         { error: 'mediaIds must be a non-empty array' },
         { status: 400 }
       );
+    }
+
+    // A malformed media id is "not found", never a Postgres uuid-cast 500 (TRI-208).
+    if (!mediaIds.every((id: unknown) => typeof id === 'string' && UUID_PATTERN.test(id))) {
+      return NextResponse.json({ error: 'Media not found' }, { status: 404 });
     }
 
     // Check tribe membership
@@ -60,6 +65,10 @@ export async function POST(
     console.error('Error adding media to album:', error);
 
     if (error instanceof Error) {
+      // Unknown ids or another tribe's media (addMultipleMediaToAlbum), TRI-208: was a 500.
+      if (error.message === 'Some media items not found or not accessible') {
+        return NextResponse.json({ error: 'Media not found' }, { status: 404 });
+      }
       if (error.message.includes('permission')) {
         return NextResponse.json({ error: error.message }, { status: 403 });
       }
@@ -95,6 +104,11 @@ export async function DELETE(
         { error: 'mediaIds must be a non-empty array' },
         { status: 400 }
       );
+    }
+
+    // A malformed media id is "not found", never a Postgres uuid-cast 500 (TRI-208).
+    if (!mediaIds.every((id: unknown) => typeof id === 'string' && UUID_PATTERN.test(id))) {
+      return NextResponse.json({ error: 'Media not found' }, { status: 404 });
     }
 
     // Check tribe membership
