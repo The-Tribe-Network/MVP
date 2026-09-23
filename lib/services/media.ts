@@ -7,7 +7,7 @@ import { eq, and, asc, desc, exists, gte, inArray, isNull, lt, count, sql, type 
 import type { MediaListSort } from '@/lib/validations/media';
 import type { Media, MediaInsert } from '@/lib/database/types';
 import { canUserUploadMedia, canUserDeleteMedia } from './permissions';
-import { assertAlbumInTribe, InvalidAlbumError } from './album';
+import { assertAlbumInTribe, InvalidAlbumError, UUID_PATTERN } from './album';
 import { blurhashForCloudinaryImage } from '@/lib/utils/blurhash';
 
 /** Cloudinary public_id from a delivery URL (`/upload/v<ver>/<public_id>.<ext>`), or null. */
@@ -318,10 +318,29 @@ export async function uploadEventCover(
  * Get media record by ID
  */
 export async function getMediaById(id: string): Promise<Media | null> {
+  // A malformed id is "not found", never a Postgres uuid-cast 500 (TRI-208).
+  if (!UUID_PATTERN.test(id)) return null;
   const [mediaRecord] = await db
     .select()
     .from(media)
     .where(eq(media.id, id))
+    .limit(1);
+
+  return mediaRecord || null;
+}
+
+/**
+ * The one media-in-tribe lookup for tribe-scoped routes that address a media by id (TRI-197 PATCH,
+ * TRI-208 likes): the media row when `mediaId` is a uuid naming a media whose `tribe_id` is `tribeId`,
+ * else null. Unknown, malformed and another tribe's media are indistinguishable (the route answers 404),
+ * so a caller cannot use one tribe's URL to learn that a media id exists elsewhere.
+ */
+export async function getMediaInTribe(mediaId: string, tribeId: string): Promise<Media | null> {
+  if (!UUID_PATTERN.test(mediaId)) return null;
+  const [mediaRecord] = await db
+    .select()
+    .from(media)
+    .where(and(eq(media.id, mediaId), eq(media.tribeId, tribeId)))
     .limit(1);
 
   return mediaRecord || null;
@@ -667,42 +686,49 @@ export async function updateMedia(
   return updated[0];
 }
 
-/**
- * Like a media
- * @param mediaId - The media ID
- * @param userId - The user ID
- */
-export async function likeMedia(mediaId: string, userId: string) {
-  // Check if already liked
-  const existing = await db
-    .select()
+/** Number of likes on a media. */
+export async function getMediaLikeCount(mediaId: string): Promise<number> {
+  const [row] = await db
+    .select({ count: count() })
     .from(mediaLike)
-    .where(and(eq(mediaLike.mediaId, mediaId), eq(mediaLike.userId, userId)))
-    .limit(1);
-
-  if (existing[0]) {
-    throw new Error("Media already liked");
-  }
-
-  // Create like
-  const like = await db
-    .insert(mediaLike)
-    .values({
-      mediaId,
-      userId,
-    })
-    .returning();
-
-  return like[0];
+    .where(eq(mediaLike.mediaId, mediaId));
+  return Number(row?.count ?? 0);
 }
 
 /**
- * Unlike a media
+ * Like a media. Idempotent (TRI-208): liking an already-liked media returns the existing like row
+ * instead of failing, so a retry or double tap is a success. The (media_id, user_id) unique constraint
+ * makes a concurrent double like safe too.
+ * @param mediaId - The media ID (the route has already bound it to the tribe)
+ * @param userId - The user ID
+ * @returns the like row, `liked: true` and the media's current like count
+ */
+export async function likeMedia(mediaId: string, userId: string) {
+  const [inserted] = await db
+    .insert(mediaLike)
+    .values({ mediaId, userId })
+    .onConflictDoNothing()
+    .returning();
+
+  const like =
+    inserted ??
+    (
+      await db
+        .select()
+        .from(mediaLike)
+        .where(and(eq(mediaLike.mediaId, mediaId), eq(mediaLike.userId, userId)))
+        .limit(1)
+    )[0];
+
+  return { like, liked: true as const, likeCount: await getMediaLikeCount(mediaId) };
+}
+
+/**
+ * Unlike a media. Idempotent: unliking a media the user has not liked is a no-op success.
  * @param mediaId - The media ID
  * @param userId - The user ID
  */
 export async function unlikeMedia(mediaId: string, userId: string) {
-  // Delete the like
   await db
     .delete(mediaLike)
     .where(and(eq(mediaLike.mediaId, mediaId), eq(mediaLike.userId, userId)));

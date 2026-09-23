@@ -94,7 +94,8 @@ export class InvalidAlbumError extends Error {
   }
 }
 
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+/** Shared with `getMediaInTribe` (TRI-208) so a malformed id never reaches Postgres as a bad uuid cast. */
+export const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * The one album-in-tribe check for every write that files media into an album (TRI-197): multipart and

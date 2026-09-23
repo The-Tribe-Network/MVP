@@ -15,7 +15,7 @@ export async function DELETE(
 
     const { media_id } = await ctx.params;
 
-    // Get media record to verify ownership
+    // Get media record to verify ownership (unknown or malformed id → 404; getMediaById checks the uuid)
     const mediaRecord = await getMediaById(media_id);
     if (!mediaRecord) {
       return NextResponse.json({ error: 'Media not found' }, { status: 404 });
