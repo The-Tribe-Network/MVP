@@ -594,6 +594,7 @@ export type FeaturedMediaWithUploader = {
   id: string;
   fileUrl: string;
   altText: string | null;
+  blurhash: string | null;
   likeCount: number;
   createdAt: Date;
   albumId: string | null;
@@ -630,6 +631,7 @@ export async function getFeaturedMedia(tribeId: string): Promise<FeaturedMediaWi
       id: media.id,
       fileUrl: media.fileUrl,
       altText: media.altText,
+      blurhash: media.blurhash,
       createdAt: media.createdAt,
       uploader: {
         id: user.id,

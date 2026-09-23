@@ -114,6 +114,7 @@ export async function getAlbumById(albumId: string): Promise<AlbumWithMedia | nu
       duration: media.duration,
       thumbnailUrl: media.thumbnailUrl,
       altText: media.altText,
+      blurhash: media.blurhash,
       createdAt: media.createdAt,
       uploadedBy: media.uploadedBy,
       postId: media.postId,
