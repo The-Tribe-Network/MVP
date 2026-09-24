@@ -100,6 +100,14 @@ async function loadPollsWithDetails(
           .where(inArray(pollVote.pollId, nonAnonPollIds))
       : [];
 
+  // 4b. Distinct voters per poll: one person picking several options counts once (TRI-262)
+  const voterCounts = await db
+    .select({ pollId: pollVote.pollId, count: sql<number>`count(distinct ${pollVote.userId})::int` })
+    .from(pollVote)
+    .where(inArray(pollVote.pollId, pollIds))
+    .groupBy(pollVote.pollId);
+  const voterCountMap = new Map(voterCounts.map((row) => [row.pollId, row.count]));
+
   // 5. Fetch current user's votes
   const userVotes = currentUserId
     ? await db
@@ -137,23 +145,36 @@ async function loadPollsWithDetails(
   });
 
   // 7. Build response
+  const now = Date.now();
   return polls.map((p) => {
+    const resultsVisibility = (p.eventId && visibilityByEvent.get(p.eventId)) || "after_voting";
+    const myVotes = userVotesMap.get(p.id) || [];
+    // Results the caller may not see yet are not sent at all, so no client can read them (TRI-258).
+    // The poll's creator always sees them.
+    const resultsHidden = !canSeeResults({
+      visibility: resultsVisibility,
+      voted: myVotes.length > 0,
+      closed: p.endsAt !== null && new Date(p.endsAt).getTime() <= now,
+      isCreator: currentUserId !== undefined && p.createdBy === currentUserId,
+    });
     const pollOptions = options
       .filter((o) => o.pollId === p.id)
       .map((o) => ({
         ...o,
-        votes: voteCountMap.get(o.id) || 0,
-        voters: p.isAnonymous ? [] : (votersMap.get(o.id) || []),
+        votes: resultsHidden ? 0 : voteCountMap.get(o.id) || 0,
+        voters: p.isAnonymous || resultsHidden ? [] : votersMap.get(o.id) || [],
       }));
 
-    const totalVotes = pollOptions.reduce((sum, opt) => sum + opt.votes, 0);
+    const totalVotes = resultsHidden ? 0 : pollOptions.reduce((sum, opt) => sum + opt.votes, 0);
 
     return {
-      resultsVisibility: (p.eventId && visibilityByEvent.get(p.eventId)) || "after_voting",
+      resultsVisibility,
+      resultsHidden,
       ...p,
       options: pollOptions,
-      userVotes: userVotesMap.get(p.id) || [],
+      userVotes: myVotes,
       totalVotes,
+      voterCount: voterCountMap.get(p.id) || 0,
     } as PollWithDetails;
   });
 }
@@ -298,4 +319,24 @@ export async function removeVote(
 export async function deletePoll(pollId: string): Promise<boolean> {
   const result = await db.delete(poll).where(eq(poll.id, pollId));
   return (result.rowCount ?? 0) > 0;
+}
+
+/** Whether the caller may see a poll's per-option results (EVT-03 results visibility, TRI-258). */
+export function canSeeResults(input: {
+  visibility: NonNullable<PollWithDetails["resultsVisibility"]>;
+  voted: boolean;
+  closed: boolean;
+  isCreator: boolean;
+}): boolean {
+  if (input.isCreator) return true;
+  switch (input.visibility) {
+    case "immediate":
+      return true;
+    case "after_voting":
+      return input.voted || input.closed;
+    case "after_close":
+      return input.closed;
+    case "hidden":
+      return false;
+  }
 }

@@ -381,6 +381,10 @@ export type PollWithDetails = Poll & {
   options: PollOptionWithVotes[];
   userVotes: string[];
   totalVotes: number;
+  // Distinct voters (TRI-262); `totalVotes` counts options picked.
+  voterCount?: number;
+  // True when the caller may not see results yet: votes and voters are zeroed (TRI-258).
+  resultsHidden?: boolean;
 };
 
 export type EventWithPolls = EventWithCreator & {
