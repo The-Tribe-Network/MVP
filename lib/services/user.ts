@@ -80,7 +80,6 @@ export async function isProfileComplete(userId: string): Promise<boolean> {
       profileCompleted: user.profileCompleted,
       displayName: user.displayName,
       username: user.username,
-      location: user.location,
     })
     .from(user)
     .where(eq(user.id, userId))
@@ -92,8 +91,7 @@ export async function isProfileComplete(userId: string): Promise<boolean> {
   return (
     userData.profileCompleted === true &&
     !!userData.displayName &&
-    !!userData.username &&
-    !!userData.location
+    !!userData.username
   );
 }
 

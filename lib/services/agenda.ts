@@ -7,7 +7,7 @@ import { user } from "@/lib/database/schemas/auth";
 import { media } from "@/lib/database/schemas/media";
 import { and, asc, desc, eq, gt, gte, inArray, lte, ne, or, sql, type AnyColumn, type SQL } from "drizzle-orm";
 import { userPreviewColumns } from "@/lib/database/user-columns";
-import { getAgendaItems, type AgendaItemPreview, type UserPreview } from "./event";
+import { effectiveEventStatus, getAgendaItems, type AgendaItemPreview, type UserPreview } from "./event";
 import { getPostsByIds, type PostWithMetadata } from "./post";
 import { CATCH_UP_FALLBACK_DAYS, getUnreadPostCounts } from "./tribe";
 
@@ -187,7 +187,7 @@ export async function getCatchUp(userId: string, params: CatchUpParams): Promise
         postId: poll.postId,
         createdAt: poll.createdAt,
         tribeId: sql<string>`coalesce(${event.tribeId}, ${post.tribeId})`,
-        eventStatus: event.status,
+        eventStatus: effectiveEventStatus,
       })
       .from(poll)
       .leftJoin(event, eq(poll.eventId, event.id))

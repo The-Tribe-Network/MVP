@@ -7,6 +7,10 @@ import { tribeSettings } from "@/lib/database/schemas";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 
+// A malformed id is a bad request, not a database error (TRI-247).
+const tribeIdSchema = z.string().uuid();
+const badTribeId = () => NextResponse.json({ error: "Invalid tribe id" }, { status: 400 });
+
 const updateFeatureTogglesSchema = z.object({
   eventsEnabled: z.boolean().optional(),
   albumsEnabled: z.boolean().optional(),
@@ -23,6 +27,7 @@ export async function GET(
 ) {
   try {
     const { tribe_id } = await context.params;
+    if (!tribeIdSchema.safeParse(tribe_id).success) return badTribeId();
 
     // Check authentication
     const user = await getServerUser();
@@ -67,6 +72,7 @@ export async function PATCH(
 ) {
   try {
     const { tribe_id } = await context.params;
+    if (!tribeIdSchema.safeParse(tribe_id).success) return badTribeId();
 
     // Check authentication
     const user = await getServerUser();

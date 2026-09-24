@@ -44,15 +44,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Verify all required fields are present
-    if (!user.displayName || !user.username || !user.location) {
+    // Verify all required fields are present. Location is optional (owner, TRI-248): onboarding
+    // lets people skip it.
+    if (!user.displayName || !user.username) {
       return NextResponse.json(
         {
           error: "Profile is incomplete. Missing required fields.",
           missing: {
             displayName: !user.displayName,
             username: !user.username,
-            location: !user.location,
           },
         },
         { status: 400 }
