@@ -34,7 +34,8 @@ export async function GET(
     const limit = parseInt(url.searchParams.get('limit') || '50');
     const offset = parseInt(url.searchParams.get('offset') || '0');
 
-    const albums = await getAlbumsByTribe(tribe_id, { limit, offset });
+    // Only albums the caller may see (TRI-273), each with the caller's `canAddMedia` (TRI-274).
+    const albums = await getAlbumsByTribe(tribe_id, user.id, { limit, offset });
 
     return NextResponse.json({ albums }, { status: 200 });
   } catch (error) {

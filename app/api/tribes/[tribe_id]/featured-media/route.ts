@@ -52,7 +52,7 @@ export async function GET(
     }
 
     // Get featured media
-    const featuredMedia = await getFeaturedMedia(validation.data.id);
+    const featuredMedia = await getFeaturedMedia(validation.data.id, user.id);
 
     return NextResponse.json(featuredMedia);
   } catch (error) {

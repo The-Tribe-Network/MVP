@@ -1,4 +1,5 @@
-import { pgTable, text, timestamp, integer, bigint, uuid, unique, boolean, index } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, integer, bigint, uuid, unique, uniqueIndex, boolean, index } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { tribe } from "./tribe";
 import { user } from "./auth";
 import { post } from "./post";
@@ -68,6 +69,9 @@ export const albumMedia = pgTable("album_media", {
   displayOrder: integer("display_order"),
 }, (table) => ({
   uniqueAlbumMedia: unique().on(table.albumId, table.mediaId),
+  // The unique above ignores NULL album_id, so the general library needs its own: at most one
+  // general-library row per media (TRI-274). tri274-album-media-general-unique.sql
+  uniqueGeneralMedia: uniqueIndex("uq_album_media_general_media_id").on(table.mediaId).where(sql`${table.albumId} IS NULL`),
   addedAtIdx: index("idx_album_media_added_at").on(table.addedAt),
   albumIdIdx: index("idx_album_media_album_id").on(table.albumId),
   mediaIdIdx: index("idx_album_media_media_id").on(table.mediaId),

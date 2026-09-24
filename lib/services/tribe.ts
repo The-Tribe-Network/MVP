@@ -172,6 +172,15 @@ export async function getTribeById(id: string, includeAvatar: boolean = false): 
   };
 }
 
+/** The caller's `GET /tribes/{id}/media` total with no filters (TRI-273). */
+async function countVisibleTribeMedia(tribeId: string, userId: string): Promise<number> {
+  const [{ countMediaByTribe }, { getAlbumAccessContext }] = await Promise.all([
+    import("./media"),
+    import("./album"),
+  ]);
+  return countMediaByTribe(tribeId, { viewerAccess: await getAlbumAccessContext(tribeId, userId) });
+}
+
 /** TribeWithCounts in the mobile contract: the detail payload plus the TRIBE-01 announcement. */
 export type TribeDetail = TribeWithMembers & {
   announcement: PostWithMetadata | null;
@@ -182,16 +191,19 @@ export type TribeDetail = TribeWithMembers & {
  * `currentUserId` drives the announcement's isLiked / poll vote state.
  */
 export async function getTribeDetail(id: string, currentUserId?: string): Promise<TribeDetail | null> {
-  const [tribeData, announcement] = await Promise.all([
+  const [tribeData, announcement, visibleMediaCount] = await Promise.all([
     getTribeById(id),
     getTribeAnnouncement(id, currentUserId),
+    currentUserId ? countVisibleTribeMedia(id, currentUserId) : Promise.resolve(null),
   ]);
 
   if (!tribeData) {
     return null;
   }
 
-  return { ...tribeData, announcement };
+  // For a caller, `mediaCount` is the "All Photos" total they can open: the same count as
+  // `GET /tribes/{id}/media` gives them (filed photos they may see, TRI-273).
+  return { ...tribeData, ...(visibleMediaCount !== null ? { mediaCount: visibleMediaCount } : {}), announcement };
 }
 
 /**
@@ -609,10 +621,12 @@ export type FeaturedMediaWithUploader = {
 
 /**
  * Get the featured media for a tribe
- * Returns null if no featured media is set
+ * Returns null if no featured media is set. `albumId`/`albumName` name only an album the viewer may see
+ * (TRI-273); the general library or a hidden album reads as null.
  */
-export async function getFeaturedMedia(tribeId: string): Promise<FeaturedMediaWithUploader | null> {
+export async function getFeaturedMedia(tribeId: string, viewerId: string): Promise<FeaturedMediaWithUploader | null> {
   const { album, albumMedia, mediaLike } = await import("@/lib/database/schemas/media");
+  const { getAlbumAccessContext, visibleAlbumCondition, canUserSeeMedia } = await import("./album");
 
   // First get the tribe's featured media ID
   const [tribeData] = await db
@@ -622,6 +636,11 @@ export async function getFeaturedMedia(tribeId: string): Promise<FeaturedMediaWi
     .limit(1);
 
   if (!tribeData?.featuredMediaId) {
+    return null;
+  }
+
+  // A featured photo that sits only in albums the viewer may not see is no featured photo for them (TRI-273).
+  if (!(await canUserSeeMedia(tribeData.featuredMediaId, tribeId, viewerId))) {
     return null;
   }
 
@@ -656,8 +675,14 @@ export async function getFeaturedMedia(tribeId: string): Promise<FeaturedMediaWi
       albumName: album.name,
     })
     .from(albumMedia)
-    .leftJoin(album, eq(albumMedia.albumId, album.id))
-    .where(eq(albumMedia.mediaId, featuredMedia.id))
+    .innerJoin(album, eq(albumMedia.albumId, album.id))
+    .where(
+      and(
+        eq(albumMedia.mediaId, featuredMedia.id),
+        visibleAlbumCondition(await getAlbumAccessContext(tribeId, viewerId))
+      )
+    )
+    .orderBy(albumMedia.addedAt)
     .limit(1);
 
   // Get like count

@@ -425,6 +425,8 @@ export type AlbumContributors = {
 export type AlbumWithMedia = AlbumWithCreator & AlbumContributors & {
   media: AlbumMediaItem[];
   photoCount: number; // Override optional to required
+  /** Whether the caller may add media to this album (TRI-274); set when the album is read for a user. */
+  canAddMedia?: boolean;
 };
 
 // Message extended types

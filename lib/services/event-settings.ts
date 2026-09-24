@@ -5,6 +5,7 @@ import { notification } from "@/lib/database/schemas/activity";
 import { user } from "@/lib/database/schemas/auth";
 import { event, eventAttendee, eventCoHost, eventLink, eventSettings } from "@/lib/database/schemas/event";
 import { album, albumMedia, media } from "@/lib/database/schemas/media";
+import { canUserSeeAlbum } from "./album";
 import { tribeSettings } from "@/lib/database/schemas/tribe";
 import type { Event, EventSettings } from "@/lib/database/types";
 import { userWithUsernameColumns } from "@/lib/database/user-columns";
@@ -62,16 +63,26 @@ export async function updateEventSettings(
   return updated!;
 }
 
-/** `AlbumPreview` for `settings.linkedAlbum`: id, name, cover url, photo count. */
-async function albumPreview(albumId: string | null) {
+/**
+ * `AlbumPreview` for `settings.linkedAlbum`: id, name, cover url, photo count. Null when the viewer may
+ * not see the album (TRI-273).
+ */
+async function albumPreview(albumId: string | null, viewerId: string) {
   if (!albumId) return null;
   const [row] = await db
-    .select({ id: album.id, name: album.name, coverUrl: media.fileUrl })
+    .select({
+      id: album.id,
+      name: album.name,
+      coverUrl: media.fileUrl,
+      tribeId: album.tribeId,
+      createdBy: album.createdBy,
+      privacy: album.privacy,
+    })
     .from(album)
     .leftJoin(media, eq(album.coverId, media.id))
     .where(eq(album.id, albumId))
     .limit(1);
-  if (!row) return null;
+  if (!row || !(await canUserSeeAlbum(row, viewerId))) return null;
   const [photos] = await db
     .select({ n: count() })
     .from(albumMedia)
@@ -229,7 +240,7 @@ export async function getEventSettingsBundle(
     eventEditability(eventRow, member, userId),
     getEventLinks(eventRow.id),
   ]);
-  const linkedAlbum = await albumPreview(settings.linkedAlbumId);
+  const linkedAlbum = await albumPreview(settings.linkedAlbumId, userId);
   const { id: _id, createdAt: _c, updatedAt: _u, eventId: _e, ...fields } = settings;
   return {
     settings: { ...fields, linkedAlbum },

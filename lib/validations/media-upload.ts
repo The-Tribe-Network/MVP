@@ -19,6 +19,9 @@ export const MAX_SIGNED_UPLOADS = 20;
 export const signMediaUploadSchema = z.object({
   count: z.number().int().min(1).max(MAX_SIGNED_UPLOADS),
   purpose: z.enum(MEDIA_UPLOAD_PURPOSES).default("media"),
+  // The album target the webhook confirm will use (TRI-275); same meaning as on confirm. Checked at sign.
+  albumId: z.string().uuid().nullable().optional(),
+  addToAlbum: z.boolean().default(true),
 });
 
 export const confirmAssetSchema = z.object({

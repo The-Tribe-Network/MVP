@@ -1,6 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerUser } from '@/lib/services/auth';
-import { addMultipleMediaToAlbum, removeMediaFromAlbum, getAlbumById, UUID_PATTERN } from '@/lib/services/album';
+import { addMultipleMediaToAlbum, removeMediaFromAlbum, canUserSeeAlbum, AlbumForbiddenError, UUID_PATTERN } from '@/lib/services/album';
+import { db } from '@/lib/database/client';
+import { album as albumTable } from '@/lib/database/schemas/media';
+import { eq } from 'drizzle-orm';
+
+/** The album row the checks need, or null for an unknown / malformed id or one the caller may not see (TRI-273). */
+async function visibleAlbum(albumId: string, userId: string) {
+  if (!UUID_PATTERN.test(albumId)) return null;
+  const [row] = await db
+    .select({ id: albumTable.id, tribeId: albumTable.tribeId, createdBy: albumTable.createdBy, privacy: albumTable.privacy })
+    .from(albumTable)
+    .where(eq(albumTable.id, albumId))
+    .limit(1);
+  if (!row || !(await canUserSeeAlbum(row, userId))) return null;
+  return row;
+}
 import { checkTribeMembership } from '@/lib/services/permissions';
 
 /**
@@ -42,8 +57,8 @@ export async function POST(
       );
     }
 
-    // Verify album belongs to this tribe
-    const album = await getAlbumById(album_id);
+    // Verify album belongs to this tribe (an album the caller may not see is not found, TRI-273)
+    const album = await visibleAlbum(album_id, user.id);
     if (!album) {
       return NextResponse.json({ error: 'Album not found' }, { status: 404 });
     }
@@ -68,6 +83,9 @@ export async function POST(
       // Unknown ids or another tribe's media (addMultipleMediaToAlbum), TRI-208: was a 500.
       if (error.message === 'Some media items not found or not accessible') {
         return NextResponse.json({ error: 'Media not found' }, { status: 404 });
+      }
+      if (error instanceof AlbumForbiddenError) {
+        return NextResponse.json({ error: error.message, code: error.code }, { status: 403 });
       }
       if (error.message.includes('permission')) {
         return NextResponse.json({ error: error.message }, { status: 403 });
@@ -120,8 +138,8 @@ export async function DELETE(
       );
     }
 
-    // Verify album belongs to this tribe
-    const album = await getAlbumById(album_id);
+    // Verify album belongs to this tribe (an album the caller may not see is not found, TRI-273)
+    const album = await visibleAlbum(album_id, user.id);
     if (!album) {
       return NextResponse.json({ error: 'Album not found' }, { status: 404 });
     }

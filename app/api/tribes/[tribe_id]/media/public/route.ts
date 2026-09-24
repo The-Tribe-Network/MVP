@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerUser } from '@/lib/services/auth';
 import { getMediaByTribe } from '@/lib/services/media';
 import { checkTribeMembership } from '@/lib/services/permissions';
+import { getAlbumAccessContext } from '@/lib/services/album';
 
 /**
  * GET /api/tribes/[tribe_id]/media/public
@@ -31,7 +32,12 @@ export async function GET(
     const offset = parseInt(url.searchParams.get('offset') || '0');
 
     // Fetch only public media (addToAlbum=true filter is in getMediaByTribe)
-    const media = await getMediaByTribe(tribe_id, { limit, offset });
+    // Albums the caller may not see do not count (TRI-273).
+    const media = await getMediaByTribe(tribe_id, {
+      limit,
+      offset,
+      viewerAccess: await getAlbumAccessContext(tribe_id, user.id),
+    });
 
     return NextResponse.json({ media }, { status: 200 });
   } catch (error) {

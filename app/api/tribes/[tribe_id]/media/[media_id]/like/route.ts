@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerUser } from '@/lib/services/auth';
-import { likeMedia, unlikeMedia, hasUserLikedMedia, getMediaInTribe } from '@/lib/services/media';
+import { likeMedia, unlikeMedia, hasUserLikedMedia, getVisibleMediaInTribe } from '@/lib/services/media';
 import { checkTribeMembership } from '@/lib/services/permissions';
 
 // Every method: 401 signed out, 403 not a member of tribe_id, 404 when media_id is not a media of
@@ -31,8 +31,8 @@ export async function POST(
       );
     }
 
-    // The media must be this tribe's (TRI-208): unknown, malformed or another tribe's id is a 404.
-    if (!(await getMediaInTribe(media_id, tribe_id))) {
+    // The media must be this tribe's (TRI-208) and visible to the caller (TRI-273), else 404.
+    if (!(await getVisibleMediaInTribe(media_id, tribe_id, user.id))) {
       return NextResponse.json({ error: 'Media not found' }, { status: 404 });
     }
 
@@ -74,8 +74,8 @@ export async function DELETE(
       );
     }
 
-    // The media must be this tribe's (TRI-208): unknown, malformed or another tribe's id is a 404.
-    if (!(await getMediaInTribe(media_id, tribe_id))) {
+    // The media must be this tribe's (TRI-208) and visible to the caller (TRI-273), else 404.
+    if (!(await getVisibleMediaInTribe(media_id, tribe_id, user.id))) {
       return NextResponse.json({ error: 'Media not found' }, { status: 404 });
     }
 
@@ -117,8 +117,8 @@ export async function GET(
       );
     }
 
-    // The media must be this tribe's (TRI-208): unknown, malformed or another tribe's id is a 404.
-    if (!(await getMediaInTribe(media_id, tribe_id))) {
+    // The media must be this tribe's (TRI-208) and visible to the caller (TRI-273), else 404.
+    if (!(await getVisibleMediaInTribe(media_id, tribe_id, user.id))) {
       return NextResponse.json({ error: 'Media not found' }, { status: 404 });
     }
 

@@ -5,7 +5,7 @@ import { mediaListQuerySchema, mediaListQueryInput } from '@/lib/validations/med
 import { validateImageFile } from '@/lib/utils/image';
 import { checkTribeMembership } from '@/lib/services/permissions';
 import { multipartFileLimit, rejectOversizedBody } from '@/lib/services/multipart-limits';
-import { InvalidAlbumError } from '@/lib/services/album';
+import { AlbumForbiddenError, InvalidAlbumError, getAlbumAccessContext } from '@/lib/services/album';
 
 /**
  * GET /api/tribes/[tribe_id]/media
@@ -46,7 +46,8 @@ export async function GET(
         { status: 400 }
       );
     }
-    const filters = validation.data;
+    // Only the general library and albums the caller may see (TRI-273): a hidden album's id lists nothing.
+    const filters = { ...validation.data, viewerAccess: await getAlbumAccessContext(tribe_id, user.id) };
 
     const [media, total] = await Promise.all([
       getMediaByTribe(tribe_id, filters),
@@ -143,6 +144,9 @@ export async function POST(
   } catch (error) {
     if (error instanceof InvalidAlbumError) {
       return NextResponse.json({ error: error.message, code: error.code }, { status: 400 });
+    }
+    if (error instanceof AlbumForbiddenError) {
+      return NextResponse.json({ error: error.message, code: error.code }, { status: 403 });
     }
 
     console.error('Error uploading tribe media:', error);
