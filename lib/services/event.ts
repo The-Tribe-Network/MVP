@@ -8,6 +8,17 @@ import { comment } from "@/lib/database/schemas/post";
 import { activity } from "@/lib/database/schemas/activity";
 import { eq, and, desc, sql, inArray, asc, or, isNull, gt, lte } from "drizzle-orm";
 import { createActivity } from "./activity";
+
+/**
+ * The status an event has now (TRI-240). `event.status` is written once at creation and never
+ * advanced, so every read and filter derives it from the dates; `cancelled` is the only stored value
+ * that sticks.
+ */
+export const effectiveEventStatus = sql<"upcoming" | "ongoing" | "completed" | "cancelled">`(case
+  when ${event.status} = 'cancelled' then 'cancelled'
+  when coalesce(${event.endDate}, ${event.startDate}) < now() then 'completed'
+  when ${event.startDate} <= now() then 'ongoing'
+  else 'upcoming' end)`;
 import { userPreviewColumns, userWithUsernameColumns } from "@/lib/database/user-columns";
 import type {
   EventWithCreator,
@@ -208,7 +219,7 @@ export async function getAgendaItems(
         coverImageUrl: event.coverImageUrl,
         startDate: event.startDate,
         endDate: event.endDate,
-        status: event.status,
+        status: effectiveEventStatus,
         tribeId: tribe.id,
         tribeName: tribe.name,
         tribeAvatarUrl: media.fileUrl,
@@ -385,7 +396,7 @@ export async function createEvent(
         startDate: event.startDate,
         endDate: event.endDate,
         location: event.location,
-        status: event.status,
+        status: effectiveEventStatus,
         createdBy: event.createdBy,
         createdAt: event.createdAt,
         updatedAt: event.updatedAt,
@@ -444,7 +455,7 @@ export async function getTribeEvents(
       endDate: event.endDate,
       location: event.location,
       coverImageUrl: event.coverImageUrl,
-      status: event.status,
+      status: effectiveEventStatus,
       createdBy: event.createdBy,
       createdAt: event.createdAt,
       updatedAt: event.updatedAt,
@@ -471,7 +482,7 @@ export async function getTribeEvents(
     .$dynamic();
 
   const conditions = options?.status
-    ? and(eq(event.tribeId, tribeId), eq(event.status, options.status))
+    ? and(eq(event.tribeId, tribeId), sql`${effectiveEventStatus} = ${options.status}`)
     : eq(event.tribeId, tribeId);
 
   let query = baseSelect.where(conditions).orderBy(desc(event.startDate));
@@ -550,7 +561,7 @@ export async function getEventById(
         endDate: event.endDate,
         location: event.location,
         coverImageUrl: event.coverImageUrl,
-        status: event.status,
+        status: effectiveEventStatus,
         createdBy: event.createdBy,
         createdAt: event.createdAt,
         updatedAt: event.updatedAt,
