@@ -4,7 +4,7 @@ import { uploadTribeMediaBatch } from '@/lib/services/media';
 import { validateImageFile } from '@/lib/utils/image';
 import { checkTribeMembership } from '@/lib/services/permissions';
 import { multipartFileLimit, rejectOversizedBody } from '@/lib/services/multipart-limits';
-import { InvalidAlbumError } from '@/lib/services/album';
+import { AlbumForbiddenError, InvalidAlbumError } from '@/lib/services/album';
 
 /**
  * POST /api/tribes/[tribe_id]/media/batch
@@ -126,6 +126,10 @@ export async function POST(
     if (error instanceof InvalidAlbumError) {
       // One albumId covers the batch: nothing was uploaded, the whole request fails (TRI-197).
       return NextResponse.json({ error: error.message, code: error.code }, { status: 400 });
+    }
+    if (error instanceof AlbumForbiddenError) {
+      // Same for an album the caller may not add to (TRI-274).
+      return NextResponse.json({ error: error.message, code: error.code }, { status: 403 });
     }
 
     console.error('Error batch uploading tribe media:', error);

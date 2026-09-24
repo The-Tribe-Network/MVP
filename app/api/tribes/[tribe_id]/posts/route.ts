@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
 import { createPost, getTribePosts, PostInputError } from "@/lib/services/post";
 import { checkTribeMembership } from "@/lib/services/permissions";
-import { InvalidAlbumError } from "@/lib/services/album";
+import { AlbumForbiddenError, InvalidAlbumError } from "@/lib/services/album";
 import { createPostSchema, listPostsQuerySchema, tribeIdParamSchema, validateApiRequest } from "@/lib/validations/post";
 
 export async function GET(
@@ -111,6 +111,9 @@ export async function POST(
   } catch (error) {
     if (error instanceof PostInputError || error instanceof InvalidAlbumError) {
       return NextResponse.json({ error: error.message, code: error.code }, { status: 400 });
+    }
+    if (error instanceof AlbumForbiddenError) {
+      return NextResponse.json({ error: error.message, code: error.code }, { status: 403 });
     }
     console.error("Error creating post:", error);
     if (error instanceof Error) {

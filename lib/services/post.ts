@@ -18,7 +18,16 @@ import type {
 } from "@/lib/database/types";
 import type { CreatePostInput } from "@/lib/validations/post";
 import { getMemberWithPermissions } from "./permissions";
-import { assertAlbumInTribe } from "./album";
+import {
+  assertAlbumInTribe,
+  assertCanAddToAlbum,
+  canUserSeeAlbum,
+  getAlbumAccessContext,
+  insertAlbumMediaRows,
+  InvalidAlbumError,
+  isAlbumVisibleTo,
+  type AlbumAccessContext,
+} from "./album";
 import { getTribeSettings } from "./tribe-settings";
 import { getPollsByIds } from "./poll";
 import { getAgendaItems, type AgendaItemPreview } from "./event";
@@ -184,7 +193,23 @@ export async function createPost(
   // Both album references must be albums of this tribe (InvalidAlbumError → the route's 400 INVALID_ALBUM).
   // `albumId` null means the general album.
   await assertAlbumInTribe(linkedAlbumId, tribeId);
-  await assertAlbumInTribe(albumId, tribeId);
+  if (linkedAlbumId) {
+    // Linking only displays the album, so seeing it is enough; one the author cannot see is as unknown (TRI-273).
+    const [linked] = await db
+      .select({ tribeId: album.tribeId, createdBy: album.createdBy, privacy: album.privacy })
+      .from(album)
+      .where(eq(album.id, linkedAlbumId))
+      .limit(1);
+    if (!linked || !(await canUserSeeAlbum(linked, userId))) {
+      throw new InvalidAlbumError();
+    }
+  }
+  if (input.addToAlbum === true && mediaIds.length > 0) {
+    // The photos are filed into `albumId`: the one add rule (TRI-274, AlbumForbiddenError → 403 ALBUM_FORBIDDEN).
+    await assertCanAddToAlbum(albumId, tribeId, userId);
+  } else {
+    await assertAlbumInTribe(albumId, tribeId);
+  }
 
   const kind = derivePostKind({ isPinned, eventId, pollId, mediaCount: mediaIds.length, linkedAlbumId });
 
@@ -223,14 +248,16 @@ export async function createPost(
 
       if (input.addToAlbum === true) {
         const addedAt = new Date();
-        await tx.insert(albumMedia).values(
+        // Skips general-library rows the photos already got at confirm (no duplicate null-album rows, TRI-274).
+        await insertAlbumMediaRows(
           mediaIds.map((mediaId) => ({
             addedAt,
             albumId, // null means the general album
             mediaId,
             addedBy: userId,
           })),
-        ).onConflictDoNothing();
+          tx,
+        );
       }
     }
 
@@ -311,9 +338,13 @@ function contentTypeCondition(contentType: PostContentType): SQL | undefined {
 }
 
 /**
- * Linked album previews (cover + photo count), keyed by album id
+ * Linked album previews (cover + photo count), keyed by album id. Only albums the viewer may see
+ * (TRI-273); without a viewer, only public albums. Rights are resolved once per tribe, not per album.
  */
-async function getLinkedAlbumPreviews(albumIds: string[]): Promise<Map<string, LinkedAlbumPreview>> {
+async function getLinkedAlbumPreviews(
+  albumIds: string[],
+  viewerId?: string
+): Promise<Map<string, LinkedAlbumPreview>> {
   const previews = new Map<string, LinkedAlbumPreview>();
   if (albumIds.length === 0) return previews;
 
@@ -332,6 +363,9 @@ async function getLinkedAlbumPreviews(albumIds: string[]): Promise<Map<string, L
     .select({
       id: album.id,
       name: album.name,
+      tribeId: album.tribeId,
+      createdBy: album.createdBy,
+      privacy: album.privacy,
       coverUrl: media.fileUrl,
       photoCount: sql<number>`COALESCE(${albumMediaCountSubquery.count}, 0)`,
     })
@@ -340,7 +374,17 @@ async function getLinkedAlbumPreviews(albumIds: string[]): Promise<Map<string, L
     .leftJoin(albumMediaCountSubquery, eq(album.id, albumMediaCountSubquery.albumId))
     .where(inArray(album.id, albumIds));
 
+  const accessByTribe = new Map<string, AlbumAccessContext>();
+  if (viewerId) {
+    const tribeIds = [...new Set(linkedAlbums.map((a) => a.tribeId))];
+    const contexts = await Promise.all(tribeIds.map((id) => getAlbumAccessContext(id, viewerId)));
+    tribeIds.forEach((id, i) => accessByTribe.set(id, contexts[i]));
+  }
+
   for (const a of linkedAlbums) {
+    const access = accessByTribe.get(a.tribeId);
+    const visible = access ? isAlbumVisibleTo(access, a) : a.privacy === "public";
+    if (!visible) continue;
     previews.set(a.id, {
       id: a.id,
       name: a.name,
@@ -510,7 +554,7 @@ async function attachPostMetadata(
       .innerJoin(media, eq(postMedia.mediaId, media.id))
       .where(and(inArray(postMedia.postId, postIds), eq(media.fileType, 'image')))
       .orderBy(asc(postMedia.displayOrder)),
-    getLinkedAlbumPreviews(albumIds),
+    getLinkedAlbumPreviews(albumIds, currentUserId),
     getAgendaItems(eventIds, currentUserId),
     getPollsByIds(pollIds, currentUserId),
     getTopComments(postIds, currentUserId),
@@ -537,14 +581,17 @@ async function attachPostMetadata(
 
   return posts.map((p) => {
     const postPhotos = photosMap.get(p.id) ?? [];
+    // A linked album the viewer may not see is no link at all for them (TRI-273): both fields null.
+    const linkedAlbum = p.linkedAlbumId ? albumPreviews.get(p.linkedAlbumId) || null : null;
     return {
       ...p,
+      linkedAlbumId: linkedAlbum ? p.linkedAlbumId : null,
       likeCount: likeCountMap.get(p.id) || 0,
       commentCount: commentCountMap.get(p.id) || 0,
       isLiked: userLikedPostIds.has(p.id),
       image: postPhotos[0] ?? null,
       media: postPhotos,
-      linkedAlbum: p.linkedAlbumId ? albumPreviews.get(p.linkedAlbumId) || null : null,
+      linkedAlbum,
       event: p.eventId ? eventPreviews.get(p.eventId) || null : null,
       poll: p.pollId ? pollMap.get(p.pollId) || null : null,
       topComment: topComments.get(p.id) ?? null,

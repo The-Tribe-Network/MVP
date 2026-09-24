@@ -30,7 +30,8 @@ export async function GET(
     }
 
     // Marks media.isNew from the caller's previous visit to this album and stamps this one (TRI-201);
-    // the service skips both when the album is not in tribe_id, which is a 403 below.
+    // the service skips both when the album is not in tribe_id, which is a 403 below. An album the
+    // caller may not see (TRI-273) comes back null: 404, same as a missing one.
     const album = await getAlbumById(album_id, { viewerId: user.id, tribeId: tribe_id });
 
     if (!album) {

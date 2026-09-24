@@ -1,12 +1,13 @@
 import { db } from "@/lib/database/client";
 import { album, albumMedia, media, mediaLike } from "@/lib/database/schemas/media";
 import { user } from "@/lib/database/schemas/auth";
-import { tribe, tribeMember, tribeMemberPreference } from "@/lib/database/schemas/tribe";
-import { eq, and, desc, sql, count, countDistinct, inArray, asc, lte } from "drizzle-orm";
-import { canUserCreateAlbums } from "./permissions";
-import { checkPermission } from "./role-permissions";
+import { tribe, tribeMember, tribeMemberPreference, tribeSettings } from "@/lib/database/schemas/tribe";
+import { eq, and, desc, sql, count, countDistinct, inArray, asc, lte, or, isNull, isNotNull, exists, notExists, type SQL } from "drizzle-orm";
+import { canUserCreateAlbums, getMemberWithPermissions } from "./permissions";
+import { checkPermission, getRolePermissions } from "./role-permissions";
 import type { AlbumMedia, AlbumWithMedia, UserPreview } from "@/lib/database/types";
 import { userPreviewColumns } from "@/lib/database/user-columns";
+import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 
 /** How far back "new" reaches on a member's first visit to an album (MEDIA-02 "NEW TODAY"). */
 const FIRST_VISIT_NEW_WINDOW_MS = 24 * 60 * 60 * 1000;
@@ -70,16 +71,237 @@ export async function canUserManageAlbum(
   return checkPermission(albumRecord.tribeId, userId, ALBUM_MANAGE_PERMISSION);
 }
 
+// ============================================
+// Album visibility and contents rights (TRI-273, TRI-274)
+// ============================================
+
+/** The album columns the visibility / add rules read. */
+export type AlbumAccessTarget = Pick<typeof album.$inferSelect, "tribeId" | "createdBy" | "privacy">;
+
+/** Roles that see `admin_only` albums and may add to them. */
+const ALBUM_STAFF_ROLES = new Set(["owner", "admin", "moderator"]);
+
 /**
- * Whether a user may add media to or remove media from an album: anyone who may manage it, plus (the
- * pre-existing, broader rule for album contents) any member who holds `canCreateAlbums`.
+ * Everything the album rules need about one user in one tribe, resolved once so a page of albums (or a
+ * media list) is judged without a query per album. `role` null means the user is not a member.
  */
-async function canUserEditAlbumContents(
-  albumRecord: AlbumWriteTarget,
+export interface AlbumAccessContext {
+  tribeId: string;
+  userId: string;
+  role: string | null;
+  /** Effective `ALBUM_MANAGE_PERMISSION` (manage any album). */
+  canManageAny: boolean;
+  /** Effective `canUploadMedia`. */
+  canUpload: boolean;
+  /** `tribe_settings.allow_collaborative_albums` (true when the tribe has no settings row, the column default). */
+  allowCollaborativeAlbums: boolean;
+}
+
+/**
+ * Resolve the caller's album rights in a tribe: membership + role, the per-member override → tribe role →
+ * system default chain (same as `checkPermission`) for the two keys, and the tribe's collaborative setting.
+ */
+export async function getAlbumAccessContext(tribeId: string, userId: string): Promise<AlbumAccessContext> {
+  const [memberData, settingsRows] = await Promise.all([
+    getMemberWithPermissions(tribeId, userId),
+    db
+      .select({ allowCollaborativeAlbums: tribeSettings.allowCollaborativeAlbums })
+      .from(tribeSettings)
+      .where(eq(tribeSettings.tribeId, tribeId))
+      .limit(1),
+  ]);
+  const allowCollaborativeAlbums = settingsRows[0]?.allowCollaborativeAlbums ?? true;
+  if (!memberData) {
+    return { tribeId, userId, role: null, canManageAny: false, canUpload: false, allowCollaborativeAlbums };
+  }
+  const rolePermissions = await getRolePermissions(tribeId, memberData.member.role);
+  const resolve = (key: string): boolean => {
+    const override = (memberData.permissions as Record<string, unknown> | null)?.[key];
+    if (override !== null && override !== undefined) return override === true;
+    return rolePermissions[key] === true;
+  };
+  return {
+    tribeId,
+    userId,
+    role: memberData.member.role,
+    canManageAny: resolve(ALBUM_MANAGE_PERMISSION),
+    canUpload: resolve("canUploadMedia"),
+    allowCollaborativeAlbums,
+  };
+}
+
+/**
+ * Album visibility (TRI-273), for a member of the album's tribe:
+ * - public: every member;
+ * - private: the album's creator only;
+ * - admin_only: owner, admin, moderator, and the album's creator.
+ * Non-members and albums of another tribe than the context's are never visible.
+ */
+export function isAlbumVisibleTo(access: AlbumAccessContext, albumRecord: AlbumAccessTarget): boolean {
+  if (access.role === null || albumRecord.tribeId !== access.tribeId) return false;
+  if (albumRecord.createdBy === access.userId) return true;
+  if (albumRecord.privacy === "public") return true;
+  if (albumRecord.privacy === "admin_only") return ALBUM_STAFF_ROLES.has(access.role);
+  return false;
+}
+
+/**
+ * Who may add media to an album (TRI-274), one rule for every write path:
+ * - public: whoever may manage it (creator or `ALBUM_MANAGE_PERMISSION`), plus any member with
+ *   `canUploadMedia` while the tribe's `allow_collaborative_albums` is on;
+ * - private: the creator only (managers cannot add to someone else's private album);
+ * - admin_only: owner, admin, moderator, or the creator.
+ */
+export function isAlbumAddableBy(access: AlbumAccessContext, albumRecord: AlbumAccessTarget): boolean {
+  if (!isAlbumVisibleTo(access, albumRecord)) return false;
+  if (albumRecord.createdBy === access.userId) return true;
+  if (albumRecord.privacy === "public") {
+    return access.canManageAny || (access.canUpload && access.allowCollaborativeAlbums);
+  }
+  if (albumRecord.privacy === "admin_only") return ALBUM_STAFF_ROLES.has(access.role!);
+  return false;
+}
+
+/** `isAlbumVisibleTo` for one album, resolving the caller's context in the album's tribe. */
+export async function canUserSeeAlbum(albumRecord: AlbumAccessTarget, userId: string): Promise<boolean> {
+  return isAlbumVisibleTo(await getAlbumAccessContext(albumRecord.tribeId, userId), albumRecord);
+}
+
+/** `isAlbumAddableBy` for one album, resolving the caller's context in the album's tribe. */
+export async function canUserAddToAlbum(albumRecord: AlbumAccessTarget, userId: string): Promise<boolean> {
+  return isAlbumAddableBy(await getAlbumAccessContext(albumRecord.tribeId, userId), albumRecord);
+}
+
+/**
+ * SQL form of `isAlbumVisibleTo` over the `album` table (the context's tribe only), for list queries that
+ * must not return or reveal albums the caller cannot see.
+ */
+export function visibleAlbumCondition(access: AlbumAccessContext): SQL {
+  if (access.role === null) return sql`false`;
+  const visible = [eq(album.privacy, "public"), eq(album.createdBy, access.userId)];
+  if (ALBUM_STAFF_ROLES.has(access.role)) visible.push(eq(album.privacy, "admin_only"));
+  return and(eq(album.tribeId, access.tribeId), or(...visible))!;
+}
+
+/**
+ * SQL over the outer `media` row: whether the viewer may see this photo (TRI-273). A photo is hidden only
+ * when it was uploaded into albums the viewer cannot see and nowhere else. Visible when any holds:
+ * - it is on a post (post images follow the post, which every member of the tribe sees);
+ * - the viewer uploaded it;
+ * - it is filed nowhere (avatars, covers, unfiled uploads: no album to hide it);
+ * - it has a general-library row (so a public photo later added to a private album stays visible);
+ * - it is in at least one album the viewer may see.
+ */
+export function visibleMediaCondition(access: AlbumAccessContext): SQL {
+  const visibleAlbumIds = db.select({ id: album.id }).from(album).where(visibleAlbumCondition(access));
+  return or(
+    isNotNull(media.postId),
+    eq(media.uploadedBy, access.userId),
+    notExists(db.select({ one: sql`1` }).from(albumMedia).where(eq(albumMedia.mediaId, media.id))),
+    exists(
+      db
+        .select({ one: sql`1` })
+        .from(albumMedia)
+        .where(
+          and(
+            eq(albumMedia.mediaId, media.id),
+            or(isNull(albumMedia.albumId), inArray(albumMedia.albumId, visibleAlbumIds))
+          )
+        )
+    )
+  )!;
+}
+
+/** Whether one media row is visible to `userId` in its tribe (see `visibleMediaCondition`). */
+export async function canUserSeeMedia(mediaId: string, tribeId: string, userId: string): Promise<boolean> {
+  const access = await getAlbumAccessContext(tribeId, userId);
+  if (access.role === null) return false;
+  const [row] = await db
+    .select({ id: media.id })
+    .from(media)
+    .where(and(eq(media.id, mediaId), eq(media.tribeId, tribeId), visibleMediaCondition(access)))
+    .limit(1);
+  return Boolean(row);
+}
+
+/**
+ * The caller may not add media to this album (TRI-274). Routes answer 403 `{ error, code: "ALBUM_FORBIDDEN" }`.
+ * The message contains "permission" so older routes that map on the message still answer 403.
+ */
+export class AlbumForbiddenError extends Error {
+  readonly code = "ALBUM_FORBIDDEN" as const;
+  constructor(message = "You do not have permission to add media to this album") {
+    super(message);
+    this.name = "AlbumForbiddenError";
+  }
+}
+
+/**
+ * The one add-rule check for write paths that file new or existing media into a named album: the album
+ * must be one of `tribeId`'s (`InvalidAlbumError` otherwise, via `assertAlbumInTribe`) and the caller must
+ * pass `isAlbumAddableBy` (`AlbumForbiddenError` otherwise). `null`/`undefined` is the general library and
+ * passes (being allowed to upload at all is the caller's own check).
+ */
+export async function assertCanAddToAlbum(albumId: unknown, tribeId: string, userId: string): Promise<void> {
+  if (albumId === null || albumId === undefined) return;
+  await assertAlbumInTribe(albumId, tribeId);
+  const [albumRecord] = await db
+    .select({ tribeId: album.tribeId, createdBy: album.createdBy, privacy: album.privacy })
+    .from(album)
+    .where(eq(album.id, albumId as string))
+    .limit(1);
+  if (!albumRecord || !(await canUserAddToAlbum(albumRecord, userId))) {
+    throw new AlbumForbiddenError();
+  }
+}
+
+/**
+ * Who may remove a media item from an album (TRI-274): anyone who may manage the album, or the item's
+ * uploader taking their own photo out of a public album.
+ */
+async function canUserRemoveFromAlbum(
+  albumRecord: AlbumWriteTarget & AlbumAccessTarget,
+  mediaUploadedBy: string | null,
   userId: string
 ): Promise<boolean> {
   if (await canUserManageAlbum(albumRecord, userId)) return true;
-  return canUserCreateAlbums(albumRecord.tribeId, userId);
+  return albumRecord.privacy === "public" && mediaUploadedBy === userId && (await canUserSeeAlbum(albumRecord, userId));
+}
+
+type AlbumMediaInsertRow = typeof albumMedia.$inferInsert;
+/** `db` or a transaction (`getDbTransaction().transaction(tx => …)`); both are PgDatabases. */
+type AlbumMediaExecutor = Pick<PgDatabase<PgQueryResultHKT, any, any>, "select" | "insert">;
+
+/**
+ * Insert album_media rows without ever giving a media item a second general-library row (`album_id` null):
+ * the (album_id, media_id) unique constraint does not apply to NULLs, so a post photo used to get one row
+ * at confirm and another at post create. Null-album rows for media that already have one are dropped
+ * before the insert; `ON CONFLICT DO NOTHING` covers the album rows and, once
+ * tri274-album-media-general-unique.sql has run, the partial unique index on the null rows too.
+ * Pass the transaction when inside one.
+ */
+export async function insertAlbumMediaRows(
+  rows: AlbumMediaInsertRow[],
+  executor: AlbumMediaExecutor = db
+): Promise<AlbumMedia[]> {
+  const generalIds = [...new Set(rows.filter((r) => !r.albumId).map((r) => r.mediaId))];
+  let alreadyGeneral = new Set<string>();
+  if (generalIds.length > 0) {
+    const existing = await executor
+      .select({ mediaId: albumMedia.mediaId })
+      .from(albumMedia)
+      .where(and(inArray(albumMedia.mediaId, generalIds), isNull(albumMedia.albumId)));
+    alreadyGeneral = new Set(existing.map((e) => e.mediaId));
+  }
+  const seenGeneral = new Set<string>();
+  const toInsert = rows.filter((r) => {
+    if (r.albumId) return true;
+    if (alreadyGeneral.has(r.mediaId) || seenGeneral.has(r.mediaId)) return false;
+    seenGeneral.add(r.mediaId);
+    return true;
+  });
+  if (toInsert.length === 0) return [];
+  return executor.insert(albumMedia).values(toInsert).onConflictDoNothing().returning();
 }
 
 /**
@@ -175,13 +397,22 @@ export interface GetAlbumOptions {
    * nothing is marked or stamped for that request.
    */
   tribeId?: string;
+  /**
+   * The caller, when it is not a viewer (create answers with the new album): sets `canAddMedia` without
+   * stamping a visit or applying visibility.
+   */
+  callerId?: string;
 }
 
 /**
  * Get an album by ID with its media (using junction table), contributors and, for a viewer, `isNew`.
+ * With `viewerId`, an album the viewer may not see (TRI-273) is null, exactly like a missing one, so
+ * routes answer 404 without revealing it exists. With `viewerId` or `callerId`, the album carries
+ * `canAddMedia` for that user (TRI-274). `coverUrl` falls back to the earliest-added photo when no cover
+ * is chosen (`coverId` stays null).
  * @param albumId - The album ID
  * @param options - See GetAlbumOptions
- * @returns The album with media or null if not found
+ * @returns The album with media or null if not found (or not visible to the viewer)
  */
 export async function getAlbumById(
   albumId: string,
@@ -225,6 +456,10 @@ export async function getAlbumById(
     .limit(1);
 
   if (!albumRecord[0]) return null;
+
+  const accessUserId = options.viewerId ?? options.callerId;
+  const access = accessUserId ? await getAlbumAccessContext(albumRecord[0].tribeId, accessUserId) : null;
+  if (options.viewerId && access && !isAlbumVisibleTo(access, albumRecord[0])) return null;
 
   // Get media in album via junction table, with each item's uploader (one join, no per-item lookups)
   const albumMediaQuery = await db
@@ -273,11 +508,25 @@ export async function getAlbumById(
     await stampAlbumVisit(visit, options.viewerId!, albumId);
   }
 
+  // No chosen cover: the earliest-added photo stands in (TRI-273 follow-up); coverId stays null.
+  let coverUrl = albumRecord[0].coverUrl;
+  if (!albumRecord[0].coverId) {
+    const earliest = albumMediaQuery
+      .filter((item) => item.fileType === "image")
+      .reduce<(typeof albumMediaQuery)[number] | null>(
+        (first, item) => (!first || item.addedAt.getTime() < first.addedAt.getTime() ? item : first),
+        null
+      );
+    coverUrl = earliest?.fileUrl ?? null;
+  }
+
   return {
     ...albumRecord[0],
+    coverUrl,
     media: mediaItems,
     photoCount: mediaItems.length,
     ...contributorsFromMedia(albumMediaQuery),
+    ...(access ? { canAddMedia: isAlbumAddableBy(access, albumRecord[0]) } : {}),
   };
 }
 
@@ -359,9 +608,23 @@ function contributorsFromMedia(
  */
 export async function getAlbumsByTribe(
   tribeId: string,
+  viewerId: string,
   options: { limit?: number; offset?: number } = {}
 ) {
   const { limit = 50, offset = 0 } = options;
+
+  // The viewer's rights, resolved once for the page: albums they cannot see are filtered out in SQL
+  // (TRI-273) and every returned album carries `canAddMedia` (TRI-274).
+  const access = await getAlbumAccessContext(tribeId, viewerId);
+
+  // No chosen cover: the earliest-added photo's URL (coverId stays null so clients can tell them apart).
+  const fallbackCoverUrl = sql<string | null>`(
+    select fm.file_url from ${albumMedia} fam
+    inner join ${media} fm on fm.id = fam.media_id
+    where fam.album_id = ${album.id} and fm.file_type = 'image'
+    order by fam.added_at asc, fam.id asc
+    limit 1
+  )`;
 
   // Subquery to get media count and distinct uploader count per album
   const mediaCountSubquery = db
@@ -383,7 +646,7 @@ export async function getAlbumsByTribe(
       name: album.name,
       description: album.description,
       coverId: album.coverId,
-      coverUrl: media.fileUrl,
+      coverUrl: sql<string | null>`CASE WHEN ${album.coverId} IS NULL THEN ${fallbackCoverUrl} ELSE ${media.fileUrl} END`,
       privacy: album.privacy,
       createdAt: album.createdAt,
       updatedAt: album.updatedAt,
@@ -413,7 +676,7 @@ export async function getAlbumsByTribe(
     .innerJoin(tribe, eq(album.tribeId, tribe.id))
     .leftJoin(media, eq(album.coverId, media.id))
     .leftJoin(mediaCountSubquery, eq(album.id, mediaCountSubquery.albumId))
-    .where(eq(album.tribeId, tribeId))
+    .where(and(eq(album.tribeId, tribeId), visibleAlbumCondition(access)))
     .orderBy(desc(album.createdAt))
     .limit(limit)
     .offset(offset);
@@ -423,6 +686,7 @@ export async function getAlbumsByTribe(
   return albums.map((a) => ({
     ...a,
     contributors: contributorsByAlbum.get(a.id) ?? [],
+    canAddMedia: isAlbumAddableBy(access, a),
   }));
 }
 
@@ -547,7 +811,7 @@ export async function addMediaToAlbum(
  * Remove media from album (removes from junction table)
  * @param mediaId - The media ID
  * @param albumId - The album ID
- * @param userId - The user ID (creator, `ALBUM_MANAGE_PERMISSION`, or `canCreateAlbums`)
+ * @param userId - The user ID (whoever may manage the album, or the uploader of a photo in a public album)
  */
 export async function removeMediaFromAlbum(
   mediaId: string,
@@ -556,7 +820,13 @@ export async function removeMediaFromAlbum(
 ) {
   const albumRecord = await getAlbumForWrite(albumId);
 
-  if (!(await canUserEditAlbumContents(albumRecord, userId))) {
+  const [mediaRecord] = await db
+    .select({ uploadedBy: media.uploadedBy })
+    .from(media)
+    .where(eq(media.id, mediaId))
+    .limit(1);
+
+  if (!(await canUserRemoveFromAlbum(albumRecord, mediaRecord?.uploadedBy ?? null, userId))) {
     throw new Error("User does not have permission to modify this album");
   }
 
@@ -595,7 +865,7 @@ export interface CreateAlbumWithMediaData {
  * Add multiple media items to an album in a single transaction
  * @param albumId - The album ID
  * @param mediaIds - Array of media IDs to add
- * @param userId - The user performing the action (creator, `ALBUM_MANAGE_PERMISSION`, or `canCreateAlbums`)
+ * @param userId - The user performing the action (must pass `canUserAddToAlbum`, TRI-274)
  * @returns Array of created album_media records
  */
 export async function addMultipleMediaToAlbum(
@@ -605,8 +875,8 @@ export async function addMultipleMediaToAlbum(
 ): Promise<AlbumMedia[]> {
   const albumRecord = await getAlbumForWrite(albumId);
 
-  if (!(await canUserEditAlbumContents(albumRecord, userId))) {
-    throw new Error("User does not have permission to modify this album");
+  if (!(await canUserAddToAlbum(albumRecord, userId))) {
+    throw new AlbumForbiddenError();
   }
 
   // Validate all media exist and belong to tribe
@@ -702,5 +972,5 @@ export async function createAlbumWithMedia(
   }
 
   // Fetch and return complete album
-  return getAlbumById(createdAlbum.id) as Promise<AlbumWithMedia>;
+  return getAlbumById(createdAlbum.id, { callerId: userId }) as Promise<AlbumWithMedia>;
 }

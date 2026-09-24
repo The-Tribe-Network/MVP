@@ -222,3 +222,23 @@ In tribe-mobile:
   Cloudinary-reported bytes (not by an upload preset). `ARCHITECTURE.md` §11 step 3/5: the routes are
   `POST /tribes/:id/media/sign` and `POST /tribes/:id/media/confirm`, and the confirm body is
   `ConfirmAsset[]` (publicId, url, width, height, bytes, format from Cloudinary's upload response).
+
+## TRI-275 · Idempotent confirm + upload webhook
+
+- **sign** body also takes `albumId?: uuid | null` and `addToAlbum?: boolean` (default `null` / `true`,
+  the same meaning as on confirm). The album rule is checked at sign: 400 `INVALID_ALBUM`,
+  403 `ALBUM_FORBIDDEN`. Every `uploads[]` item gains `params: Record<string, string>`: the full form
+  to POST to Cloudinary besides `file` and `api_key` (`folder`, `public_id`, `timestamp`, `signature`,
+  and, when `CLOUDINARY_NOTIFICATION_URL` is set, `notification_url` and `context`). Send it verbatim.
+  `context` is `uid=<uploaderId>|alb=<albumId or empty>|add=<1|0>|pur=<purpose>`; both extras are signed.
+- **confirm** is idempotent per uploader: an asset this user already confirmed in this tribe is returned
+  as it is (not re-verified, not re-filed). `201` when at least one asset was created, `200` when all
+  were already confirmed; always `{ media: Media[] }` in `assets[]` order, new and existing mixed.
+  Another uploader's (or another tribe's) asset is still 400 `ALREADY_CONFIRMED`.
+- **webhook** `POST /api/webhooks/cloudinary`: Cloudinary's upload notification. Verified with
+  `cloudinary.utils.verifyNotificationSignature(rawBody, X-Cld-Timestamp, X-Cld-Signature, 7200)`
+  (401 otherwise). Only `notification_type: "upload"` image uploads under `tribes/<tribeId>/` carrying
+  our context are acted on: the same confirm runs as the uploader in the context (membership,
+  `canUploadMedia`, album add rule, format / size limits, blurhash, `album_media`). Everything
+  deliberately ignored answers 200 `{ ok: true }` with no detail; unexpected failures answer 500 so
+  Cloudinary retries. The app and the webhook can both confirm the same asset in either order.

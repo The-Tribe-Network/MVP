@@ -1,13 +1,21 @@
 import { db } from '@/lib/database/client';
-import { albumMedia, media, mediaLike } from '@/lib/database/schemas';
+import { album, albumMedia, media, mediaLike } from '@/lib/database/schemas';
 import { user } from '@/lib/database/schemas/auth';
 import { comment } from '@/lib/database/schemas/post';
 import { cloudinary } from '@/lib/clients/cloudinary';
-import { eq, and, asc, desc, exists, gte, inArray, isNull, lt, count, sql, type SQL } from 'drizzle-orm';
+import { eq, and, or, asc, desc, exists, gte, inArray, isNotNull, isNull, lt, count, sql, type SQL } from 'drizzle-orm';
 import type { MediaListSort } from '@/lib/validations/media';
 import type { Media, MediaInsert } from '@/lib/database/types';
 import { canUserUploadMedia, canUserDeleteMedia } from './permissions';
-import { assertAlbumInTribe, InvalidAlbumError, UUID_PATTERN } from './album';
+import {
+  assertCanAddToAlbum,
+  insertAlbumMediaRows,
+  InvalidAlbumError,
+  UUID_PATTERN,
+  canUserSeeMedia,
+  visibleAlbumCondition,
+  type AlbumAccessContext,
+} from './album';
 import { blurhashForCloudinaryImage } from '@/lib/utils/blurhash';
 
 /** Cloudinary public_id from a delivery URL (`/upload/v<ver>/<public_id>.<ext>`), or null. */
@@ -335,6 +343,16 @@ export async function getMediaById(id: string): Promise<Media | null> {
  * else null. Unknown, malformed and another tribe's media are indistinguishable (the route answers 404),
  * so a caller cannot use one tribe's URL to learn that a media id exists elsewhere.
  */
+/**
+ * `getMediaInTribe` for reads (TRI-273): also null when the photo is hidden from `userId` (uploaded only
+ * into albums they may not see), so a hidden photo is indistinguishable from a missing one (404).
+ */
+export async function getVisibleMediaInTribe(mediaId: string, tribeId: string, userId: string): Promise<Media | null> {
+  const mediaRecord = await getMediaInTribe(mediaId, tribeId);
+  if (!mediaRecord) return null;
+  return (await canUserSeeMedia(mediaId, tribeId, userId)) ? mediaRecord : null;
+}
+
 export async function getMediaInTribe(mediaId: string, tribeId: string): Promise<Media | null> {
   if (!UUID_PATTERN.test(mediaId)) return null;
   const [mediaRecord] = await db
@@ -406,6 +424,12 @@ export async function deleteMediaWithoutChecks(mediaId: string): Promise<void> {
 
 export interface MediaFilters {
   albumId?: string | null;
+  /**
+   * The viewer's album rights (TRI-273). When set, only general-library rows and rows of albums the viewer
+   * may see count: a photo filed only in hidden albums is not listed, an `albumId` of a hidden album lists
+   * nothing (as an unknown album does), and a row's `albumId` never names a hidden album.
+   */
+  viewerAccess?: AlbumAccessContext;
   type?: "image" | "video" | "document";
   /** Uploader user ids (TRI-207); matches any of them. An empty array matches nothing. */
   uploadedBy?: string[];
@@ -442,16 +466,36 @@ function mediaListConditions(tribeId: string, filters: MediaFilters) {
  * Which album_media rows of the outer `media` row count: all of them, one album's, or the general library's
  * (album_id is null). Used correlated, so it must be embedded where `media` is in scope.
  */
-function albumMediaOfMedia(albumId: string | null | undefined) {
+function albumMediaOfMedia(albumId: string | null | undefined, viewerAccess?: AlbumAccessContext) {
   return and(
     eq(albumMedia.mediaId, media.id),
-    albumId === undefined ? undefined : albumId === null ? isNull(albumMedia.albumId) : eq(albumMedia.albumId, albumId)
+    albumId === undefined ? undefined : albumId === null ? isNull(albumMedia.albumId) : eq(albumMedia.albumId, albumId),
+    viewerAccess
+      ? or(
+          isNull(albumMedia.albumId),
+          inArray(albumMedia.albumId, db.select({ id: album.id }).from(album).where(visibleAlbumCondition(viewerAccess)))
+        )
+      : undefined
   );
 }
 
 /** The outer `media` row has at least one album_media row the album filter allows. */
-function isFiled(albumId: string | null | undefined) {
-  return exists(db.select({ one: sql`1` }).from(albumMedia).where(albumMediaOfMedia(albumId)));
+function isFiled(albumId: string | null | undefined, viewerAccess?: AlbumAccessContext) {
+  return exists(db.select({ one: sql`1` }).from(albumMedia).where(albumMediaOfMedia(albumId, viewerAccess)));
+}
+
+/**
+ * Whether the outer `media` row is listed. Always: filed at all (never-filed media such as avatars is not
+ * a gallery photo). With a viewer (TRI-273), it must also be visible to them: in the general library or an
+ * album they may see, or, with no album filter, a post image or their own upload filed anywhere.
+ */
+function isListed(albumId: string | null | undefined, viewerAccess?: AlbumAccessContext) {
+  if (!viewerAccess) return isFiled(albumId);
+  if (albumId !== undefined) return isFiled(albumId, viewerAccess);
+  return or(
+    isFiled(undefined, viewerAccess),
+    and(or(isNotNull(media.postId), eq(media.uploadedBy, viewerAccess.userId)), isFiled(undefined))
+  )!;
 }
 
 // Correlated counts: one index probe per row instead of joining likes x comments and grouping.
@@ -472,7 +516,7 @@ export async function getMediaByTribe(
   tribeId: string,
   filters: MediaFilters = {}
 ) {
-  const { albumId, sort = "newest", limit = 50, offset = 0 } = filters;
+  const { albumId, viewerAccess, sort = "newest", limit = 50, offset = 0 } = filters;
 
   // The one album_media row reported per photo (earliest by added_at, id). Scalar subqueries in the select
   // list, so Postgres evaluates them only for the returned page (a lateral join ran them for every row
@@ -481,7 +525,7 @@ export async function getMediaByTribe(
     sql`(${db
       .select({ value: column })
       .from(albumMedia)
-      .where(albumMediaOfMedia(albumId))
+      .where(albumMediaOfMedia(albumId, viewerAccess))
       .orderBy(asc(albumMedia.addedAt), asc(albumMedia.id))
       .limit(1)})`.mapWith(column);
 
@@ -511,7 +555,8 @@ export async function getMediaByTribe(
       uploadedBy: media.uploadedBy,
       postId: media.postId,
       albumId: filedRow(albumMedia.albumId) as SQL<string | null>,
-      addedAt: filedRow(albumMedia.addedAt) as SQL<Date>,
+      // A post image or own upload that is only in hidden albums has no visible row: its own date stands in.
+      addedAt: sql<Date>`COALESCE(${filedRow(albumMedia.addedAt)}, ${media.createdAt})`.mapWith(albumMedia.addedAt),
       tribeId: media.tribeId,
       uploader: {
         id: user.id,
@@ -523,7 +568,7 @@ export async function getMediaByTribe(
     })
     .from(media)
     .leftJoin(user, eq(media.uploadedBy, user.id))
-    .where(and(...mediaListConditions(tribeId, filters), isFiled(albumId)))
+    .where(and(...mediaListConditions(tribeId, filters), isListed(albumId, viewerAccess)))
     .orderBy(...orderBy)
     .limit(limit)
     .offset(offset);
@@ -537,7 +582,7 @@ export async function countMediaByTribe(tribeId: string, filters: MediaFilters =
     .where(
       and(
         ...mediaListConditions(tribeId, filters),
-        isFiled(filters.albumId)
+        isListed(filters.albumId, filters.viewerAccess)
       )
     );
   return row?.total ?? 0;
@@ -798,9 +843,10 @@ export async function uploadTribeMedia(
     throw new Error('User does not have permission to upload media');
   }
 
-  // The album must be one of this tribe's (TRI-197), checked before any byte reaches Cloudinary.
+  // The album must be one of this tribe's (TRI-197) and the caller must be allowed to add to it
+  // (TRI-274, AlbumForbiddenError), checked before any byte reaches Cloudinary.
   if (addToAlbum) {
-    await assertAlbumInTribe(albumId, tribeId);
+    await assertCanAddToAlbum(albumId, tribeId, userId);
   }
 
   // Upload to Cloudinary with transformations
@@ -842,12 +888,12 @@ export async function uploadTribeMedia(
     .returning();
 
   if (addToAlbum === true) {
-    await db.insert(albumMedia).values({
+    await insertAlbumMediaRows([{
       albumId: albumId || null, // If albumId is null, the media will be added to the general album
       mediaId: createdMedia.id,
       addedBy: userId,
       addedAt: new Date(),
-    });
+    }]);
   }
 
   return {
@@ -883,7 +929,7 @@ export async function uploadTribeMediaBatch(
   // One albumId covers the whole batch, so an album that is not this tribe's fails the request up front
   // (InvalidAlbumError) before any file is uploaded, instead of once per file in `failed[]`.
   if (addToAlbum) {
-    await assertAlbumInTribe(albumId, tribeId);
+    await assertCanAddToAlbum(albumId, tribeId, userId);
   }
 
   // Upload all files in parallel
@@ -927,12 +973,12 @@ export async function uploadTribeMediaBatch(
         .returning();
 
       if (addToAlbum === true) {
-        await db.insert(albumMedia).values({
+        await insertAlbumMediaRows([{
           albumId: albumId || null,
           mediaId: createdMedia.id,
           addedBy: userId,
           addedAt: new Date(),
-        });
+        }]);
       }
 
       return {
@@ -983,32 +1029,33 @@ export async function addMediaToAlbumJunction(
   albumId: string | null,
   userId: string
 ) {
-  // Check if already exists
+  // A move: afterwards the media is filed exactly once, in `albumId` (null = general library). Updating
+  // every row in place (the old way) could collide with the (album_id, media_id) unique constraint when
+  // the media was filed more than once, and kept duplicate general-library rows (TRI-274).
   const existing = await db
     .select()
     .from(albumMedia)
     .where(eq(albumMedia.mediaId, mediaId))
-    .limit(1);
+    .orderBy(asc(albumMedia.addedAt), asc(albumMedia.id));
 
-  if (existing[0]) {
-    // Update existing albumMedia record
+  const [keep, ...extra] = existing;
+  if (keep) {
+    if (extra.length > 0) {
+      await db.delete(albumMedia).where(inArray(albumMedia.id, extra.map((row) => row.id)));
+    }
     const [updated] = await db
       .update(albumMedia)
       .set({ albumId: albumId })
-      .where(eq(albumMedia.mediaId, mediaId))
+      .where(eq(albumMedia.id, keep.id))
       .returning();
     return updated;
   } else {
-    // Create new albumMedia record
-    const [created] = await db
-      .insert(albumMedia)
-      .values({
-        albumId: albumId,
-        mediaId: mediaId,
-        addedBy: userId,
-        addedAt: new Date(),
-      })
-      .returning();
+    const [created] = await insertAlbumMediaRows([{
+      albumId: albumId,
+      mediaId: mediaId,
+      addedBy: userId,
+      addedAt: new Date(),
+    }]);
     return created;
   }
 }
@@ -1054,7 +1101,8 @@ export async function updateMediaAlbumAssignment(
       if (!mediaRecord.tribeId) {
         throw new InvalidAlbumError();
       }
-      await assertAlbumInTribe(albumId, mediaRecord.tribeId);
+      // One add rule for every path into an album (TRI-274): AlbumForbiddenError when not allowed.
+      await assertCanAddToAlbum(albumId, mediaRecord.tribeId, userId);
     }
 
     // Add to album or change album

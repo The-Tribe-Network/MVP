@@ -8,7 +8,7 @@ import {
   updateMediaAlbumAssignment
 } from '@/lib/services/media';
 import { checkTribeMembership } from '@/lib/services/permissions';
-import { InvalidAlbumError } from '@/lib/services/album';
+import { AlbumForbiddenError, InvalidAlbumError } from '@/lib/services/album';
 
 /**
  * PATCH /api/tribes/[tribe_id]/media/[media_id]
@@ -70,6 +70,9 @@ export async function PATCH(
   } catch (error) {
     if (error instanceof InvalidAlbumError) {
       return NextResponse.json({ error: error.message, code: error.code }, { status: 400 });
+    }
+    if (error instanceof AlbumForbiddenError) {
+      return NextResponse.json({ error: error.message, code: error.code }, { status: 403 });
     }
 
     console.error('Error updating media:', error);

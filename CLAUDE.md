@@ -525,6 +525,10 @@ Required variables (see `.env`):
 - `CLOUDINARY_API_KEY`
 - `CLOUDINARY_API_SECRET`
 - `CLOUDINARY_URL` - Full Cloudinary URL
+- `CLOUDINARY_NOTIFICATION_URL` - Optional. Full https URL of `POST /api/webhooks/cloudinary` on this
+  deployment (e.g. `https://<host>/api/webhooks/cloudinary`). When set, `POST /tribes/{id}/media/sign`
+  signs `notification_url` + an upload `context` into every slot and Cloudinary's upload notification
+  confirms the upload server-side (TRI-275). Unset: no webhook, the app's confirm is the only path.
 
 ### Other
 - `NODE_ENV` - Environment (development/production)
