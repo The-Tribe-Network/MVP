@@ -123,6 +123,8 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: /*isProduction*/ false,
+    // A reset is often because the account was compromised: sign every other device out (TRI-235).
+    revokeSessionsOnPasswordReset: true,
     sendEmailVerification: async ({ user, verificationUrl }: { user: any; verificationUrl: string }) => {
       try {
         await sendVerificationEmail({
