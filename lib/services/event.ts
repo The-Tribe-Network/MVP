@@ -549,7 +549,7 @@ export async function getEventById(
   eventId: string,
   userId?: string
 ): Promise<EventWithDetails | null> {
-  const [eventData, counts, userAttendance, rules, eventCounts] = await Promise.all([
+  const [eventData, counts, userAttendance, rules, eventCounts, agenda] = await Promise.all([
     // Event with creator
     db
       .select({
@@ -610,6 +610,9 @@ export async function getEventById(
 
     // Poll and comment counts for the preview sheet (TRI-161)
     eventCountsFor([eventId]),
+
+    // The going avatars EVT-02 stacks, same as Home's agenda card (TRI-259)
+    getAgendaItems([eventId], userId),
   ]);
 
   if (!eventData[0]) return null;
@@ -630,6 +633,11 @@ export async function getEventById(
     // EVT-17: who may see the list (all members / count only / hidden)
     attendeeVisibility: rules.attendeeVisibility,
     attendees: [], // Fetch separately if needed
+    // Hidden unless the list itself is visible to members; the creator always sees it (TRI-259)
+    attendeePreview:
+      rules.attendeeVisibility === "all_members" || eventData[0].createdBy === userId
+        ? (agenda.get(eventId)?.attendeePreview ?? [])
+        : [],
   } as unknown as EventWithDetails;
 }
 
