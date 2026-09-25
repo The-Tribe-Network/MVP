@@ -105,7 +105,7 @@ invitation emails). Member-written text is HTML-escaped. It never throws: every 
 
 - **Tribe owner** (`tribe_member.role = 'owner'`), except when the report is about the owner or the owner's content
   (logged `report is about the tribe owner; tribe owner not emailed`).
-- **Platform owner**: `PLATFORM_OWNER_EMAIL` env var (`devgayflor@gmail.com`, owner decision 2026-09-25). Unset → skipped and logged (`PLATFORM_OWNER_EMAIL is not set`).
+- **Platform owner**: `PLATFORM_OWNER_EMAIL` env var (`anthonygayflor6@gmail.com`, owner decision 2026-09-25). Unset → skipped and logged (`PLATFORM_OWNER_EMAIL is not set`).
   Skipped if it is the same address as the tribe owner's.
 - Content: tribe, reason, note, reporter name, author/member name, a 280-char excerpt (post/comment) or the photo URL,
   ids and timestamp; "Nothing has been hidden or removed automatically".
@@ -214,7 +214,7 @@ Not filtered (by design): `/members/admins`, event co-hosts, event host/creator 
 `npx tsc --noEmit`: the same 9 baseline errors, file by file (line numbers moved in `lib/services/activity.ts`,
 `album.ts`, `media.ts` because of the added lines; same errors). `npx next typegen` run.
 
-Env: `PLATFORM_OWNER_EMAIL=devgayflor@gmail.com` (new, optional; the owner sets it on Vercel Production and Preview). The existing
+Env: `PLATFORM_OWNER_EMAIL=anthonygayflor6@gmail.com` (new, optional; the owner sets it on Vercel Production and Preview). The existing
 `RESEND_API_KEY` / `RESEND_FROM_EMAIL` must be a verified sending domain for the email to reach anyone but the Resend
 account owner (see §7).
 
@@ -274,7 +274,7 @@ regenerate the client and re-run `contract:gaps`:
 
 - **Production migration**: approved and applied. `tri237-238-reports-blocks.sql` ran on Production through the Neon
   MCP; the `report` and `user_block` tables, their constraints and indexes were verified.
-- **`PLATFORM_OWNER_EMAIL`**: `devgayflor@gmail.com`; the owner sets it on Vercel.
+- **`PLATFORM_OWNER_EMAIL`**: `anthonygayflor6@gmail.com`; the owner sets it on Vercel.
 - **Resend sending domain**: still to confirm. Development sends from the sandbox sender, which only delivers to the
   Resend account owner; Production's `RESEND_FROM_EMAIL` must be on a verified domain, or report emails reach no one.
 - **Reason set** (`spam, harassment, hate, sexual_content, violence, self_harm, other`): kept. Renaming later is an
