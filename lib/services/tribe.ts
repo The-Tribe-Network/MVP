@@ -12,6 +12,7 @@ import type { UpdateTribeInput } from "@/lib/validations/tribe";
 import { userPreviewColumns } from "@/lib/database/user-columns";
 import { getAgendaItems, type AgendaItemPreview } from "./event";
 import { getTribeAnnouncement, type PostWithMetadata } from "./post";
+import { mutedTribeIdsOf } from "./notification-feed";
 
 /**
  * Create a new tribe and add the creator as owner
@@ -365,7 +366,10 @@ export async function getMyTribeSummaries(userId: string): Promise<TribeSummary[
       .orderBy(event.tribeId, asc(event.startDate)),
   ]);
 
-  const agenda = await getAgendaItems(nextEvents.map((e) => e.id), userId);
+  const [agenda, muted] = await Promise.all([
+    getAgendaItems(nextEvents.map((e) => e.id), userId),
+    mutedTribeIdsOf(userId),
+  ]);
 
   const memberCountMap = new Map(memberCounts.map((r) => [r.tribeId, Number(r.count)]));
   const unreadMap = unread;
@@ -383,7 +387,8 @@ export async function getMyTribeSummaries(userId: string): Promise<TribeSummary[
     ...m,
     avatar: avatarUrl || avatar, // Use URL if available, otherwise keep original (null or ID)
     memberCount: memberCountMap.get(m.id) ?? 0,
-    unreadCount: unreadMap.get(m.id) ?? 0,
+    // A muted tribe shows no badge (NOTIF-04, TRI-7)
+    unreadCount: muted.has(m.id) ? 0 : unreadMap.get(m.id) ?? 0,
     lastActivityAt: lastActivityMap.get(m.id) ?? null,
     nextEvent: nextEventMap.get(m.id) ?? null,
   }));
