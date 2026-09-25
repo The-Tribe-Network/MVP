@@ -9,6 +9,7 @@ import { activity } from "@/lib/database/schemas/activity";
 import { eq, and, desc, sql, inArray, asc, or, isNull, gt, lte, exists, type SQL } from "drizzle-orm";
 import { createActivity } from "./activity";
 import { appLink, eventAttendeeIds, eventHostIds, notify, tribeMemberIds, type NotifyExecutor } from "./notifications";
+import { excludeBlocked } from "./blocks";
 
 /**
  * The status an event has now (TRI-240). `event.status` is written once at creation and never
@@ -208,7 +209,14 @@ export async function getAgendaItems(
       rank: sql<number>`row_number() over (partition by ${eventAttendee.eventId} order by ${eventAttendee.createdAt}, ${eventAttendee.id})`.as("rank"),
     })
     .from(eventAttendee)
-    .where(and(inArray(eventAttendee.eventId, eventIds), eq(eventAttendee.status, "going")))
+    // The avatar stack skips a blocked pair (TRI-238); goingCount still counts them
+    .where(
+      and(
+        inArray(eventAttendee.eventId, eventIds),
+        eq(eventAttendee.status, "going"),
+        excludeBlocked(currentUserId, eventAttendee.userId)
+      )
+    )
     .as("ranked_going");
 
   const [events, counts, myRsvps, previewRows, openPolls, commentCounts] = await Promise.all([
@@ -985,7 +993,7 @@ export async function removeMultipleEventAttendees(eventId: string, userIds: str
  * Get all attendees for an event with user details
  * Ordered by status (going, maybe, not_going) and creation date
  */
-export async function getEventAttendees(eventId: string): Promise<EventAttendeeWithUser[]> {
+export async function getEventAttendees(eventId: string, viewerId?: string): Promise<EventAttendeeWithUser[]> {
   const attendees = await db
     .select({
       id: eventAttendee.id,
@@ -1000,7 +1008,8 @@ export async function getEventAttendees(eventId: string): Promise<EventAttendeeW
     })
     .from(eventAttendee)
     .innerJoin(user, eq(eventAttendee.userId, user.id))
-    .where(eq(eventAttendee.eventId, eventId))
+    // A blocked pair's RSVP rows are left out (TRI-238)
+    .where(and(eq(eventAttendee.eventId, eventId), excludeBlocked(viewerId, eventAttendee.userId)))
     .orderBy(
       sql`CASE ${eventAttendee.status} WHEN 'going' THEN 1 WHEN 'maybe' THEN 2 WHEN 'not_going' THEN 3 ELSE 4 END`,
       asc(eventAttendee.createdAt)

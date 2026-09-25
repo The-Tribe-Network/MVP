@@ -4,6 +4,7 @@ import { db } from "@/lib/database/client";
 import { user } from "@/lib/database/schemas/auth";
 import { notification } from "@/lib/database/schemas/activity";
 import { tribe, tribeMember, tribeMemberPreference } from "@/lib/database/schemas/tribe";
+import { excludeBlocked } from "./blocks";
 
 /**
  * The read side of notifications (TRI-7; mobile NOTIF-01/03/04): the feed grouped by tribe, the flat feed, mark read,
@@ -12,7 +13,12 @@ import { tribe, tribeMember, tribeMemberPreference } from "@/lib/database/schema
  * - A group is a tribe the caller belongs to. Rows with no tribe, or from a tribe they haven't joined (invites), are
  *   the `personal` bucket.
  * - A muted tribe (NOTIF-04) still shows its rows but is left out of the total `unreadCount` (the drawer badge).
+ * - A row whose actor is in a blocked pair with the caller (TRI-238) is hidden everywhere here: lists, group totals
+ *   and every unread count. Rows are kept, so unblocking brings them back. `notify()` writes no new ones.
  */
+
+/** The caller's rows, minus those whose (latest) actor is in a blocked pair with them. */
+const ownRows = (userId: string) => and(eq(notification.userId, userId), excludeBlocked(userId, notification.actorId));
 
 export type NotificationFilter = "all" | "mentions" | "events" | "invites";
 
@@ -48,7 +54,7 @@ async function badgeCount(userId: string, mutedTribeIds: Set<string>) {
     .from(notification)
     .where(
       and(
-        eq(notification.userId, userId),
+        ownRows(userId),
         isNull(notification.readAt),
         muted.length
           ? sql`(${notification.tribeId} IS NULL OR ${notification.tribeId} NOT IN (${sql.join(
@@ -135,7 +141,7 @@ type Bucket = { items: NotificationDto[]; unreadCount: number; totalCount: numbe
 export async function listNotificationGroups(userId: string, filter: NotificationFilter, perGroup: number) {
   const { memberTribeIds, mutedTribeIds } = await membershipsOf(userId);
   const isGroup = (tribeId: string | null): tribeId is string => tribeId !== null && memberTribeIds.includes(tribeId);
-  const base = and(eq(notification.userId, userId), typeFilter(filter));
+  const base = and(ownRows(userId), typeFilter(filter));
 
   // Newest `perGroup` per tribe (NULL tribes form one partition). Personal is the top of the non-member partitions.
   const ranked = db
@@ -232,7 +238,7 @@ export async function listNotifications(
     .from(notification)
     .where(
       and(
-        eq(notification.userId, userId),
+        ownRows(userId),
         typeFilter(opts.filter),
         opts.tribeId ? eq(notification.tribeId, opts.tribeId) : undefined,
         after ? sql`(${notification.latestAt}, ${notification.id}) < (${after.latestAt}::timestamp, ${after.id}::uuid)` : undefined
@@ -250,7 +256,7 @@ export async function listNotifications(
     const [row] = await db
       .select({ n: count() })
       .from(notification)
-      .where(and(eq(notification.userId, userId), eq(notification.tribeId, opts.tribeId), isNull(notification.readAt)));
+      .where(and(ownRows(userId), eq(notification.tribeId, opts.tribeId), isNull(notification.readAt)));
     unreadCount = Number(row?.n ?? 0);
   } else {
     unreadCount = await badgeCount(userId, (await membershipsOf(userId)).mutedTribeIds);

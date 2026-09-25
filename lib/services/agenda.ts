@@ -10,6 +10,7 @@ import { userPreviewColumns } from "@/lib/database/user-columns";
 import { effectiveEventStatus, getAgendaItems, type AgendaItemPreview, type UserPreview } from "./event";
 import { getPostsByIds, type PostWithMetadata } from "./post";
 import { CATCH_UP_FALLBACK_DAYS, getUnreadPostCounts } from "./tribe";
+import { excludeBlocked } from "./blocks";
 
 /**
  * Cross-tribe reads for Home (mobile contract `getAgenda`, `getCatchUp`; DATA-MODEL-DELTA §4).
@@ -159,6 +160,7 @@ export async function getCatchUp(userId: string, params: CatchUpParams): Promise
     .where(
       and(
         ne(eventAttendee.userId, userId),
+        excludeBlocked(userId, eventAttendee.userId),
         ne(event.status, "cancelled"),
         sinceCondition(event.tribeId, eventAttendee.createdAt)
       )
@@ -177,7 +179,7 @@ export async function getCatchUp(userId: string, params: CatchUpParams): Promise
       })
       .from(post)
       .leftJoin(likeCounts, eq(likeCounts.postId, post.id))
-      .where(and(ne(post.authorId, userId), sinceCondition(post.tribeId, post.createdAt)))
+      .where(and(ne(post.authorId, userId), excludeBlocked(userId, post.authorId), sinceCondition(post.tribeId, post.createdAt)))
       .orderBy(desc(post.createdAt))
       .limit(SOURCE_CAP),
     db
@@ -222,7 +224,13 @@ export async function getCatchUp(userId: string, params: CatchUpParams): Promise
       })
       .from(tribeMember)
       .innerJoin(user, eq(tribeMember.userId, user.id))
-      .where(and(ne(tribeMember.userId, userId), sinceCondition(tribeMember.tribeId, tribeMember.joinedAt)))
+      .where(
+        and(
+          ne(tribeMember.userId, userId),
+          excludeBlocked(userId, tribeMember.userId),
+          sinceCondition(tribeMember.tribeId, tribeMember.joinedAt)
+        )
+      )
       .orderBy(desc(tribeMember.joinedAt))
       .limit(SOURCE_CAP),
     getUnreadPostCounts(userId),

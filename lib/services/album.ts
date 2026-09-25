@@ -8,6 +8,7 @@ import { checkPermission, getRolePermissions } from "./role-permissions";
 import type { AlbumMedia, AlbumWithMedia, UserPreview } from "@/lib/database/types";
 import { userPreviewColumns } from "@/lib/database/user-columns";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
+import { excludeBlocked } from "./blocks";
 
 /** How far back "new" reaches on a member's first visit to an album (MEDIA-02 "NEW TODAY"). */
 const FIRST_VISIT_NEW_WINDOW_MS = 24 * 60 * 60 * 1000;
@@ -488,7 +489,9 @@ export async function getAlbumById(
     .innerJoin(media, eq(albumMedia.mediaId, media.id))
     .innerJoin(user, eq(media.uploadedBy, user.id))
     .leftJoin(mediaLike, eq(media.id, mediaLike.mediaId))
-    .where(eq(albumMedia.albumId, albumId))
+    // A viewer never sees a blocked pair's photos (TRI-238); photoCount, contributors and the fallback
+    // cover below follow the filtered list
+    .where(and(eq(albumMedia.albumId, albumId), excludeBlocked(options.viewerId, media.uploadedBy)))
     .groupBy(media.id, albumMedia.id, user.id)
     .orderBy(asc(albumMedia.displayOrder), desc(media.createdAt));
 
@@ -681,7 +684,7 @@ export async function getAlbumsByTribe(
     .limit(limit)
     .offset(offset);
 
-  const contributorsByAlbum = await getTopContributors(albums.map((a) => a.id));
+  const contributorsByAlbum = await getTopContributors(albums.map((a) => a.id), viewerId);
 
   return albums.map((a) => ({
     ...a,
@@ -693,8 +696,9 @@ export async function getAlbumsByTribe(
 /**
  * Up to 3 distinct uploaders per album, most recent contribution first, for a page of albums in one
  * grouped query: rank uploaders per album by their latest `album_media.added_at`, keep rank <= 3.
+ * Uploaders in a blocked pair with the viewer are skipped (TRI-238); `contributorCount` still counts them.
  */
-async function getTopContributors(albumIds: string[]): Promise<Map<string, UserPreview[]>> {
+async function getTopContributors(albumIds: string[], viewerId?: string): Promise<Map<string, UserPreview[]>> {
   const byAlbum = new Map<string, UserPreview[]>();
   if (albumIds.length === 0) return byAlbum;
 
@@ -706,7 +710,7 @@ async function getTopContributors(albumIds: string[]): Promise<Map<string, UserP
     })
     .from(albumMedia)
     .innerJoin(media, eq(albumMedia.mediaId, media.id))
-    .where(inArray(albumMedia.albumId, albumIds))
+    .where(and(inArray(albumMedia.albumId, albumIds), excludeBlocked(viewerId, media.uploadedBy)))
     .groupBy(albumMedia.albumId, media.uploadedBy)
     .as('ranked');
 

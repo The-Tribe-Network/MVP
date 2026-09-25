@@ -33,6 +33,7 @@ import { getPollsByIds } from "./poll";
 import { getAgendaItems, type AgendaItemPreview } from "./event";
 import { userPreviewColumns, userWithProfileColumns, userWithUsernameColumns } from "@/lib/database/user-columns";
 import { appLink, excerpt, notify, tribeMemberIds, type NotifyExecutor } from "./notifications";
+import { excludeBlocked, isBlockedPair } from "./blocks";
 
 /**
  * Check if user can post in a tribe
@@ -448,7 +449,8 @@ async function getTopComments(
     })
     .from(comment)
     .leftJoin(commentLikeCounts, eq(comment.id, commentLikeCounts.commentId))
-    .where(inArray(comment.postId, postIds))
+    // A blocked pair's comments are never the preview (TRI-238)
+    .where(and(inArray(comment.postId, postIds), excludeBlocked(currentUserId, comment.authorId)))
     .as('ranked_comments');
 
   const rows = await db
@@ -491,8 +493,11 @@ async function getTopComments(
   return topComments;
 }
 
-/** Up to three most recent likers per post, as UserPreview. One windowed query over the page. */
-async function getPostLikers(postIds: string[]): Promise<Map<string, UserPreview[]>> {
+/**
+ * Up to three most recent likers per post, as UserPreview. One windowed query over the page. Likers in a
+ * blocked pair with the viewer are skipped (TRI-238); `likeCount` still counts them.
+ */
+async function getPostLikers(postIds: string[], viewerId?: string): Promise<Map<string, UserPreview[]>> {
   const likers = new Map<string, UserPreview[]>();
   if (postIds.length === 0) return likers;
 
@@ -503,7 +508,7 @@ async function getPostLikers(postIds: string[]): Promise<Map<string, UserPreview
       rank: sql<number>`ROW_NUMBER() OVER (PARTITION BY ${postLike.postId} ORDER BY ${postLike.createdAt} DESC, ${postLike.id})`.as('rank'),
     })
     .from(postLike)
-    .where(inArray(postLike.postId, postIds))
+    .where(and(inArray(postLike.postId, postIds), excludeBlocked(viewerId, postLike.userId)))
     .as('ranked_likes');
 
   const rows = await db
@@ -576,7 +581,7 @@ async function attachPostMetadata(
     getAgendaItems(eventIds, currentUserId),
     getPollsByIds(pollIds, currentUserId),
     getTopComments(postIds, currentUserId),
-    getPostLikers(postIds),
+    getPostLikers(postIds, currentUserId),
   ]);
 
   const likeCountMap = new Map(likeCounts.map((lc) => [lc.postId, Number(lc.count)]));
@@ -630,7 +635,7 @@ export async function getTribeAnnouncement(
     .select({ ...postColumns, author: authorColumns })
     .from(post)
     .innerJoin(user, eq(post.authorId, user.id))
-    .where(and(eq(post.tribeId, tribeId), eq(post.isPinned, true)))
+    .where(and(eq(post.tribeId, tribeId), eq(post.isPinned, true), excludeBlocked(currentUserId, post.authorId)))
     .orderBy(sql`${post.pinnedAt} DESC NULLS LAST`, desc(post.createdAt))
     .limit(1);
 
@@ -655,6 +660,11 @@ export async function getTribePosts(
   const typeCondition = contentTypeCondition(contentType);
   if (typeCondition) {
     conditions.push(typeCondition);
+  }
+  // Neither side of a block sees the other's posts (TRI-238)
+  const notBlocked = excludeBlocked(currentUserId, post.authorId);
+  if (notBlocked) {
+    conditions.push(notBlocked);
   }
 
   // For "hot" and "top" sorting, we need to join with like counts
@@ -710,7 +720,7 @@ export async function getPostsByAuthor(
     .select({ ...postColumns, author: authorColumns })
     .from(post)
     .innerJoin(user, eq(post.authorId, user.id))
-    .where(and(eq(post.authorId, authorId), inArray(post.tribeId, tribeIds)))
+    .where(and(eq(post.authorId, authorId), inArray(post.tribeId, tribeIds), excludeBlocked(currentUserId, post.authorId)))
     .orderBy(desc(post.createdAt), desc(post.id))
     .limit(limit)
     .offset(offset);
@@ -740,7 +750,7 @@ export async function getPostsByIds(
     .select({ ...postColumns, author: authorColumns })
     .from(post)
     .innerJoin(user, eq(post.authorId, user.id))
-    .where(inArray(post.id, postIds));
+    .where(and(inArray(post.id, postIds), excludeBlocked(currentUserId, post.authorId)));
   return attachPostMetadata(posts, currentUserId);
 }
 
@@ -763,7 +773,8 @@ export async function getPostById(postId: string): Promise<PostWithAuthor | null
 }
 
 /**
- * Get a single post by ID with full metadata (likes, comments, photos, linked album, event, poll)
+ * Get a single post by ID with full metadata (likes, comments, photos, linked album, event, poll).
+ * Null for a post whose author is in a blocked pair with `currentUserId` (TRI-238), as for a missing one.
  */
 export async function getPostByIdWithMetadata(
   postId: string,
@@ -771,6 +782,9 @@ export async function getPostByIdWithMetadata(
 ): Promise<PostWithMetadata | null> {
   const postData = await getPostById(postId);
   if (!postData) {
+    return null;
+  }
+  if (currentUserId && (await isBlockedPair(currentUserId, postData.authorId))) {
     return null;
   }
 
@@ -841,18 +855,26 @@ export async function deletePost(postId: string, userId: string): Promise<void> 
 /**
  * Verify post exists and user is tribe member in a single query
  * OPTIMIZED: Replaces separate checkTribeMembership + getPostById calls
+ *
+ * Also null when the post's author and `userId` are a blocked pair (TRI-238), so the post detail, its
+ * comments, commenting and liking all answer 404 as for a missing post. `ignoreBlocks` is for moderation
+ * (pin / unpin), which a moderator may do whoever wrote the post.
  * @returns Post data with tribeId, or null if post not found or user not member
  */
 export async function verifyPostAccessAndMembership(
   postId: string,
   tribeId: string,
-  userId: string
+  userId: string,
+  options: { ignoreBlocks?: boolean } = {}
 ): Promise<{ tribeId: string; authorId: string } | null> {
   const [result] = await db
     .select({
       postTribeId: post.tribeId,
       postAuthorId: post.authorId,
       memberExists: tribeMember.id,
+      blocked: options.ignoreBlocks
+        ? sql<boolean>`false`
+        : sql<boolean>`not ${excludeBlocked(userId, post.authorId)}`,
     })
     .from(post)
     .leftJoin(
@@ -866,7 +888,7 @@ export async function verifyPostAccessAndMembership(
     .limit(1);
 
   // Check if post exists, belongs to tribe, and user is member
-  if (!result || result.postTribeId !== tribeId || !result.memberExists) {
+  if (!result || result.postTribeId !== tribeId || !result.memberExists || result.blocked === true) {
     return null;
   }
 

@@ -17,6 +17,7 @@ import {
   type AlbumAccessContext,
 } from './album';
 import { blurhashForCloudinaryImage } from '@/lib/utils/blurhash';
+import { excludeBlocked, isBlockedPair } from './blocks';
 
 /** Cloudinary public_id from a delivery URL (`/upload/v<ver>/<public_id>.<ext>`), or null. */
 export function publicIdFromCloudinaryUrl(url: string): string | null {
@@ -345,11 +346,13 @@ export async function getMediaById(id: string): Promise<Media | null> {
  */
 /**
  * `getMediaInTribe` for reads (TRI-273): also null when the photo is hidden from `userId` (uploaded only
- * into albums they may not see), so a hidden photo is indistinguishable from a missing one (404).
+ * into albums they may not see), or its uploader and `userId` are a blocked pair (TRI-238), so a hidden
+ * photo is indistinguishable from a missing one (404).
  */
 export async function getVisibleMediaInTribe(mediaId: string, tribeId: string, userId: string): Promise<Media | null> {
   const mediaRecord = await getMediaInTribe(mediaId, tribeId);
   if (!mediaRecord) return null;
+  if (await isBlockedPair(userId, mediaRecord.uploadedBy)) return null;
   return (await canUserSeeMedia(mediaId, tribeId, userId)) ? mediaRecord : null;
 }
 
@@ -457,8 +460,12 @@ export interface UpdateMediaData {
 
 /** Conditions on `media` shared by the listMedia page query and its count. */
 function mediaListConditions(tribeId: string, filters: MediaFilters) {
-  const { type, uploadedBy, createdFrom, createdBefore } = filters;
+  const { type, uploadedBy, createdFrom, createdBefore, viewerAccess } = filters;
   const conditions = [eq(media.tribeId, tribeId)];
+
+  // With a viewer, a blocked pair's uploads are not listed or counted (TRI-238)
+  const notBlocked = excludeBlocked(viewerAccess?.userId, media.uploadedBy);
+  if (notBlocked) conditions.push(notBlocked);
 
   if (type) conditions.push(eq(media.fileType, type));
   if (uploadedBy) conditions.push(uploadedBy.length ? inArray(media.uploadedBy, uploadedBy) : sql`false`);

@@ -6,6 +6,7 @@ import { post } from "@/lib/database/schemas/post";
 import { eq, desc, and, inArray } from "drizzle-orm";
 import type { Activity, ActivityInsert, ActivityWithUser } from "@/lib/database/types";
 import { userPreviewColumns } from "@/lib/database/user-columns";
+import { excludeBlocked } from "./blocks";
 
 /**
  * Check if a like count is a milestone (1, 5, 10, 15, 20, etc.)
@@ -144,7 +145,8 @@ export async function checkAndCreateLikeMilestone(
 export async function getTribeActivities(
   tribeId: string,
   limit: number = 20,
-  offset: number = 0
+  offset: number = 0,
+  viewerId?: string
 ): Promise<ActivityWithUser[]> {
   const activities = await db
     .select({
@@ -179,7 +181,8 @@ export async function getTribeActivities(
     .from(activity)
     .innerJoin(user, eq(activity.userId, user.id))
     .leftJoin(tribe, eq(activity.tribeId, tribe.id))
-    .where(eq(activity.tribeId, tribeId))
+    // A blocked pair's activity is hidden from the viewer (TRI-238)
+    .where(and(eq(activity.tribeId, tribeId), excludeBlocked(viewerId, activity.userId)))
     .orderBy(desc(activity.createdAt))
     .limit(limit)
     .offset(offset);
@@ -200,7 +203,8 @@ export async function getTribeActivities(
 export async function getUserTribesActivities(
   tribeIds: string[],
   limit: number = 20,
-  offset: number = 0
+  offset: number = 0,
+  viewerId?: string
 ): Promise<ActivityWithUser[]> {
   if (tribeIds.length === 0) {
     return [];
@@ -240,7 +244,7 @@ export async function getUserTribesActivities(
     .from(activity)
     .innerJoin(user, eq(activity.userId, user.id))
     .leftJoin(tribe, eq(activity.tribeId, tribe.id))
-    .where(inArray(activity.tribeId, tribeIds))
+    .where(and(inArray(activity.tribeId, tribeIds), excludeBlocked(viewerId, activity.userId)))
     .orderBy(desc(activity.createdAt))
     .limit(limit)
     .offset(offset);

@@ -28,11 +28,13 @@ export async function POST(
       );
     }
 
-    // Verify post exists, belongs to tribe, AND user is member
+    // Verify post exists, belongs to tribe, AND user is member. Pinning is moderation: a block between the
+    // moderator and the author does not hide the post here (TRI-238).
     const postAccess = await verifyPostAccessAndMembership(
       paramValidation.data.post_id,
       paramValidation.data.tribe_id,
-      user.id
+      user.id,
+      { ignoreBlocks: true }
     );
 
     if (!postAccess) {

@@ -28,6 +28,9 @@ export {
   notificationChannel,
   notificationDeliveryStatus,
   socialNetwork,
+  reportTargetType,
+  reportReason,
+  reportStatus,
 } from "@/lib/database/schemas/enums";
 
 // Tribe tables
@@ -87,6 +90,9 @@ export {
 
 // Member profile tables (TRI-15)
 export { userSocialLink, userPrivacy } from "@/lib/database/schemas/profile";
+
+// Reports and blocks (TRI-237, TRI-238)
+export { report, userBlock } from "@/lib/database/schemas/safety";
 
 // Draft tables
 export { draft } from "@/lib/database/schemas/draft";

@@ -8,6 +8,7 @@ import { checkPermission } from "./role-permissions";
 import type { PaginatedMembers, MemberListItem } from "@/lib/database/types";
 import type { MemberListQuery, UpdateMemberPermissionsInput } from "@/lib/validations/members";
 import { userBasicColumns } from "@/lib/database/user-columns";
+import { excludeBlocked } from "./blocks";
 
 /**
  * Role hierarchy for permission checks
@@ -89,8 +90,8 @@ export async function getAllTribeMembers(
   const { page = 1, pageSize = 50, search, role, hasCustomPermissions, joinedAfter, joinedBefore } = options;
   const offset = (page - 1) * pageSize;
 
-  // Build where conditions
-  const conditions = [eq(tribeMember.tribeId, tribeId)];
+  // Build where conditions. A blocked pair is left out of the list, its search and its total (TRI-238).
+  const conditions = [eq(tribeMember.tribeId, tribeId), excludeBlocked(userId, tribeMember.userId)!];
 
   // Search filter (name, username, or email)
   if (search) {
