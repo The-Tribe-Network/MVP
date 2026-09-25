@@ -1,6 +1,6 @@
 # TRI-189 · Emit: announcements (posts, pins, event announce)
 
-Status: implemented on the TRI-191 branch (stacked on MVP #54), verified on Neon `Development`, uncommitted (2026-09-24)
+Status: in review as MVP #55 (2026-09-24); verified on Neon `Development`
 Linear: https://linear.app/tribenetwork/issue/TRI-189 · owner answer on TRI-257: announcements **and** pins notify.
 
 Until TRI-257 splits them, a pin *is* the announcement (`post.isPinned`), so:

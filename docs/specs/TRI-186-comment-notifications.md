@@ -1,6 +1,6 @@
 # TRI-186 · Emit: comments on your post/event and replies to your comment
 
-Status: implemented on the TRI-191 branch (stacked on MVP #54), verified on Neon `Development`, uncommitted (2026-09-24)
+Status: in review as MVP #55 (2026-09-24); verified on Neon `Development`
 Linear: https://linear.app/tribenetwork/issue/TRI-186 · **mentions are not in this change** (no format agreed; see §3).
 
 ## 1. Behaviour

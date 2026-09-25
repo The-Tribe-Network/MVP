@@ -1,13 +1,13 @@
 # TRI-187, 190, 192, 193, 219 · Emit: invites, reminders, new posts/events, likes, poll results
 
-Status: implemented on the TRI-191 branch (stacked on MVP #54), verified on Neon `Development`, uncommitted (2026-09-24)
+Status: in review as MVP #55 (2026-09-24); verified on Neon `Development`
 Builds on `notify()` (TRI-183). Copy convention: `title` is read after the actor's name; with no actor it stands alone.
 
 ## Changes to `notify()` (TRI-183)
 
 - **Distinct actors:** new column `notification.actor_ids uuid[]`; a collapse adds the actor only if absent, and
   `actor_count` follows it (like, unlike, like again counts once; TRI-193). Migration
-  `tri179c-notification-actor-ids.sql` (additive): **Development done; Production must run it before this merges.**
+  `tri179c-notification-actor-ids.sql` (additive): run on Development and Production (2026-09-24).
 - **`once`:** with a collapse key, skip recipients who *ever* had that key, read or not. Scheduled emits use it so a
   later tick never re-sends a row the recipient already read.
 - New types (not yet in the app's contract; TRI-7 / TRI-223 add them): `new_post`, `new_event`, `poll_closed`.

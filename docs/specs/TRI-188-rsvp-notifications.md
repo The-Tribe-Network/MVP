@@ -1,6 +1,6 @@
 # TRI-188 · Emit: RSVP changes, to hosts and co-hosts
 
-Status: implemented on the TRI-191 branch (stacked on MVP #54), verified on Neon `Development`, uncommitted (2026-09-24)
+Status: in review as MVP #55 (2026-09-24); verified on Neon `Development`
 Linear: https://linear.app/tribenetwork/issue/TRI-188
 
 ## Behaviour

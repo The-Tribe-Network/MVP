@@ -1,6 +1,6 @@
 # TRI-191 · Emit: event cancelled, rescheduled or changed, to attendees
 
-Status: implemented on the branch (stacked on TRI-179, MVP #54), verified on Neon `Development`, uncommitted (2026-09-24)
+Status: in review as MVP #55 (2026-09-24); verified on Neon `Development`
 Linear: https://linear.app/tribenetwork/issue/TRI-191
 Branch: `anthonygayflor6/tri-191-emit-event-cancelled-rescheduled-or-changed-to-attendees`
 Builds on: `notify()` (TRI-183, `docs/specs/TRI-179-notification-record.md`). No migration.
