@@ -8,6 +8,7 @@ import type {
   MemberPermissionDetail,
   UserWithUsername,
 } from "@/lib/database/types";
+import type { MemberWithPermissions } from "./permissions";
 
 /**
  * Get tribe members with custom permission overrides
@@ -69,6 +70,33 @@ export async function getTribeMembersWithPermissions(
 }
 
 /**
+ * Resolve every permission key for a member with checkPermission semantics:
+ * individual override → tribe role default → system default.
+ *
+ * @param tribeId - The tribe ID
+ * @param memberData - The member row and its individual overrides
+ * @returns The role defaults and the fully resolved permission set
+ */
+export async function resolveEffectivePermissions(
+  tribeId: string,
+  memberData: MemberWithPermissions
+): Promise<{ roleDefaults: Record<string, boolean>; effectivePermissions: Record<string, boolean> }> {
+  const roleDefaults = await getRolePermissions(tribeId, memberData.member.role);
+
+  const effectivePermissions: Record<string, boolean> = { ...roleDefaults };
+  if (memberData.permissions) {
+    Object.keys(effectivePermissions).forEach((key) => {
+      const overrideValue = (memberData.permissions as any)![key];
+      if (overrideValue !== null && overrideValue !== undefined) {
+        effectivePermissions[key] = overrideValue === true;
+      }
+    });
+  }
+
+  return { roleDefaults, effectivePermissions };
+}
+
+/**
  * Get detailed permission information for a specific member
  *
  * Returns:
@@ -91,19 +119,10 @@ export async function getMemberPermissionsDetail(
   const memberData = await getMemberWithPermissions(tribeId, userId);
   if (!memberData) return null;
 
-  // Get role defaults
-  const roleDefaults = await getRolePermissions(tribeId, memberData.member.role);
-
-  // Calculate effective permissions (individual overrides take precedence)
-  const effectivePermissions: Record<string, boolean> = { ...roleDefaults };
-  if (memberData.permissions) {
-    Object.keys(effectivePermissions).forEach((key) => {
-      const overrideValue = (memberData.permissions as any)![key];
-      if (overrideValue !== null && overrideValue !== undefined) {
-        effectivePermissions[key] = overrideValue === true;
-      }
-    });
-  }
+  const { roleDefaults, effectivePermissions } = await resolveEffectivePermissions(
+    tribeId,
+    memberData
+  );
 
   // Fetch user info
   const [userInfo] = await db
