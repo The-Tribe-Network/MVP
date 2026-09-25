@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerUser } from '@/lib/services/auth';
 import { getMemberWithPermissions } from '@/lib/services/permissions';
+import { resolveEffectivePermissions } from '@/lib/services/member-permissions';
 import { tribeIdParamSchema, validateApiRequest } from '@/lib/validations/tribe';
 
 /**
  * GET /api/tribes/[tribe_id]/members/me
- * Get current user's member data with permissions
+ * Get current user's member data with its raw overrides and the resolved effectivePermissions
  */
 export async function GET(
   request: NextRequest,
@@ -38,7 +39,12 @@ export async function GET(
       );
     }
 
-    return NextResponse.json(memberData);
+    const { effectivePermissions } = await resolveEffectivePermissions(
+      paramValidation.data.id,
+      memberData
+    );
+
+    return NextResponse.json({ ...memberData, effectivePermissions });
   } catch (error) {
     console.error('Error fetching member data:', error);
     return NextResponse.json(
