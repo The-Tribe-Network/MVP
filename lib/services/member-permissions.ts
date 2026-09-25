@@ -31,6 +31,7 @@ export async function getTribeMembersWithPermissions(
       user: {
         id: user.id,
         name: user.name,
+        displayName: user.displayName,
         username: user.username,
         image: user.image,
       },
@@ -134,6 +135,7 @@ export async function getMemberPermissionsDetail(
     .select({
       id: user.id,
       name: user.name,
+      displayName: user.displayName,
       username: user.username,
       image: user.image,
     })

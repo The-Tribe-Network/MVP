@@ -586,11 +586,12 @@ export async function transferOwnership(
 /**
  * Get admin members of a tribe (for transfer ownership selection)
  */
-export async function getTribeAdminMembers(tribeId: string): Promise<Array<{ id: string; name: string; username: string | null; image: string | null }>> {
+export async function getTribeAdminMembers(tribeId: string): Promise<Array<{ id: string; name: string; displayName: string | null; username: string | null; image: string | null }>> {
   const adminMembers = await db
     .select({
       id: user.id,
       name: user.name,
+      displayName: user.displayName,
       username: user.username,
       image: user.image,
     })
@@ -617,6 +618,7 @@ export type FeaturedMediaWithUploader = {
   uploader: {
     id: string;
     name: string;
+    displayName: string | null;
     username: string | null;
     image: string | null;
   };
@@ -658,6 +660,7 @@ export async function getFeaturedMedia(tribeId: string, viewerId: string): Promi
       uploader: {
         id: user.id,
         name: user.name,
+        displayName: user.displayName,
         username: user.username,
         image: user.image,
       },

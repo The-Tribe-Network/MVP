@@ -726,6 +726,7 @@ async function getTopContributors(albumIds: string[], viewerId?: string): Promis
       rank: ranked.rank,
       id: user.id,
       name: user.name,
+      displayName: user.displayName,
       image: user.image,
     })
     .from(ranked)
@@ -736,7 +737,7 @@ async function getTopContributors(albumIds: string[], viewerId?: string): Promis
   for (const row of rows) {
     if (!row.albumId) continue;
     const list = byAlbum.get(row.albumId) ?? [];
-    list.push({ id: row.id, name: row.name, image: row.image });
+    list.push({ id: row.id, name: row.name, displayName: row.displayName, image: row.image });
     byAlbum.set(row.albumId, list);
   }
   return byAlbum;

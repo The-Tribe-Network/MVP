@@ -440,8 +440,8 @@ export async function getUserPendingInvitations(userEmail: string) {
       },
       avatarUrl: avatarMedia.fileUrl,
       bannerUrl: bannerMedia.fileUrl,
-      creator: { id: creator.id, name: creator.name, image: creator.image },
-      inviter: { id: inviter.id, name: inviter.name, image: inviter.image },
+      creator: { id: creator.id, name: creator.name, displayName: creator.displayName, image: creator.image },
+      inviter: { id: inviter.id, name: inviter.name, displayName: inviter.displayName, image: inviter.image },
     })
     .from(tribeInvitation)
     .innerJoin(tribe, eq(tribeInvitation.tribeId, tribe.id))

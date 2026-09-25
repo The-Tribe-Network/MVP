@@ -260,7 +260,7 @@ export interface ConfirmedMedia {
   likeCount: number;
   commentCount: number;
   isLiked: boolean;
-  uploader: { id: string; name: string; username: string | null; image: string | null };
+  uploader: { id: string; name: string; displayName: string | null; username: string | null; image: string | null };
 }
 
 export interface ConfirmResult {
@@ -446,7 +446,7 @@ async function loadConfirmed(publicIds: string[], userId: string): Promise<Confi
   const rows = await db
     .select({
       media,
-      uploader: { id: user.id, name: user.name, username: user.username, image: user.image },
+      uploader: { id: user.id, name: user.name, displayName: user.displayName, username: user.username, image: user.image },
     })
     .from(media)
     .innerJoin(user, eq(media.uploadedBy, user.id))

@@ -22,6 +22,7 @@ export const mockEvent: EventWithDetails = {
   creator: {
     id: 'user-1',
     name: 'Sarah Chen',
+    displayName: null,
     image: null,
   },
   tribe: {
@@ -50,6 +51,7 @@ export const mockEvent: EventWithDetails = {
       user: {
         id: 'user-2',
         name: 'John Doe',
+        displayName: null,
         username: null,
         image: null,
       },

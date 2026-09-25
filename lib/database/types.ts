@@ -204,10 +204,10 @@ export type MessageReadInsert = InferInsertModel<typeof messageRead>;
 // ============================================
 
 // Utility type to pick specific user fields (for partial user objects)
-export type UserPreview = Pick<User, 'id' | 'name' | 'image'>;
-export type UserWithUsername = Pick<User, 'id' | 'name' | 'username' | 'image'>;
-export type UserWithProfile = Pick<User, 'id' | 'name' | 'username' | 'image' | 'displayName'>;
-export type UserBasic = Pick<User, 'id' | 'name' | 'email' | 'image' | 'username'>;
+export type UserPreview = Pick<User, 'id' | 'name' | 'image'> & { displayName: string | null };
+export type UserWithUsername = Pick<User, 'id' | 'name' | 'username' | 'image'> & { displayName: string | null };
+export type UserWithProfile = UserWithUsername;
+export type UserBasic = Pick<User, 'id' | 'name' | 'email' | 'image' | 'username'> & { displayName: string | null };
 
 // ============================================
 // Extended types for API responses
