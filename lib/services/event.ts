@@ -1004,10 +1004,16 @@ export async function getEventAttendees(eventId: string, viewerId?: string): Pro
       note: eventAttendee.note,
       createdAt: eventAttendee.createdAt,
       updatedAt: eventAttendee.updatedAt,
+      // The creator and co-hosts (TRI-13) are hosts; EVT-17 labels and orders them (TRI-291)
+      isHost: sql<boolean>`(${event.createdBy} = ${eventAttendee.userId} OR EXISTS (
+        SELECT 1 FROM ${eventCoHost}
+        WHERE ${eventCoHost.eventId} = ${eventAttendee.eventId} AND ${eventCoHost.userId} = ${eventAttendee.userId}
+      ))`,
       user: userWithUsernameColumns,
     })
     .from(eventAttendee)
     .innerJoin(user, eq(eventAttendee.userId, user.id))
+    .innerJoin(event, eq(eventAttendee.eventId, event.id))
     // A blocked pair's RSVP rows are left out (TRI-238)
     .where(and(eq(eventAttendee.eventId, eventId), excludeBlocked(viewerId, eventAttendee.userId)))
     .orderBy(
