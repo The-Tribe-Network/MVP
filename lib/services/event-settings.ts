@@ -1,7 +1,6 @@
-import { and, count, eq, inArray, ne } from "drizzle-orm";
+import { and, count, eq } from "drizzle-orm";
 
 import { db } from "@/lib/database/client";
-import { notification } from "@/lib/database/schemas/activity";
 import { user } from "@/lib/database/schemas/auth";
 import { event, eventAttendee, eventCoHost, eventLink, eventSettings } from "@/lib/database/schemas/event";
 import { album, albumMedia, media } from "@/lib/database/schemas/media";
@@ -11,6 +10,7 @@ import type { Event, EventSettings } from "@/lib/database/types";
 import { userWithUsernameColumns } from "@/lib/database/user-columns";
 import type { EventLinkInput, UpdateEventSettingsInput } from "@/lib/validations/event-settings";
 
+import { eventAttendeeIds, findUnreadNotification, notify } from "./notifications";
 import type { MemberWithPermissions } from "./permissions";
 
 // TRI-13 · event settings, co-hosts, links, announce (tribe-mobile DATA-MODEL-DELTA §6).
@@ -257,36 +257,26 @@ export async function getEventSettingsBundle(
 const eventLinkFor = (tribeId: string, eventId: string) => `/tribes/${tribeId}/events/${eventId}`;
 
 /**
- * EVT-09 "Send to all attendees": a notification row per going/maybe attendee (the sender excluded),
- * returned as `{ recipients }`. Push delivery is TRI-189's `notify()`; until it lands the rows alone
- * feed NOTIF-01.
+ * EVT-09 "Send to all attendees": a notification per going/maybe attendee (the sender excluded), returned
+ * as `{ recipients }`. The type becomes `announcement` with TRI-189; it stays `event_update` until then.
  */
 export async function announceToAttendees(
   eventRow: Pick<Event, "id" | "tribeId" | "title">,
   senderId: string,
   message: string
 ): Promise<number> {
-  const rows = await db
-    .select({ userId: eventAttendee.userId })
-    .from(eventAttendee)
-    .where(
-      and(
-        eq(eventAttendee.eventId, eventRow.id),
-        inArray(eventAttendee.status, ["going", "maybe"]),
-        ne(eventAttendee.userId, senderId)
-      )
-    );
-  if (rows.length === 0) return 0;
-  await db.insert(notification).values(
-    rows.map((row) => ({
-      userId: row.userId,
-      type: "event_update",
-      title: eventRow.title,
-      message,
-      link: eventLinkFor(eventRow.tribeId, eventRow.id),
-    }))
-  );
-  return rows.length;
+  const recipients = await eventAttendeeIds(db, eventRow.id);
+  return notify(db, {
+    type: "event_update",
+    actorId: senderId,
+    tribeId: eventRow.tribeId,
+    entityType: "event",
+    entityId: eventRow.id,
+    recipients,
+    title: eventRow.title,
+    message,
+    link: eventLinkFor(eventRow.tribeId, eventRow.id),
+  });
 }
 
 /**
@@ -297,27 +287,21 @@ export async function requestCoHostAccess(
   eventRow: Pick<Event, "id" | "tribeId" | "title" | "createdBy">,
   requester: { id: string; name: string }
 ): Promise<"sent" | "pending"> {
-  const link = eventLinkFor(eventRow.tribeId, eventRow.id);
-  const [pending] = await db
-    .select({ id: notification.id })
-    .from(notification)
-    .where(
-      and(
-        eq(notification.userId, eventRow.createdBy),
-        eq(notification.type, "event_cohost_request"),
-        eq(notification.link, link),
-        eq(notification.message, coHostRequestMessage(requester.name)),
-        eq(notification.isRead, false)
-      )
-    )
-    .limit(1);
-  if (pending) return "pending";
-  await db.insert(notification).values({
-    userId: eventRow.createdBy,
+  const request = {
     type: "event_cohost_request",
+    entityType: "event",
+    entityId: eventRow.id,
+    collapse: requester.id,
+  } as const;
+  if (await findUnreadNotification(db, eventRow.createdBy, request)) return "pending";
+  await notify(db, {
+    ...request,
+    actorId: requester.id,
+    tribeId: eventRow.tribeId,
+    recipients: [eventRow.createdBy],
     title: eventRow.title,
     message: coHostRequestMessage(requester.name),
-    link,
+    link: eventLinkFor(eventRow.tribeId, eventRow.id),
   });
   return "sent";
 }
