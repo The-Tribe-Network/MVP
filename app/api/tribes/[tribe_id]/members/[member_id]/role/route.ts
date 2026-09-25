@@ -45,7 +45,8 @@ export async function PATCH(
       if (
         error.message.includes('permission') ||
         error.message.includes('manage') ||
-        error.message.includes('owner')
+        error.message.includes('owner') ||
+        error.message.includes('assign')
       ) {
         return NextResponse.json({ error: error.message }, { status: 403 });
       }

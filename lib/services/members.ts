@@ -191,13 +191,15 @@ export async function changeMemberRole(
     throw new Error(managementCheck.reason || 'Cannot manage this member');
   }
 
-  // Additional role-specific checks
+  // The role being granted must also sit below the requester's own rank (TRI-295):
+  // only the owner may grant admin; everyone else may only assign roles strictly below their own.
+  // (Granting owner is not possible here; ownership moves only via transfer.)
   const requesterRole = requestingMemberData.member.role;
-  if (requesterRole === 'admin') {
-    // Admins can only assign moderator or member roles
-    if (newRole === 'admin') {
-      throw new Error('Only owners can assign admin role');
-    }
+  if (newRole === 'admin' && requesterRole !== 'owner') {
+    throw new Error('Only the tribe owner can assign the admin role');
+  }
+  if (roleHierarchy[newRole] >= roleHierarchy[requesterRole]) {
+    throw new Error('You can only assign roles below your own');
   }
 
   // Update member role

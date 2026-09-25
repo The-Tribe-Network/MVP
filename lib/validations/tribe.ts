@@ -58,11 +58,13 @@ export const updateTribeSchema = z.object({
     .max(100, "Tribe name must be less than 100 characters")
     .trim()
     .optional(),
+  // Absent = no change; "" or null = clear (stored as null). TRI-292
   description: z
-    .string()
-    .max(1000, "Description must be less than 1000 characters")
-    .trim()
-    .transform((val) => (val === "" ? undefined : val))
+    .union([
+      z.string().max(1000, "Description must be less than 1000 characters").trim(),
+      z.null(),
+    ])
+    .transform((val) => (val === "" ? null : val))
     .optional(),
   avatar: z
     .union([uuidSchema, z.literal(""), z.null()])
