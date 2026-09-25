@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { user, account, event, tribe, activity, media, post, comment, commentLike, eventAttendee, eventSettings, eventCoHost, eventLink, message, messageRead, notification, hashtag, postHashtag, postLike, postMedia, session, tribeInvitation, tribeMember, tribeMemberPermission, album, mediaLike, tribeMemberPreference, albumMedia, poll, pollOption, pollVote, draft } from "@/lib/database/schemas";
+import { user, account, event, tribe, activity, media, post, comment, commentLike, eventAttendee, eventSettings, eventCoHost, eventLink, message, messageRead, notification, notificationDelivery, hashtag, postHashtag, postLike, postMedia, session, tribeInvitation, tribeMember, tribeMemberPermission, album, mediaLike, tribeMemberPreference, albumMedia, poll, pollOption, pollVote, draft } from "@/lib/database/schemas";
 
 export const accountRelations = relations(account, ({ one }) => ({
 	user: one(user, {
@@ -36,7 +36,12 @@ export const userRelations = relations(user, ({ many }) => ({
 		relationName: "message_senderId_user_id"
 	}),
 	messageReads: many(messageRead),
-	notifications: many(notification),
+	notifications: many(notification, {
+		relationName: "notification_userId_user_id"
+	}),
+	notificationsActed: many(notification, {
+		relationName: "notification_actorId_user_id"
+	}),
 	postLikes: many(postLike),
 	sessions: many(session),
 	tribeInvitations: many(tribeInvitation),
@@ -302,10 +307,28 @@ export const messageReadRelations = relations(messageRead, ({ one }) => ({
 	}),
 }));
 
-export const notificationRelations = relations(notification, ({ one }) => ({
+export const notificationRelations = relations(notification, ({ one, many }) => ({
 	user: one(user, {
 		fields: [notification.userId],
-		references: [user.id]
+		references: [user.id],
+		relationName: "notification_userId_user_id"
+	}),
+	actor: one(user, {
+		fields: [notification.actorId],
+		references: [user.id],
+		relationName: "notification_actorId_user_id"
+	}),
+	tribe: one(tribe, {
+		fields: [notification.tribeId],
+		references: [tribe.id]
+	}),
+	deliveries: many(notificationDelivery),
+}));
+
+export const notificationDeliveryRelations = relations(notificationDelivery, ({ one }) => ({
+	notification: one(notification, {
+		fields: [notificationDelivery.notificationId],
+		references: [notification.id]
 	}),
 }));
 

@@ -92,3 +92,14 @@ export const pollResultsVisibility = pgEnum("poll_results_visibility", [
   "hidden",
 ]);
 
+
+// Delivery channels beyond the in-app feed (TRI-179); in-app read state is `notification.read_at`
+export const notificationChannel = pgEnum("notification_channel", ["push", "email"]);
+
+// `suppressed` = not sent on purpose (mute, preference, quiet hours); the in-app row still exists
+export const notificationDeliveryStatus = pgEnum("notification_delivery_status", [
+  "pending",
+  "sent",
+  "failed",
+  "suppressed",
+]);

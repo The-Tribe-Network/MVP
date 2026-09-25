@@ -25,6 +25,8 @@ export {
   pollResultsVisibility,
   draftKind,
   rsvpStatus,
+  notificationChannel,
+  notificationDeliveryStatus,
 } from "@/lib/database/schemas/enums";
 
 // Tribe tables
@@ -79,6 +81,7 @@ export {
 export {
   activity,
   notification,
+  notificationDelivery,
 } from "@/lib/database/schemas/activity";
 
 // Draft tables
@@ -122,6 +125,7 @@ export {
   messageRelations,
   messageReadRelations,
   notificationRelations,
+  notificationDeliveryRelations,
   postHashtagRelations,
   hashtagRelations,
   postLikeRelations,
