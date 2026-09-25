@@ -134,12 +134,18 @@ export const tribeMemberPreference = pgTable("tribe_member_preference", {
   // albumId -> ISO time of the member's last album detail view; album GET marks media.isNew from it (TRI-201)
   lastAlbumVisitAt: jsonb("last_album_visit_at").$type<Record<string, string>>(),
 
+  // NOTIF-04 "Mute {tribe}": no push and no badges from this tribe; its rows still reach the feed (TRI-7)
+  notificationsMuted: boolean("notifications_muted").default(false).notNull(),
+
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .defaultNow()
     .$onUpdate(() => new Date())
     .notNull(),
-});
+}, (table) => ({
+  // One preference row per membership, so writes can upsert (TRI-7)
+  memberUnique: unique("uq_tribe_member_preference_member").on(table.tribeMemberId),
+}));
 
 export const tribeInvitation = pgTable("tribe_invitation", {
   id: uuid("id").primaryKey().defaultRandom(),

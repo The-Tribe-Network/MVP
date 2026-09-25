@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerUser } from '@/lib/services/auth';
 import { db } from '@/lib/database/client';
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { tribeMember, tribeMemberPreference } from '@/lib/database/schemas';
 
 /**
@@ -24,7 +24,9 @@ export async function GET(
     // Single query with LEFT JOIN to get preferences in one go
     const result = await db
       .select({
+        memberId: tribeMember.id,
         autoAddPostMediaToTribe: tribeMemberPreference.autoAddPostMediaToTribe,
+        notificationsMuted: tribeMemberPreference.notificationsMuted,
       })
       .from(tribeMember)
       .leftJoin(
@@ -47,17 +49,14 @@ export async function GET(
       );
     }
 
-    // If preference doesn't exist (LEFT JOIN returns null), return default value
-    const preference = result[0].autoAddPostMediaToTribe;
-    if (preference === null || preference === undefined) {
-      return NextResponse.json(
-        { preferences: { autoAddPostMediaToTribe: true } },
-        { status: 200 }
-      );
-    }
-
+    // No preference row yet (LEFT JOIN nulls) means the defaults
     return NextResponse.json(
-      { preferences: { autoAddPostMediaToTribe: preference } },
+      {
+        preferences: {
+          autoAddPostMediaToTribe: result[0].autoAddPostMediaToTribe ?? true,
+          notificationsMuted: result[0].notificationsMuted ?? false,
+        },
+      },
       { status: 200 }
     );
   } catch (error) {
@@ -87,65 +86,45 @@ export async function PATCH(
     const body = await request.json();
     const { tribe_id } = await ctx.params;
 
-    const { autoAddPostMediaToTribe } = body;
-
-    if (typeof autoAddPostMediaToTribe !== 'boolean') {
+    // Partial update: either field (TRI-7 adds `notificationsMuted`, NOTIF-04)
+    const patch: { autoAddPostMediaToTribe?: boolean; notificationsMuted?: boolean } = {};
+    for (const key of ['autoAddPostMediaToTribe', 'notificationsMuted'] as const) {
+      if (body?.[key] === undefined) continue;
+      if (typeof body[key] !== 'boolean') {
+        return NextResponse.json({ error: `${key} must be a boolean` }, { status: 400 });
+      }
+      patch[key] = body[key];
+    }
+    if (Object.keys(patch).length === 0) {
       return NextResponse.json(
-        { error: 'autoAddPostMediaToTribe must be a boolean' },
+        { error: 'Nothing to update: send autoAddPostMediaToTribe or notificationsMuted' },
         { status: 400 }
       );
     }
 
-    // Quick membership check (single indexed query)
-    const memberExists = await db
+    const [member] = await db
       .select({ id: tribeMember.id })
       .from(tribeMember)
-      .where(
-        and(
-          eq(tribeMember.tribeId, tribe_id),
-          eq(tribeMember.userId, user.id)
-        )
-      )
+      .where(and(eq(tribeMember.tribeId, tribe_id), eq(tribeMember.userId, user.id)))
       .limit(1);
-
-    if (!memberExists[0]) {
+    if (!member) {
       return NextResponse.json(
         { error: 'You are not a member of this tribe' },
         { status: 403 }
       );
     }
 
-    // Update preferences using subquery to find tribeMemberId directly
-    // This is efficient as the subquery uses the same indexed lookup
-    const updated = await db
-      .update(tribeMemberPreference)
-      .set({ autoAddPostMediaToTribe })
-      .where(
-        inArray(
-          tribeMemberPreference.tribeMemberId,
-          db
-            .select({ id: tribeMember.id })
-            .from(tribeMember)
-            .where(
-              and(
-                eq(tribeMember.tribeId, tribe_id),
-                eq(tribeMember.userId, user.id)
-              )
-            )
-        )
-      )
+    // Most members have no preference row yet: create it with the patch, or update the one there is
+    const [updated] = await db
+      .insert(tribeMemberPreference)
+      .values({ tribeMemberId: member.id, userId: user.id, ...patch })
+      .onConflictDoUpdate({ target: tribeMemberPreference.tribeMemberId, set: patch })
       .returning({
         autoAddPostMediaToTribe: tribeMemberPreference.autoAddPostMediaToTribe,
+        notificationsMuted: tribeMemberPreference.notificationsMuted,
       });
 
-    if (!updated[0]) {
-      return NextResponse.json({ error: 'Tribe member preference not found' }, { status: 404 });
-    }
-
-    return NextResponse.json(
-      { preferences: updated[0] },
-      { status: 200 }
-    );
+    return NextResponse.json({ preferences: updated }, { status: 200 });
   } catch (error) {
     console.error('Error updating tribe member preferences:', error);
     return NextResponse.json(
