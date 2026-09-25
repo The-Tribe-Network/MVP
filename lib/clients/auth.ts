@@ -4,12 +4,13 @@ import { expo } from "@better-auth/expo"
 import { nextCookies } from "better-auth/next-js"
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { APIError, createAuthMiddleware } from "better-auth/api";
-import { eq } from "drizzle-orm";
+import { and, eq, gt, sql } from "drizzle-orm";
+import * as z from "zod";
 import { isProduction } from "@/lib/utils"
 import { db } from "../database/client";
 import { sendVerificationEmail, sendPasswordResetEmail, sendWelcomeEmail, sendMagicLinkEmail } from "../email/email";
 import { account, session, user, verification } from "@/lib/database/schemas";
-import { sendOTPEmailVerification, sendOTPForgetPasswordEmail } from "../email";
+import { sendEmailChangedNotice, sendEmailChangeOTP, sendOTPEmailVerification, sendOTPForgetPasswordEmail } from "../email";
 import { BIRTHDAY_MESSAGES, birthdayProblem, birthdaySchema } from "@/lib/validations/account";
 
 const { LOCAL_ORIGIN, NODE_ENV } = process.env;
@@ -75,11 +76,27 @@ export const auth = betterAuth({
     // Age gate (TRI-16, TRI-106): email sign-up must carry a real birthday of someone 13 or older.
     // 400 { code: BIRTHDAY_REQUIRED | BIRTHDAY_INVALID | UNDER_MIN_AGE, message }; nothing is written.
     before: createAuthMiddleware(async (ctx) => {
-      if (ctx.path !== "/sign-up/email") return;
-      const problem = birthdayProblem((ctx.body as { birthday?: unknown } | undefined)?.birthday);
-      if (problem) {
-        throw new APIError("BAD_REQUEST", { code: problem, message: BIRTHDAY_MESSAGES[problem] });
+      if (ctx.path === "/sign-up/email") {
+        const problem = birthdayProblem((ctx.body as { birthday?: unknown } | undefined)?.birthday);
+        if (problem) {
+          throw new APIError("BAD_REQUEST", { code: problem, message: BIRTHDAY_MESSAGES[problem] });
+        }
+        return;
       }
+      if (ctx.path === "/email-otp/request-email-change" || ctx.path === "/email-otp/change-email") {
+        await checkEmailChange(ctx, ctx.path === "/email-otp/request-email-change");
+      }
+    }),
+    // Change email: tell the OLD address once the change is done (a hijacked session can't move the account quietly)
+    after: createAuthMiddleware(async (ctx) => {
+      if (ctx.path !== "/email-otp/change-email") return;
+      const returned = ctx.context.returned as { success?: boolean } | undefined;
+      const oldEmail = ctx.request ? emailChangeOldEmail.get(ctx.request) : undefined;
+      const newEmail = (ctx.body as { newEmail?: string } | undefined)?.newEmail?.toLowerCase();
+      if (returned?.success !== true || !oldEmail || !newEmail || oldEmail.toLowerCase() === newEmail) return;
+      sendEmailChangedNotice({ to: oldEmail, newEmail }).catch((error) => {
+        console.error("Failed to send email-changed notice:", error);
+      });
     }),
   },
   databaseHooks: {
@@ -156,8 +173,15 @@ export const auth = betterAuth({
             to: email,
             otp,
           });
+        } else if (type === "change-email") {
+          // `email` is the NEW address here
+          sendEmailChangeOTP({ to: email, otp });
         }
       },
+      // Change email with a code sent to the new address (USET-03): POST /email-otp/request-email-change
+      // { newEmail } → POST /email-otp/change-email { newEmail, otp }. The signed-in session is the proof of
+      // ownership of the current address (no second code to it); it gets a notice instead (hooks.after).
+      changeEmail: { enabled: true },
     }),
     nextCookies(), // must stay last so cookies set by other plugins reach Next
   ],
@@ -223,3 +247,51 @@ export const auth = betterAuth({
     },
   },
 })
+
+// Change email (USET-03). Runs before Better-Auth's emailOTP change-email endpoints so the app gets specific codes
+// (Better-Auth answers a taken address with a silent 200 on request and a generic 400 on verify). Without a
+// session it does nothing and the endpoint answers 401.
+const EMAIL_CHANGE_SENDS_PER_MINUTE = 1;
+const EMAIL_CHANGE_SENDS_PER_HOUR = 5;
+
+// The caller's address before the change, for the notice in hooks.after (keyed by the HTTP request)
+const emailChangeOldEmail = new WeakMap<Request, string>();
+
+async function checkEmailChange(ctx: Parameters<Parameters<typeof createAuthMiddleware>[0]>[0], isSend: boolean): Promise<void> {
+  // Hooks see the raw request (the bearer plugin's cookie rewrite only reaches the endpoint), so resolve the
+  // session through auth.api, which accepts either the bearer or the cookie
+  const headers = ctx.request?.headers ?? ctx.headers;
+  if (!headers) return;
+  const current = await auth.api.getSession({ headers });
+  if (!current) return;
+  const oldEmail = current.user.email.toLowerCase();
+  if (ctx.request) emailChangeOldEmail.set(ctx.request, current.user.email);
+  const raw = (ctx.body as { newEmail?: unknown } | undefined)?.newEmail;
+  const newEmail = typeof raw === "string" ? raw.toLowerCase() : "";
+  if (!z.string().email().safeParse(newEmail).success) {
+    throw new APIError("BAD_REQUEST", { code: "INVALID_EMAIL", message: "Enter a valid email address" });
+  }
+  if (newEmail === oldEmail) {
+    throw new APIError("BAD_REQUEST", { code: "EMAIL_SAME", message: "That's already your email address" });
+  }
+  const [taken] = await db.select({ id: user.id }).from(user).where(eq(user.email, newEmail)).limit(1);
+  if (taken) {
+    throw new APIError("CONFLICT", { code: "EMAIL_TAKEN", message: "That email address is already in use" });
+  }
+  if (!isSend) return;
+  // Sends per account, counted from the pending codes (Better-Auth's own limiter is per IP, in memory, prod only)
+  const prefix = `change-email-otp-${oldEmail}-`;
+  const [counts] = await db
+    .select({
+      lastMinute: sql<number>`count(*) filter (where ${verification.createdAt} > now() - interval '1 minute')`.mapWith(Number),
+      lastHour: sql<number>`count(*)`.mapWith(Number),
+    })
+    .from(verification)
+    .where(and(
+      sql`left(${verification.identifier}, ${prefix.length}) = ${prefix}`,
+      gt(verification.createdAt, sql`now() - interval '1 hour'`),
+    ));
+  if (counts && (counts.lastMinute >= EMAIL_CHANGE_SENDS_PER_MINUTE || counts.lastHour >= EMAIL_CHANGE_SENDS_PER_HOUR)) {
+    throw new APIError("TOO_MANY_REQUESTS", { code: "RATE_LIMITED", message: "Too many codes requested. Try again later." });
+  }
+}

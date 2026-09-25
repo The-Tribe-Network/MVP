@@ -12,6 +12,7 @@ export { sendMagicLinkEmail } from './templates/magic-link/send-magic-link-email
 export { sendOTPSignInEmail } from './templates/otp-signin/send-otp-signin-email';
 export { sendOTPEmailVerification } from './templates/otp-email-verification/send-otp-email-verification';
 export { sendOTPForgetPasswordEmail } from './templates/otp-forget-password/send-otp-forget-password-email';
+export { sendEmailChangeOTP, sendEmailChangedNotice } from './templates/email-change/send-email-change-emails';
 
 // Template exports for advanced usage
 export { generateVerificationEmailHtml } from './templates/sign-up-verification/template-html';
