@@ -322,6 +322,8 @@ export type EventWithCreator = Event & {
 
 export type EventAttendeeWithUser = EventAttendee & {
   user: UserWithUsername;
+  // Event creator or co-host (TRI-291)
+  isHost: boolean;
 };
 
 export type EventWithAttendees = EventWithCreator & {
