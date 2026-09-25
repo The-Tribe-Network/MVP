@@ -1,6 +1,6 @@
 # TRI-15 · API · Member profile, social links, privacy preferences
 
-Status: implemented on the branch, migrated on Neon `Development` only, uncommitted · 2026-09-25
+Status: in review (MVP #58); migrated on Neon Development and Production · 2026-09-25
 Linear: https://linear.app/tribenetwork/issue/TRI-15
 Branch: `anthonygayflor6/tri-15-api-member-profile-social-links-privacy-preferences` (stacked on TRI-17)
 Sources: tribe-mobile `docs/DATA-MODEL-DELTA.md` §7, `docs/api/openapi.yaml` (`updateMe`, `UpdateProfileInput`,
@@ -49,7 +49,7 @@ node lib/database/migrations/run-sql.mjs lib/database/migrations/tri15-member-pr
 
 Applied to **Development** (`ep-divine-term-ahpw8jvi`) twice on 2026-09-25 (second run a no-op); the 6 constraints
 (2 pkeys, 2 FKs, `user_social_link_user_id_network_unique`, `user_privacy_user_id_unique`) are present.
-**Not applied to Production** — needs the owner's go-ahead.
+Applied to Production on 2026-09-25 with the owner's go-ahead (Neon MCP, branch `br-small-wind-ahbxmjc9`); all six constraints and the `everyone` default verified.
 
 ---
 
@@ -192,7 +192,7 @@ shared tribes, or `tribeId` if shared, or nothing (same response for any unshare
   (event-attachments, event mock-data, settings/events route, activity.ts ×3, album.ts, media.ts); none are in
   files this change touches.
 - **Migration:** applied twice on Development, constraints listed in §2. Production untouched.
-- **Request matrix:** 53/53 checks passed. The script is a curl + jq script and is kept outside the repo (TRI-15 scratch):
+- **Request matrix:** 55/55 checks passed (53 original + the `everyone` default and the `tribe_members` opt-in). The script is a curl + jq script and is kept outside the repo (TRI-15 scratch):
   - auth: 401 unauthenticated (profile, posts, privacy); 404 unknown and malformed user; 400 bad `tribeId` / `limit`.
   - privacy defaults with no row; own profile (3 tribes, 0 private, email visible, 5 posts / 2 events).
   - shared: home15→home1 = College Friends only, role member, +2 private, counts 2 posts / 0 events, and the
