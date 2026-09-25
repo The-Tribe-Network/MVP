@@ -12,6 +12,11 @@ export interface UpdateProfileInput {
   location?: string;
   avatar?: string;
   removeAvatar?: boolean;
+  // TRI-16 account fields (validated in lib/validations/account.ts)
+  phone?: string | null;
+  language?: string;
+  timezone?: string | null;
+  birthday?: string;
 }
 
 /**

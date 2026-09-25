@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { birthdaySchema, languageSchema, phoneSchema, timezoneSchema } from "./account";
 
 // UUID validation schema
 const uuidSchema = z.string().uuid("Invalid UUID format");
@@ -195,6 +196,12 @@ export const updateProfileSchema = z.object({
     .optional(),
   location: z.string().optional(),
   socialLinks: socialLinksSchema.optional(),
+  // Account fields (TRI-16, USET-02/03). phone / timezone accept null to clear; birthday cannot be cleared
+  // and never set to an age under 13; language is a BCP-47 tag (stored canonical).
+  phone: phoneSchema.optional(),
+  language: languageSchema.optional(),
+  timezone: timezoneSchema.optional(),
+  birthday: birthdaySchema.optional(),
 });
 
 // ── Privacy preferences (USET-06, TRI-15) ──
