@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
 import { getEventPolls, createPoll } from "@/lib/services/poll";
 import { getMemberWithPermissions } from "@/lib/services/permissions";
+import { getEventById } from "@/lib/services/event";
+import { canCreateEventPoll } from "@/lib/services/event-settings";
 import { createPollSchema } from "@/lib/validations/poll";
 
 // GET /api/tribes/[tribe_id]/events/[event_id]/polls
@@ -51,11 +53,13 @@ export async function POST(
       return NextResponse.json({ error: "Not a member" }, { status: 403 });
     }
 
-    // Check permission (same as event creation for now)
-    const canCreate =
-      memberData.permissions?.canCreateEvents !== false &&
-      (memberData.permissions?.canCreateEvents === true ||
-        ["owner", "admin", "moderator"].includes(memberData.member.role));
+    const eventRow = await getEventById(event_id);
+    if (!eventRow || eventRow.tribeId !== tribe_id) {
+      return NextResponse.json({ error: "Event not found" }, { status: 404 });
+    }
+
+    // Effective canCreateEvents AND the event's pollCreationLevel
+    const canCreate = await canCreateEventPoll(eventRow, memberData, user.id);
 
     if (!canCreate) {
       return NextResponse.json(

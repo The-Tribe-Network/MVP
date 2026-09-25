@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerUser } from '@/lib/services/auth';
 import { getTimelineSettings, updateTimelineSettings } from '@/lib/services/tribe-settings';
 import { getMemberWithPermissions } from '@/lib/services/permissions';
+import { checkPermission } from '@/lib/services/role-permissions';
 import { validateApiRequest } from '@/lib/validations/tribe-settings';
 import { updateTimelineSettingsSchema } from '@/lib/validations/tribe-settings';
 
@@ -53,8 +54,8 @@ export async function PATCH(request: NextRequest, ctx: RouteContext) {
       return NextResponse.json({ error: 'You must be a member of this tribe' }, { status: 403 });
     }
 
-    const { member, permissions } = memberData;
-    const canEdit = permissions?.canEditTribeSettings ?? (member.role === 'owner' || member.role === 'admin');
+    // Effective canEditTribeSettings (override → tribe role default → system default)
+    const canEdit = await checkPermission(tribe_id, user.id, 'canEditTribeSettings');
 
     if (!canEdit) {
       return NextResponse.json(

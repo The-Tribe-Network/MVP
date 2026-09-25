@@ -8,6 +8,7 @@ import { post } from "@/lib/database/schemas/post";
 import { eq, ne, asc, count, and, inArray, aliasedTable, sql } from "drizzle-orm";
 import type { TribeInsert, TribeWithCreator, TribeWithMembers, Tribe } from "@/lib/database/types";
 import { getMemberWithPermissions } from "./permissions";
+import { checkPermission } from "./role-permissions";
 import type { UpdateTribeInput } from "@/lib/validations/tribe";
 import { userPreviewColumns } from "@/lib/database/user-columns";
 import { getAgendaItems, type AgendaItemPreview } from "./event";
@@ -448,11 +449,8 @@ export async function updateTribe(
   }
 
   // Check if user can edit tribe settings
-  const canEdit =
-    memberData.member.role === "owner" ||
-    memberData.permissions?.canEditTribeSettings === true ||
-    (memberData.member.role === "admin" &&
-      memberData.permissions?.canEditTribeSettings !== false);
+  // Effective canEditTribeSettings (override → tribe role default → system default)
+  const canEdit = await checkPermission(tribeId, userId, "canEditTribeSettings");
 
   if (!canEdit) {
     throw new Error("No permission to edit tribe settings");

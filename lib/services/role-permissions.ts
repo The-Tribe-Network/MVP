@@ -1,6 +1,8 @@
 import { db } from "@/lib/database/client";
 import { tribeRolePermission } from "@/lib/database/schemas/permissions";
 import { eq, and } from "drizzle-orm";
+import { getTribeSettings } from "./tribe-settings";
+import type { TribeSettings } from "@/lib/database/types";
 
 /**
  * System Role Defaults
@@ -235,6 +237,81 @@ export async function updateRolePermissions(
   }
 }
 
+// ============================================
+// Tribe permission levels (tribe_settings.*PermissionLevel)
+// ============================================
+
+/**
+ * The permissions a tribe-level "who can …" setting also gates. A member has one of these only when the
+ * permission resolves true (override → tribe role default → system default) AND their role meets the
+ * tribe's level for it. The owner always meets the level.
+ *
+ * Event editing and poll creation are per event (`event_settings.editPermission` / `pollCreationLevel`,
+ * seeded from the tribe's `eventEditPermissionLevel` / `pollCreationPermissionLevel`), so they are
+ * checked where the event is known, not here.
+ */
+export const PERMISSION_LEVEL_SETTINGS = {
+  canPost: "postingPermissionLevel",
+  canComment: "commentingPermissionLevel",
+  canUploadMedia: "mediaUploadPermissionLevel",
+  canCreateAlbums: "albumCreationPermissionLevel",
+  canCreateEvents: "eventCreationPermissionLevel",
+} as const satisfies Record<string, keyof TribeSettings>;
+
+type LevelGatedPermission = keyof typeof PERMISSION_LEVEL_SETTINGS;
+export type PermissionLevels = Pick<TribeSettings, (typeof PERMISSION_LEVEL_SETTINGS)[LevelGatedPermission]>;
+
+const ROLE_RANK: Record<string, number> = { member: 0, moderator: 1, admin: 2, owner: 3 };
+
+/** Minimum role rank for each level value (`permission_level` and `poll_creation_permission` enums). */
+const LEVEL_RANK: Record<string, number> = {
+  all_members: 0,
+  moderators: 1,
+  admins: 2,
+  owner_only: 3,
+};
+
+/**
+ * Whether `role` meets a tribe level: all_members < moderators < admins < owner_only. The owner always
+ * does. An unknown level (e.g. `event_creator`, which is about the event, not the role) is met by the
+ * owner only.
+ */
+export function roleMeetsLevel(role: string, level: string): boolean {
+  if (role === "owner") return true;
+  const needed = LEVEL_RANK[level];
+  if (needed === undefined) return false;
+  return (ROLE_RANK[role] ?? -1) >= needed;
+}
+
+/** The tribe's level settings for the level-gated permissions. */
+export async function getPermissionLevels(tribeId: string): Promise<PermissionLevels> {
+  const settings = await getTribeSettings(tribeId);
+  return {
+    postingPermissionLevel: settings.postingPermissionLevel,
+    commentingPermissionLevel: settings.commentingPermissionLevel,
+    mediaUploadPermissionLevel: settings.mediaUploadPermissionLevel,
+    albumCreationPermissionLevel: settings.albumCreationPermissionLevel,
+    eventCreationPermissionLevel: settings.eventCreationPermissionLevel,
+  };
+}
+
+/**
+ * Turn off each level-gated permission whose tribe level the role does not meet. Mutates and returns
+ * `permissions`; a permission that already resolved false stays false.
+ */
+export function applyPermissionLevels(
+  permissions: Record<string, boolean>,
+  role: string,
+  levels: PermissionLevels
+): Record<string, boolean> {
+  for (const [key, setting] of Object.entries(PERMISSION_LEVEL_SETTINGS)) {
+    if (permissions[key] === true && !roleMeetsLevel(role, levels[setting])) {
+      permissions[key] = false;
+    }
+  }
+  return permissions;
+}
+
 /**
  * Check a specific permission for a user
  *
@@ -242,6 +319,8 @@ export async function updateRolePermissions(
  * 1. Individual Override (tribeMemberPermission)
  * 2. Tribe Role Default (tribeRolePermission)
  * 3. System Default (SYSTEM_ROLE_DEFAULTS)
+ * then, for the level-gated permissions (`PERMISSION_LEVEL_SETTINGS`), the tribe's level setting.
+ * Same result as the key in `resolveEffectivePermissions` (`GET /members/me`).
  *
  * @param tribeId - The tribe ID
  * @param userId - The user ID
@@ -260,18 +339,34 @@ export async function checkPermission(
   const memberData = await getMemberWithPermissions(tribeId, userId);
   if (!memberData) return false;
 
+  const role = memberData.member.role;
+  let allowed: boolean | undefined;
+
   // Layer 1: Check individual override
   const individualValue = (memberData.permissions as any)?.[permissionKey];
   if (individualValue !== null && individualValue !== undefined) {
-    return individualValue === true;
+    allowed = individualValue === true;
   }
 
   // Layer 2: Check tribe's role default
-  const rolePermissions = await getRolePermissions(tribeId, memberData.member.role);
-  if (rolePermissions[permissionKey] !== null && rolePermissions[permissionKey] !== undefined) {
-    return rolePermissions[permissionKey] === true;
+  if (allowed === undefined) {
+    const rolePermissions = await getRolePermissions(tribeId, role);
+    if (rolePermissions[permissionKey] !== null && rolePermissions[permissionKey] !== undefined) {
+      allowed = rolePermissions[permissionKey] === true;
+    }
   }
 
   // Layer 3: Fall back to system default
-  return SYSTEM_ROLE_DEFAULTS[memberData.member.role]?.[permissionKey] === true;
+  if (allowed === undefined) {
+    allowed = SYSTEM_ROLE_DEFAULTS[role]?.[permissionKey] === true;
+  }
+
+  // Tribe level gate
+  if (allowed && permissionKey in PERMISSION_LEVEL_SETTINGS) {
+    const levels = await getPermissionLevels(tribeId);
+    const setting = PERMISSION_LEVEL_SETTINGS[permissionKey as LevelGatedPermission];
+    return roleMeetsLevel(role, levels[setting]);
+  }
+
+  return allowed;
 }

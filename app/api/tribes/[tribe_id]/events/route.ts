@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
 import { createEvent, getTribeEvents } from "@/lib/services/event";
 import { getMemberWithPermissions } from "@/lib/services/permissions";
+import { checkPermission } from "@/lib/services/role-permissions";
 import { createEventWithPollSchema } from "@/lib/validations/event";
 
 // GET /api/tribes/[tribe_id]/events
@@ -65,10 +66,8 @@ export async function POST(
       return NextResponse.json({ error: "Not a member" }, { status: 403 });
     }
 
-    const canCreate =
-      memberData.permissions?.canCreateEvents !== false &&
-      (memberData.permissions?.canCreateEvents === true ||
-        ["owner", "admin", "moderator"].includes(memberData.member.role));
+    // Effective canCreateEvents, gated by the tribe's eventCreationPermissionLevel
+    const canCreate = await checkPermission(tribe_id, user.id, "canCreateEvents");
 
     if (!canCreate) {
       return NextResponse.json(

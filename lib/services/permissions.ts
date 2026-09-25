@@ -134,12 +134,8 @@ export async function canUserDeleteMedia(
   if (mediaRecord[0].tribeId !== tribeId) return false;
 
   const isOwner = mediaRecord[0].uploadedBy === userId;
-  const role = memberData.member.role;
 
-  // Admins and owners can always delete
-  if (role === "owner" || role === "admin") return true;
-
-  // Check if user has permission to delete any media
+  // Check if user has permission to delete any media (owners and admins have it by default)
   const canDeleteAny = await checkPermission(tribeId, userId, "canDeleteAnyMedia");
   if (canDeleteAny) return true;
 

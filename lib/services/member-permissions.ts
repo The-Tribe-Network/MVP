@@ -2,7 +2,7 @@ import { db } from "@/lib/database/client";
 import { tribeMember, tribeMemberPermission } from "@/lib/database/schemas/tribe";
 import { user } from "@/lib/database/schemas/auth";
 import { eq, and, or, ilike, isNotNull } from "drizzle-orm";
-import { getRolePermissions } from "./role-permissions";
+import { applyPermissionLevels, getPermissionLevels, getRolePermissions } from "./role-permissions";
 import type {
   TribeMemberWithPermissionsExtended,
   MemberPermissionDetail,
@@ -71,17 +71,21 @@ export async function getTribeMembersWithPermissions(
 
 /**
  * Resolve every permission key for a member with checkPermission semantics:
- * individual override → tribe role default → system default.
+ * individual override → tribe role default → system default, then the tribe's level settings
+ * (`postingPermissionLevel` etc.) turn off what the member's role is below.
  *
  * @param tribeId - The tribe ID
  * @param memberData - The member row and its individual overrides
- * @returns The role defaults and the fully resolved permission set
+ * @returns The role defaults (the role layer only, without levels) and the fully resolved permission set
  */
 export async function resolveEffectivePermissions(
   tribeId: string,
   memberData: MemberWithPermissions
 ): Promise<{ roleDefaults: Record<string, boolean>; effectivePermissions: Record<string, boolean> }> {
-  const roleDefaults = await getRolePermissions(tribeId, memberData.member.role);
+  const [roleDefaults, levels] = await Promise.all([
+    getRolePermissions(tribeId, memberData.member.role),
+    getPermissionLevels(tribeId),
+  ]);
 
   const effectivePermissions: Record<string, boolean> = { ...roleDefaults };
   if (memberData.permissions) {
@@ -92,6 +96,7 @@ export async function resolveEffectivePermissions(
       }
     });
   }
+  applyPermissionLevels(effectivePermissions, memberData.member.role, levels);
 
   return { roleDefaults, effectivePermissions };
 }

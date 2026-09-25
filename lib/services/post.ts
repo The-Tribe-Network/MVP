@@ -17,7 +17,7 @@ import type {
   UserPreview,
 } from "@/lib/database/types";
 import type { CreatePostInput } from "@/lib/validations/post";
-import { getMemberWithPermissions } from "./permissions";
+import { checkPermission } from "./role-permissions";
 import {
   assertAlbumInTribe,
   assertCanAddToAlbum,
@@ -36,47 +36,25 @@ import { appLink, excerpt, notify, tribeMemberIds, type NotifyExecutor } from ".
 import { excludeBlocked, isBlockedPair } from "./blocks";
 
 /**
- * Check if user can post in a tribe
- * OPTIMIZED: 1 DB call instead of 3
- * - Must be a member
- * - If permission override exists and is false, cannot post
- * - Otherwise, members can post by default
+ * Post rights resolve like `effectivePermissions` (`checkPermission`): individual override → tribe role
+ * default → system default, and for posting the tribe's `postingPermissionLevel` too. Non-members resolve
+ * false.
  */
-async function canUserPost(tribeId: string, userId: string): Promise<boolean> {
-  // Get member and permissions in a single query
-  const memberData = await getMemberWithPermissions(tribeId, userId);
-  if (!memberData) {
-    return false;
-  }
-
-  // If permission override exists and is false, cannot post
-  if (memberData.permissions?.canPost === false) {
-    return false;
-  }
-
-  // Default: members can post
-  return true;
+function canUserPost(tribeId: string, userId: string): Promise<boolean> {
+  return checkPermission(tribeId, userId, "canPost");
 }
 
-/**
- * Check if user can moderate posts (can edit/delete any post)
- * OPTIMIZED: 1 DB call instead of 3
- */
-async function canUserModeratePosts(tribeId: string, userId: string): Promise<boolean> {
-  // Get member and permissions in a single query
-  const memberData = await getMemberWithPermissions(tribeId, userId);
-  if (!memberData) {
-    return false;
-  }
+/** Edit or pin any post (`canModeratePosts`). */
+function canUserModeratePosts(tribeId: string, userId: string): Promise<boolean> {
+  return checkPermission(tribeId, userId, "canModeratePosts");
+}
 
-  const role = memberData.member.role;
-  if (role === "owner" || role === "admin" || role === "moderator") {
-    return true;
-  }
-
-  // Check for permission override
-  return memberData.permissions?.canModeratePosts === true ||
-    memberData.permissions?.canDeleteAnyPost === true;
+/** Delete any post: `canModeratePosts` or `canDeleteAnyPost`. */
+async function canUserDeleteAnyPost(tribeId: string, userId: string): Promise<boolean> {
+  return (
+    (await checkPermission(tribeId, userId, "canModeratePosts")) ||
+    (await checkPermission(tribeId, userId, "canDeleteAnyPost"))
+  );
 }
 
 /**
@@ -806,11 +784,13 @@ export async function updatePost(
     throw new Error("Post not found");
   }
 
-  // Check if user is author or moderator
+  // The author with `canEditOwnPosts`, or a moderator
   const isAuthor = existingPost.authorId === userId;
-  const canModerate = await canUserModeratePosts(existingPost.tribeId, userId);
+  const canEdit =
+    (isAuthor && (await checkPermission(existingPost.tribeId, userId, "canEditOwnPosts"))) ||
+    (await canUserModeratePosts(existingPost.tribeId, userId));
 
-  if (!isAuthor && !canModerate) {
+  if (!canEdit) {
     throw new Error("You do not have permission to edit this post");
   }
 
@@ -840,11 +820,13 @@ export async function deletePost(postId: string, userId: string): Promise<void> 
     throw new Error("Post not found");
   }
 
-  // Check if user is author or moderator
+  // The author with `canDeleteOwnPosts`, or whoever may delete any post
   const isAuthor = existingPost.authorId === userId;
-  const canModerate = await canUserModeratePosts(existingPost.tribeId, userId);
+  const canDelete =
+    (isAuthor && (await checkPermission(existingPost.tribeId, userId, "canDeleteOwnPosts"))) ||
+    (await canUserDeleteAnyPost(existingPost.tribeId, userId));
 
-  if (!isAuthor && !canModerate) {
+  if (!canDelete) {
     throw new Error("You do not have permission to delete this post");
   }
 

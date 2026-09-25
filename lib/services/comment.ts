@@ -5,7 +5,7 @@ import { tribeMember, tribeMemberPermission } from "@/lib/database/schemas/tribe
 import { user } from "@/lib/database/schemas/auth";
 import { eq, and, asc, count, inArray, or, isNull, sql } from "drizzle-orm";
 import type { Comment, CommentInsert, CommentWithAuthor } from "@/lib/database/types";
-import { getMemberWithPermissions } from "./permissions";
+import { checkPermission } from "./role-permissions";
 import { getPostById } from "./post";
 import { getEventById } from "./event";
 import { userWithProfileColumns } from "@/lib/database/user-columns";
@@ -26,24 +26,23 @@ function withoutOrphanReplies<T extends { id: string; parentCommentId: string | 
 }
 
 /**
- * Check if user can moderate comments (can edit/delete any comment)
- * OPTIMIZED: 1 DB call instead of 3
+ * Comment rights resolve like `effectivePermissions` (`checkPermission`): individual override → tribe role
+ * default → system default, and for commenting the tribe's `commentingPermissionLevel` too.
  */
-async function canUserModerateComments(tribeId: string, userId: string): Promise<boolean> {
-  // Get member and permissions in a single query
-  const memberData = await getMemberWithPermissions(tribeId, userId);
-  if (!memberData) {
-    return false;
+async function assertCanComment(tribeId: string, userId: string): Promise<void> {
+  if (!(await checkPermission(tribeId, userId, "canComment"))) {
+    throw new Error("You do not have permission to comment in this tribe");
   }
+}
 
-  const role = memberData.member.role;
-  if (role === "owner" || role === "admin" || role === "moderator") {
-    return true;
-  }
-
-  // Check for permission override
-  return memberData.permissions?.canModeratePosts === true ||
-    memberData.permissions?.canDeleteAnyPost === true;
+/** Edit or delete any comment (`canModerateComments`); deleting also allows `canDeleteAnyComment`. */
+async function canUserModerateComments(
+  tribeId: string,
+  userId: string,
+  action: "edit" | "delete"
+): Promise<boolean> {
+  if (await checkPermission(tribeId, userId, "canModerateComments")) return true;
+  return action === "delete" && (await checkPermission(tribeId, userId, "canDeleteAnyComment"));
 }
 
 /**
@@ -101,6 +100,7 @@ export async function createComment(
   if (!postData) {
     throw new Error("Post not found");
   }
+  await assertCanComment(postData.tribeId, userId);
 
   // The comment and its notifications commit together (TRI-186)
   const createdComment = await getDbTransaction().transaction(async (tx) => {
@@ -303,7 +303,7 @@ export async function updateComment(
 
   // Check if user is author or moderator
   const isAuthor = existingComment.authorId === userId;
-  const canModerate = isAuthor ? false : await canUserModerateComments(tribeId, userId);
+  const canModerate = isAuthor ? false : await canUserModerateComments(tribeId, userId, "edit");
 
   if (!isAuthor && !canModerate) {
     throw new Error("You do not have permission to edit this comment");
@@ -363,7 +363,7 @@ export async function deleteComment(commentId: string, userId: string): Promise<
 
   // Check if user is author or moderator
   const isAuthor = existingComment.authorId === userId;
-  const canModerate = isAuthor ? false : await canUserModerateComments(tribeId, userId);
+  const canModerate = isAuthor ? false : await canUserModerateComments(tribeId, userId, "delete");
 
   if (!isAuthor && !canModerate) {
     throw new Error("You do not have permission to delete this comment");
@@ -441,6 +441,7 @@ export async function createEventComment(
   if (!eventData) {
     throw new Error("Event not found");
   }
+  await assertCanComment(eventData.tribeId, userId);
 
   // The comment and its notifications commit together (TRI-186)
   const createdComment = await getDbTransaction().transaction(async (tx) => {

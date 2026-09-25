@@ -12,6 +12,7 @@ import type { EventLinkInput, UpdateEventSettingsInput } from "@/lib/validations
 
 import { appLink, eventAttendeeIds, findUnreadNotification, notify } from "./notifications";
 import type { MemberWithPermissions } from "./permissions";
+import { checkPermission, roleMeetsLevel } from "./role-permissions";
 
 // TRI-13 · event settings, co-hosts, links, announce (tribe-mobile DATA-MODEL-DELTA §6).
 // The three tables already existed; this file is the API over them.
@@ -30,6 +31,7 @@ export async function getOrCreateEventSettings(eventId: string, tribeId: string)
         attendeeVisibility: defaults.showAttendeeList,
         enablePolls: defaults.enableEventPolls,
         pollCreationLevel: defaults.pollCreationPermissionLevel,
+        editPermission: defaults.eventEditPermissionLevel,
         pollResultsVisibility: defaults.pollResultsVisibility,
         allowAnonymousPolls: defaults.allowAnonymousPolls,
         enableReminders: defaults.enableEventReminders,
@@ -184,26 +186,28 @@ type EditContext = {
   event: Pick<Event, "createdBy">;
   settings: Pick<EventSettings, "editPermission">;
   member: MemberWithPermissions;
+  /** The caller's effective `canEditEvents` (override → tribe role default → system default). */
+  canEditEvents: boolean;
   coHosts: { userId: string }[];
   userId: string;
 };
 
 /**
  * The one place that says who may edit an event (DATA-MODEL-DELTA §6): the creator and co-hosts always;
- * otherwise `event_settings.editPermission` decides, with a `canEditEvents` override or an owner/admin
- * role standing in for "admins". Used by PUT /events/{id}, the detail's `canUserEdit` and the settings
- * routes.
+ * otherwise `event_settings.editPermission` (seeded from the tribe's `eventEditPermissionLevel`) decides:
+ * - creator_only: nobody else (the tribe owner still may);
+ * - creator_and_admins: an owner or admin whose effective `canEditEvents` is on (or anyone granted it);
+ * - all_members: any member.
+ * Used by PUT /events/{id}, the detail's `canUserEdit` and the settings routes.
  */
-export function canEditEvent({ event, settings, member, coHosts, userId }: EditContext): boolean {
+export function canEditEvent({ event, settings, member, canEditEvents, coHosts, userId }: EditContext): boolean {
   if (event.createdBy === userId) return true;
   if (coHosts.some((row) => row.userId === userId)) return true;
-  const isAdmin =
-    member.permissions?.canEditEvents === true || member.member.role === "owner" || member.member.role === "admin";
   switch (settings.editPermission ?? "creator_and_admins") {
     case "creator_only":
-      return false;
+      return member.member.role === "owner";
     case "creator_and_admins":
-      return isAdmin;
+      return canEditEvents;
     case "all_members":
       return true;
   }
@@ -215,17 +219,40 @@ export async function eventEditability(
   member: MemberWithPermissions,
   userId: string
 ) {
-  const [settings, coHosts] = await Promise.all([
+  const [settings, coHosts, canEditEvents] = await Promise.all([
     getOrCreateEventSettings(eventRow.id, eventRow.tribeId),
     getEventCoHosts(eventRow.id),
+    checkPermission(eventRow.tribeId, userId, "canEditEvents"),
   ]);
   return {
     settings,
     coHosts,
     isUserCreator: eventRow.createdBy === userId,
     isUserCoHost: coHosts.some((row) => row.userId === userId),
-    canUserEdit: canEditEvent({ event: eventRow, settings, member, coHosts, userId }),
+    canUserEdit: canEditEvent({ event: eventRow, settings, member, canEditEvents, coHosts, userId }),
   };
+}
+
+/**
+ * Who may add a poll to an event: effective `canCreateEvents` (with the tribe's `eventCreationPermissionLevel`)
+ * AND the event's `pollCreationLevel` (seeded from the tribe's `pollCreationPermissionLevel`):
+ * - event_creator: the event's creator or a co-host (the tribe owner still may);
+ * - moderators / admins: the creator or a co-host, or a member whose role is at least that level.
+ */
+export async function canCreateEventPoll(
+  eventRow: Pick<Event, "id" | "tribeId" | "createdBy">,
+  member: MemberWithPermissions,
+  userId: string
+): Promise<boolean> {
+  const [allowed, settings, coHosts] = await Promise.all([
+    checkPermission(eventRow.tribeId, userId, "canCreateEvents"),
+    getOrCreateEventSettings(eventRow.id, eventRow.tribeId),
+    getEventCoHosts(eventRow.id),
+  ]);
+  if (!allowed) return false;
+  if (eventRow.createdBy === userId || coHosts.some((row) => row.userId === userId)) return true;
+  // `event_creator` is not a role level, so roleMeetsLevel lets only the owner through
+  return roleMeetsLevel(member.member.role, settings.pollCreationLevel ?? "event_creator");
 }
 
 // ── bundle ──

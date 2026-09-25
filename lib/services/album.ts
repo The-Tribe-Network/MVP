@@ -4,7 +4,7 @@ import { user } from "@/lib/database/schemas/auth";
 import { tribe, tribeMember, tribeMemberPreference, tribeSettings } from "@/lib/database/schemas/tribe";
 import { eq, and, desc, sql, count, countDistinct, inArray, asc, lte, or, isNull, isNotNull, exists, notExists, type SQL } from "drizzle-orm";
 import { canUserCreateAlbums, getMemberWithPermissions } from "./permissions";
-import { checkPermission, getRolePermissions } from "./role-permissions";
+import { checkPermission, getRolePermissions, roleMeetsLevel } from "./role-permissions";
 import type { AlbumMedia, AlbumWithMedia, UserPreview } from "@/lib/database/types";
 import { userPreviewColumns } from "@/lib/database/user-columns";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
@@ -100,18 +100,23 @@ export interface AlbumAccessContext {
 
 /**
  * Resolve the caller's album rights in a tribe: membership + role, the per-member override → tribe role →
- * system default chain (same as `checkPermission`) for the two keys, and the tribe's collaborative setting.
+ * system default chain (same as `checkPermission`, including the media upload level) for the two keys, and
+ * the tribe's collaborative setting.
  */
 export async function getAlbumAccessContext(tribeId: string, userId: string): Promise<AlbumAccessContext> {
   const [memberData, settingsRows] = await Promise.all([
     getMemberWithPermissions(tribeId, userId),
     db
-      .select({ allowCollaborativeAlbums: tribeSettings.allowCollaborativeAlbums })
+      .select({
+        allowCollaborativeAlbums: tribeSettings.allowCollaborativeAlbums,
+        mediaUploadPermissionLevel: tribeSettings.mediaUploadPermissionLevel,
+      })
       .from(tribeSettings)
       .where(eq(tribeSettings.tribeId, tribeId))
       .limit(1),
   ]);
   const allowCollaborativeAlbums = settingsRows[0]?.allowCollaborativeAlbums ?? true;
+  const mediaUploadLevel = settingsRows[0]?.mediaUploadPermissionLevel ?? "all_members";
   if (!memberData) {
     return { tribeId, userId, role: null, canManageAny: false, canUpload: false, allowCollaborativeAlbums };
   }
@@ -126,7 +131,8 @@ export async function getAlbumAccessContext(tribeId: string, userId: string): Pr
     userId,
     role: memberData.member.role,
     canManageAny: resolve(ALBUM_MANAGE_PERMISSION),
-    canUpload: resolve("canUploadMedia"),
+    // Same as checkPermission(…, "canUploadMedia"): the tribe's mediaUploadPermissionLevel gates it too
+    canUpload: resolve("canUploadMedia") && roleMeetsLevel(memberData.member.role, mediaUploadLevel),
     allowCollaborativeAlbums,
   };
 }
