@@ -3,11 +3,14 @@ import { emailOTP, username, bearer } from "better-auth/plugins"
 import { expo } from "@better-auth/expo"
 import { nextCookies } from "better-auth/next-js"
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { APIError, createAuthMiddleware } from "better-auth/api";
+import { eq } from "drizzle-orm";
 import { isProduction } from "@/lib/utils"
 import { db } from "../database/client";
 import { sendVerificationEmail, sendPasswordResetEmail, sendWelcomeEmail, sendMagicLinkEmail } from "../email/email";
 import { account, session, user, verification } from "@/lib/database/schemas";
 import { sendOTPEmailVerification, sendOTPForgetPasswordEmail } from "../email";
+import { BIRTHDAY_MESSAGES, birthdayProblem, birthdaySchema } from "@/lib/validations/account";
 
 const { LOCAL_ORIGIN, NODE_ENV } = process.env;
 
@@ -52,6 +55,45 @@ export const auth = betterAuth({
       tourCompleted: {
         type: "boolean",
         required: false,
+      },
+      // TRI-16. Sent by the sign-up forms (web and mobile) as 'YYYY-MM-DD'. Required and 13+ for email
+      // sign-up (the hooks.before below, with specific error codes); optional here so social sign-ups
+      // may leave it null. The validator keeps /update-user from setting an under-13 or malformed date.
+      birthday: {
+        type: "string",
+        required: false,
+        validator: { input: birthdaySchema.nullable() },
+      },
+      // Written through PATCH /user/profile only; returned in the session user (GET /user/profile)
+      // (input: false — sign-up and /update-user reject them, so the zod rules there are the only way in)
+      phone: { type: "string", required: false, input: false },
+      language: { type: "string", required: false, input: false, defaultValue: "en" },
+      timezone: { type: "string", required: false, input: false },
+    },
+  },
+  hooks: {
+    // Age gate (TRI-16, TRI-106): email sign-up must carry a real birthday of someone 13 or older.
+    // 400 { code: BIRTHDAY_REQUIRED | BIRTHDAY_INVALID | UNDER_MIN_AGE, message }; nothing is written.
+    before: createAuthMiddleware(async (ctx) => {
+      if (ctx.path !== "/sign-up/email") return;
+      const problem = birthdayProblem((ctx.body as { birthday?: unknown } | undefined)?.birthday);
+      if (problem) {
+        throw new APIError("BAD_REQUEST", { code: problem, message: BIRTHDAY_MESSAGES[problem] });
+      }
+    }),
+  },
+  databaseHooks: {
+    session: {
+      create: {
+        // A deleted account's tombstone (TRI-16) never gets a session, whatever path tries to create one
+        before: async (newSession) => {
+          const [row] = await db
+            .select({ deletedAt: user.deletedAt })
+            .from(user)
+            .where(eq(user.id, newSession.userId))
+            .limit(1);
+          if (!row || row.deletedAt) return false;
+        },
       },
     },
   },
@@ -100,6 +142,8 @@ export const auth = betterAuth({
     // }),
     emailOTP({
       otpLength: 6,
+      // OTP verifies and resets only; accounts are created by email sign-up, which enforces the age gate (TRI-106)
+      disableSignUp: true,
       sendVerificationOnSignUp: false,
       sendVerificationOTP: async ({ email, type, otp }) => {
         if (type === "email-verification") {

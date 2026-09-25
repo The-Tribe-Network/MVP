@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean, uuid } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean, uuid, date } from "drizzle-orm/pg-core";
 
 export const user = pgTable("user", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -12,6 +12,14 @@ export const user = pgTable("user", {
   location: text("location"),
   profileCompleted: boolean("profile_completed").default(false).notNull(),
   tourCompleted: boolean("tour_completed").default(false).notNull(),
+  // Account fields (TRI-16, USET-02/03). tri16-account-fields.sql
+  phone: text("phone"), // free text, lightly validated
+  language: text("language").default("en"), // BCP-47 language tag
+  timezone: text("timezone"), // IANA zone name
+  birthday: date("birthday"), // 'YYYY-MM-DD'; set at email sign-up (13+), null for social sign-ups
+  // Set by DELETE /me/account: the row stays as a PII-scrubbed tombstone so the user's posts, comments and
+  // events (FKs cascade on user delete) survive, attributed to "Deleted user". See lib/services/account.ts.
+  deletedAt: timestamp("deleted_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .defaultNow()

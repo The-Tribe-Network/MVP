@@ -375,24 +375,30 @@ export async function deleteMedia(id: string): Promise<void> {
     return;
   }
 
+  // Cloudinary first; a failure there is logged and the row is deleted anyway
+  await destroyMediaAsset(mediaRecord);
+
+  // Delete from database
+  await db.delete(media).where(eq(media.id, id));
+}
+
+/**
+ * Remove a media row's asset from Cloudinary, best effort (logs and returns on failure). The Cloudinary
+ * half of `deleteMedia`; also used by account deletion (TRI-16), which deletes the rows in its transaction.
+ */
+export async function destroyMediaAsset(mediaRecord: Pick<Media, 'id' | 'publicId' | 'fileUrl'>): Promise<void> {
   // Stored public_id (TRI-160); older rows without one fall back to parsing the delivery URL.
   const publicId = mediaRecord.publicId ?? publicIdFromCloudinaryUrl(mediaRecord.fileUrl);
   if (!publicId) {
-    console.warn('Could not determine Cloudinary public_id for media', id, mediaRecord.fileUrl);
-    await db.delete(media).where(eq(media.id, id));
+    console.warn('Could not determine Cloudinary public_id for media', mediaRecord.id, mediaRecord.fileUrl);
     return;
   }
 
-  // Delete from Cloudinary
   try {
     await cloudinary.uploader.destroy(publicId);
   } catch (error) {
     console.error('Failed to delete from Cloudinary:', error);
-    // Continue with database deletion even if Cloudinary deletion fails
   }
-
-  // Delete from database
-  await db.delete(media).where(eq(media.id, id));
 }
 
 /**
