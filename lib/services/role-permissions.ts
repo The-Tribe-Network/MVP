@@ -259,7 +259,23 @@ export const PERMISSION_LEVEL_SETTINGS = {
 } as const satisfies Record<string, keyof TribeSettings>;
 
 type LevelGatedPermission = keyof typeof PERMISSION_LEVEL_SETTINGS;
-export type PermissionLevels = Pick<TribeSettings, (typeof PERMISSION_LEVEL_SETTINGS)[LevelGatedPermission]>;
+
+/**
+ * The permissions a tribe-level on/off switch also gates (Timeline settings). While the switch is off,
+ * nobody but the owner has the permission. These are the author's own-post rights only: moderators and
+ * admins still edit or delete others' posts through `canModeratePosts` / `canDeleteAnyPost`.
+ */
+export const PERMISSION_SWITCH_SETTINGS = {
+  canEditOwnPosts: "allowPostEditing",
+  canDeleteOwnPosts: "allowPostDeletion",
+} as const satisfies Record<string, keyof TribeSettings>;
+
+type SwitchGatedPermission = keyof typeof PERMISSION_SWITCH_SETTINGS;
+export type PermissionLevels = Pick<
+  TribeSettings,
+  | (typeof PERMISSION_LEVEL_SETTINGS)[LevelGatedPermission]
+  | (typeof PERMISSION_SWITCH_SETTINGS)[SwitchGatedPermission]
+>;
 
 const ROLE_RANK: Record<string, number> = { member: 0, moderator: 1, admin: 2, owner: 3 };
 
@@ -283,7 +299,7 @@ export function roleMeetsLevel(role: string, level: string): boolean {
   return (ROLE_RANK[role] ?? -1) >= needed;
 }
 
-/** The tribe's level settings for the level-gated permissions. */
+/** The tribe's level settings and switches for the level- and switch-gated permissions. */
 export async function getPermissionLevels(tribeId: string): Promise<PermissionLevels> {
   const settings = await getTribeSettings(tribeId);
   return {
@@ -292,12 +308,15 @@ export async function getPermissionLevels(tribeId: string): Promise<PermissionLe
     mediaUploadPermissionLevel: settings.mediaUploadPermissionLevel,
     albumCreationPermissionLevel: settings.albumCreationPermissionLevel,
     eventCreationPermissionLevel: settings.eventCreationPermissionLevel,
+    allowPostEditing: settings.allowPostEditing,
+    allowPostDeletion: settings.allowPostDeletion,
   };
 }
 
 /**
- * Turn off each level-gated permission whose tribe level the role does not meet. Mutates and returns
- * `permissions`; a permission that already resolved false stays false.
+ * Turn off each level-gated permission whose tribe level the role does not meet, and each switch-gated
+ * permission whose tribe switch is off (the owner excepted). Mutates and returns `permissions`; a
+ * permission that already resolved false stays false.
  */
 export function applyPermissionLevels(
   permissions: Record<string, boolean>,
@@ -307,6 +326,11 @@ export function applyPermissionLevels(
   for (const [key, setting] of Object.entries(PERMISSION_LEVEL_SETTINGS)) {
     if (permissions[key] === true && !roleMeetsLevel(role, levels[setting])) {
       permissions[key] = false;
+    }
+  }
+  if (role !== "owner") {
+    for (const [key, setting] of Object.entries(PERMISSION_SWITCH_SETTINGS)) {
+      if (permissions[key] === true && !levels[setting]) permissions[key] = false;
     }
   }
   return permissions;
@@ -319,7 +343,8 @@ export function applyPermissionLevels(
  * 1. Individual Override (tribeMemberPermission)
  * 2. Tribe Role Default (tribeRolePermission)
  * 3. System Default (SYSTEM_ROLE_DEFAULTS)
- * then, for the level-gated permissions (`PERMISSION_LEVEL_SETTINGS`), the tribe's level setting.
+ * then, for the level-gated permissions (`PERMISSION_LEVEL_SETTINGS`), the tribe's level setting, and for
+ * the switch-gated ones (`PERMISSION_SWITCH_SETTINGS`), the tribe's switch (the owner is exempt).
  * Same result as the key in `resolveEffectivePermissions` (`GET /members/me`).
  *
  * @param tribeId - The tribe ID
@@ -366,6 +391,12 @@ export async function checkPermission(
     const levels = await getPermissionLevels(tribeId);
     const setting = PERMISSION_LEVEL_SETTINGS[permissionKey as LevelGatedPermission];
     return roleMeetsLevel(role, levels[setting]);
+  }
+
+  // Tribe switch gate
+  if (allowed && role !== "owner" && permissionKey in PERMISSION_SWITCH_SETTINGS) {
+    const levels = await getPermissionLevels(tribeId);
+    return levels[PERMISSION_SWITCH_SETTINGS[permissionKey as SwitchGatedPermission]];
   }
 
   return allowed;
