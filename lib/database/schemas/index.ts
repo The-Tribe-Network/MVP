@@ -27,6 +27,7 @@ export {
   rsvpStatus,
   notificationChannel,
   notificationDeliveryStatus,
+  socialNetwork,
 } from "@/lib/database/schemas/enums";
 
 // Tribe tables
@@ -83,6 +84,9 @@ export {
   notification,
   notificationDelivery,
 } from "@/lib/database/schemas/activity";
+
+// Member profile tables (TRI-15)
+export { userSocialLink, userPrivacy } from "@/lib/database/schemas/profile";
 
 // Draft tables
 export { draft } from "@/lib/database/schemas/draft";

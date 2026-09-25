@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
-import { updateUserProfile, checkUsernameAvailability } from "@/lib/services/user";
+import { checkUsernameAvailability } from "@/lib/services/user";
+import { getSocialLinks, updateProfileWithSocialLinks } from "@/lib/services/profile";
 import { updateProfileSchema, validateApiRequest } from "@/lib/validations/profile";
 
 /**
  * PATCH /api/user/profile
- * Update user profile
+ * Update user profile. `socialLinks` (TRI-15) replaces all of the caller's links; `[]` clears them.
+ * Returns the user row plus `socialLinks`.
  */
 export async function PATCH(request: NextRequest) {
   try {
@@ -35,7 +37,7 @@ export async function PATCH(request: NextRequest) {
       }
     }
 
-    const updatedUser = await updateUserProfile(user.id, validation.data);
+    const updatedUser = await updateProfileWithSocialLinks(user.id, validation.data);
 
     return NextResponse.json(updatedUser);
   } catch (error) {
@@ -49,7 +51,7 @@ export async function PATCH(request: NextRequest) {
 
 /**
  * GET /api/user/profile
- * Get current user profile
+ * Get current user profile, plus `socialLinks` for the PROF-03 editor (TRI-15)
  */
 export async function GET(request: NextRequest) {
   try {
@@ -58,7 +60,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    return NextResponse.json(user);
+    return NextResponse.json({ ...user, socialLinks: await getSocialLinks(user.id) });
   } catch (error) {
     console.error("Error fetching profile:", error);
     return NextResponse.json(
