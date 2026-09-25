@@ -5,6 +5,7 @@ import { user } from "@/lib/database/schemas/auth";
 import { eq, and, sql, inArray, type SQL } from "drizzle-orm";
 import type { PollWithDetails, PollOptionWithVotes } from "@/lib/database/types";
 import { userPreviewColumns } from "@/lib/database/user-columns";
+import { excludeBlocked } from "./blocks";
 
 /**
  * Get all polls for an event with vote details
@@ -97,7 +98,8 @@ async function loadPollsWithDetails(
           })
           .from(pollVote)
           .innerJoin(user, eq(pollVote.userId, user.id))
-          .where(inArray(pollVote.pollId, nonAnonPollIds))
+          // A blocked pair's votes still count but the voter is not named (TRI-238)
+          .where(and(inArray(pollVote.pollId, nonAnonPollIds), excludeBlocked(currentUserId, pollVote.userId)))
       : [];
 
   // 4b. Distinct voters per poll: one person picking several options counts once (TRI-262)

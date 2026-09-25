@@ -106,3 +106,17 @@ export const notificationDeliveryStatus = pgEnum("notification_delivery_status",
 
 // Member profile social links (TRI-15, owner decision TRI-81): one link per network per user
 export const socialNetwork = pgEnum("social_network", ["youtube", "instagram", "tiktok", "x", "website"]);
+
+// Reports (TRI-237, owner decision TRI-105): what can be reported, why, and the report's state.
+// `status` values are the ones DATA-MODEL-DELTA §9 reserved; only `open` is written until the TRI-19 queue.
+export const reportTargetType = pgEnum("report_target_type", ["post", "comment", "media", "user"]);
+export const reportReason = pgEnum("report_reason", [
+  "spam",
+  "harassment",
+  "hate",
+  "sexual_content",
+  "violence",
+  "self_harm",
+  "other",
+]);
+export const reportStatus = pgEnum("report_status", ["open", "dismissed", "removed"]);

@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get("offset") || "0", 10);
 
     // Fetch activities from all user's tribes
-    const activities = await getUserTribesActivities(tribeIds, limit, offset);
+    const activities = await getUserTribesActivities(tribeIds, limit, offset, user.id);
 
     return NextResponse.json(activities);
   } catch (error) {

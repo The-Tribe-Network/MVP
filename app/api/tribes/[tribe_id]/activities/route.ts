@@ -44,7 +44,8 @@ export async function GET(
     const activities = await getTribeActivities(
       tribeValidation.data.tribe_id,
       limit,
-      offset
+      offset,
+      user.id
     );
 
     return NextResponse.json(activities);

@@ -10,6 +10,20 @@ import { getPostById } from "./post";
 import { getEventById } from "./event";
 import { userWithProfileColumns } from "@/lib/database/user-columns";
 import { appLink, eventHostIds, excerpt, notify, type NotifyExecutor } from "./notifications";
+import { excludeBlocked } from "./blocks";
+
+/**
+ * TRI-238: after the blocked pair's comments are filtered out in SQL, replies under a hidden comment go too
+ * (they answer something the viewer cannot see). Rows are oldest first, so a parent precedes its replies.
+ */
+function withoutOrphanReplies<T extends { id: string; parentCommentId: string | null }>(rows: T[]): T[] {
+  const kept = new Set<string>();
+  return rows.filter((row) => {
+    if (row.parentCommentId && !kept.has(row.parentCommentId)) return false;
+    kept.add(row.id);
+    return true;
+  });
+}
 
 /**
  * Check if user can moderate comments (can edit/delete any comment)
@@ -154,8 +168,9 @@ export async function getPostComments(
     })
     .from(comment)
     .innerJoin(user, eq(comment.authorId, user.id))
-    .where(eq(comment.postId, postId))
-    .orderBy(asc(comment.createdAt));
+    .where(and(eq(comment.postId, postId), excludeBlocked(currentUserId, comment.authorId)))
+    .orderBy(asc(comment.createdAt))
+    .then(withoutOrphanReplies);
 
   if (comments.length === 0) {
     return [];
@@ -495,8 +510,9 @@ export async function getEventComments(
     })
     .from(comment)
     .innerJoin(user, eq(comment.authorId, user.id))
-    .where(eq(comment.eventId, eventId))
-    .orderBy(asc(comment.createdAt));
+    .where(and(eq(comment.eventId, eventId), excludeBlocked(currentUserId, comment.authorId)))
+    .orderBy(asc(comment.createdAt))
+    .then(withoutOrphanReplies);
 
   if (comments.length === 0) {
     return [];

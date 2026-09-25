@@ -11,6 +11,7 @@ import { getAlbumAccessContext, UUID_PATTERN } from "./album";
 import { countEventsHostedBy, getEventsHostedBy } from "./event";
 import { countMediaByTribe, getMediaByTribe } from "./media";
 import { countPostsByAuthor, getPostsByAuthor } from "./post";
+import { isBlockedPair } from "./blocks";
 
 /**
  * Member profiles, social links and privacy preferences (TRI-15; mobile PROF-02, PROF-03, USET-06).
@@ -174,11 +175,17 @@ function scopeTribeIds(shared: SharedTribe[], tribeId?: string): string[] {
   return tribeId === undefined ? ids : ids.includes(tribeId) ? [tribeId] : [];
 }
 
-/** A live user: a deleted account's tombstone (TRI-16) has no profile, so its routes answer 404. */
-async function userExists(userId: string) {
+/**
+ * A live user the viewer may look at: a deleted account's tombstone (TRI-16) has no profile, and neither side
+ * of a block sees the other's (TRI-238), so those routes answer 404 exactly as for an unknown id.
+ */
+async function profileVisible(viewerId: string, userId: string) {
   if (!UUID_PATTERN.test(userId)) return false;
-  const [row] = await db.select({ id: user.id }).from(user).where(and(eq(user.id, userId), isNull(user.deletedAt))).limit(1);
-  return !!row;
+  const [[row], blocked] = await Promise.all([
+    db.select({ id: user.id }).from(user).where(and(eq(user.id, userId), isNull(user.deletedAt))).limit(1),
+    isBlockedPair(viewerId, userId),
+  ]);
+  return !!row && !blocked;
 }
 
 export type MemberProfile = {
@@ -199,7 +206,8 @@ export type MemberProfile = {
 };
 
 /**
- * GET /users/{id}/profile. Null when the user does not exist, was deleted (TRI-16), or the id is malformed.
+ * GET /users/{id}/profile. Null when the user does not exist, was deleted (TRI-16), the id is malformed, or the
+ * viewer and the user are a blocked pair, either direction (TRI-238).
  *
  * Privacy (the member's `user_privacy`, defaults when no row), never applied to the member's own view:
  * - `profileVisibility = 'tribe_members'` and no shared tribe → only id, name, displayName, username, image;
@@ -228,6 +236,7 @@ export async function getMemberProfile(viewerId: string, targetId: string, tribe
     .where(and(eq(user.id, targetId), isNull(user.deletedAt)))
     .limit(1);
   if (!target) return null;
+  if (await isBlockedPair(viewerId, targetId)) return null;
 
   const isSelf = viewerId === targetId;
   const [privacy, socialLinks, { shared, privateCount }] = await Promise.all([
@@ -270,14 +279,14 @@ type ContentQuery = { tribeId?: string; limit: number; offset: number };
 
 /** Null when the user does not exist; else the tribes the tab may read. */
 async function contentScope(viewerId: string, targetId: string, tribeId?: string): Promise<string[] | null> {
-  if (!(await userExists(targetId))) return null;
+  if (!(await profileVisible(viewerId, targetId))) return null;
   const { shared } = await sharedTribesOf(viewerId, targetId);
   return scopeTribeIds(shared, tribeId);
 }
 
 /** GET /users/{id}/posts: feed-shaped posts plus `tribe` (TribeRef), since the list spans tribes. */
 export async function getMemberPosts(viewerId: string, targetId: string, query: ContentQuery) {
-  if (!(await userExists(targetId))) return null;
+  if (!(await profileVisible(viewerId, targetId))) return null;
   const { shared } = await sharedTribesOf(viewerId, targetId);
   const scope = scopeTribeIds(shared, query.tribeId);
   const posts = await getPostsByAuthor(targetId, scope, query.limit, query.offset, viewerId);

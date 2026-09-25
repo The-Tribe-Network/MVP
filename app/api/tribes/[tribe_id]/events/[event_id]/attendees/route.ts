@@ -27,7 +27,7 @@ export async function GET(
       return NextResponse.json({ error: "Not a member" }, { status: 403 });
     }
 
-    const attendees = await getEventAttendees(event_id);
+    const attendees = await getEventAttendees(event_id, user.id);
     return NextResponse.json(attendees);
   } catch (error) {
     console.error("Error fetching attendees:", error);

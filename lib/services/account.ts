@@ -15,6 +15,7 @@ import {
   tribeMemberPermission,
   tribeMemberPreference,
   user,
+  userBlock,
   userPrivacy,
   userSocialLink,
   verification,
@@ -86,13 +87,14 @@ async function mediaToRemove(userId: string) {
  * DELETE /me/account. Blocked while the user owns a tribe. Otherwise, in one transaction:
  *
  * removed — sessions (so the bearer stops working at once), auth accounts / password, verification
- *   codes for their email, social links, privacy row, every tribe membership with its permission overrides
+ *   codes for their email, social links, privacy row, blocks in either direction (TRI-238), every tribe
+ *   membership with its permission overrides
  *   and preferences, RSVPs and co-host slots, drafts, notifications addressed to them, and their media rows
  *   (with each photo's post / album / like links); the Cloudinary assets are destroyed after commit.
  * scrubbed — name → "Deleted user"; email → deleted+<id>@deleted.invalid; displayName, username, image,
  *   bio, location, phone, timezone, birthday → null; emailVerified / profileCompleted false; deleted_at set.
- * kept — posts, comments, events, polls and albums they created, their likes and poll votes, activity rows
- *   and notifications they caused for others: all now attributed to the tombstone.
+ * kept — posts, comments, events, polls and albums they created, their likes and poll votes, activity rows,
+ *   notifications they caused for others and reports they filed (TRI-237): all now attributed to the tombstone.
  *
  * Safe to run again on a tombstone (every step is a no-op or re-scrub; deleted_at keeps its first value).
  */
@@ -122,6 +124,8 @@ export async function deleteAccount(userId: string): Promise<DeleteAccountResult
 
     await tx.delete(userSocialLink).where(eq(userSocialLink.userId, userId));
     await tx.delete(userPrivacy).where(eq(userPrivacy.userId, userId));
+    // Blocks either way (TRI-238). Reports they filed stay as evidence, reporter_id now the tombstone (TRI-237).
+    await tx.delete(userBlock).where(or(eq(userBlock.blockerId, userId), eq(userBlock.blockedId, userId)));
 
     await tx.delete(tribeMemberPermission).where(eq(tribeMemberPermission.userId, userId));
     await tx.delete(tribeMemberPreference).where(eq(tribeMemberPreference.userId, userId));

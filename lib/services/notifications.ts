@@ -1,9 +1,10 @@
-import { and, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 
 import { notification } from "@/lib/database/schemas/activity";
 import { event, eventAttendee, eventCoHost } from "@/lib/database/schemas/event";
 import { tribeMember } from "@/lib/database/schemas/tribe";
+import { userBlock } from "@/lib/database/schemas/safety";
 
 /**
  * The one way to emit a notification (TRI-183, ADR-17): a transactional outbox, not a broker.
@@ -101,6 +102,18 @@ export function dedupeKeyFor(event: Pick<NotificationEvent, "type" | "entityType
 /** Inserts (or collapses into) one row per recipient, minus the actor. Returns how many recipients it wrote for. */
 export async function notify(executor: NotifyExecutor, event: NotificationEvent): Promise<number> {
   let recipients = [...new Set(event.recipients)].filter((id) => id !== event.actorId);
+  const actorId = event.actorId;
+  if (actorId && recipients.length > 0) {
+    // TRI-238: nobody hears about what someone they blocked (or who blocked them) did
+    const pairs = await executor
+      .select({ blockerId: userBlock.blockerId, blockedId: userBlock.blockedId })
+      .from(userBlock)
+      .where(or(eq(userBlock.blockerId, actorId), eq(userBlock.blockedId, actorId)));
+    if (pairs.length > 0) {
+      const peers = new Set(pairs.map((p) => (p.blockerId === actorId ? p.blockedId : p.blockerId)));
+      recipients = recipients.filter((id) => !peers.has(id));
+    }
+  }
   const dedupeKey = dedupeKeyFor(event);
   if (event.once && dedupeKey && recipients.length > 0) {
     const had = await executor
