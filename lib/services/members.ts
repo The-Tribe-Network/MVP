@@ -2,7 +2,7 @@ import { db, getDbTransaction } from "@/lib/database/client";
 import { deleteDraftsForMember } from "@/lib/services/draft";
 import { tribeMember, tribeMemberPermission } from "@/lib/database/schemas/tribe";
 import { user } from "@/lib/database/schemas/auth";
-import { eq, and, like, or, count, gte, lte, sql } from "drizzle-orm";
+import { eq, and, like, or, count, gte, lte, sql, isNull } from "drizzle-orm";
 import { getMemberWithPermissions } from "./permissions";
 import { checkPermission } from "./role-permissions";
 import type { PaginatedMembers, MemberListItem } from "@/lib/database/types";
@@ -91,7 +91,8 @@ export async function getAllTribeMembers(
   const offset = (page - 1) * pageSize;
 
   // Build where conditions. A blocked pair is left out of the list, its search and its total (TRI-238).
-  const conditions = [eq(tribeMember.tribeId, tribeId), excludeBlocked(userId, tribeMember.userId)!];
+  // A deactivated account (TRI-293) is hidden too, until it signs in again.
+  const conditions = [eq(tribeMember.tribeId, tribeId), excludeBlocked(userId, tribeMember.userId)!, isNull(user.deactivatedAt)];
 
   // Search filter (name, username, or email)
   if (search) {

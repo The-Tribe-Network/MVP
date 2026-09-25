@@ -87,11 +87,16 @@ export async function createTribeInvitations(
   // Create lookup sets for fast checking
   const existingMemberEmails = new Set(existingMembers.map(m => m.userEmail));
   const existingInvitationEmails = new Set(existingInvitations.map(inv => inv.email));
+  // TRI-293: nobody can invite a deactivated account (skipped like an existing member)
+  const deactivatedEmails = new Set(existingUsers.filter(u => u.deactivatedAt).map(u => u.email));
 
   // Filter invitations to only valid ones
   const validInvitations = invitations.filter(invitation => {
     // Skip if already a member
     if (existingMemberEmails.has(invitation.email)) return false;
+
+    // Skip if the account is deactivated
+    if (deactivatedEmails.has(invitation.email)) return false;
 
     // Skip if already has pending invitation
     if (existingInvitationEmails.has(invitation.email)) return false;
