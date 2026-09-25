@@ -401,6 +401,7 @@ export function TribeProfileSection({
                   placeholder="Tell us what your tribe is about..."
                   className="min-h-[120px]"
                   {...field}
+                  value={field.value ?? ''}
                 />
               </FormControl>
               <FormDescription>
