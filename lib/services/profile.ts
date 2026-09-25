@@ -1,4 +1,4 @@
-import { asc, eq, sql } from "drizzle-orm";
+import { and, asc, eq, isNull, sql } from "drizzle-orm";
 
 import { db, getDbTransaction } from "@/lib/database/client";
 import { user } from "@/lib/database/schemas/auth";
@@ -100,6 +100,10 @@ export async function updateProfileWithSocialLinks(
   if (data.username !== undefined) updateData.username = data.username.toLowerCase();
   if (data.location !== undefined) updateData.location = data.location;
   if (data.removeAvatar === true) updateData.image = null;
+  if (data.phone !== undefined) updateData.phone = data.phone;
+  if (data.language !== undefined) updateData.language = data.language;
+  if (data.timezone !== undefined) updateData.timezone = data.timezone;
+  if (data.birthday !== undefined) updateData.birthday = data.birthday;
   // Avatar upload is handled by the upload endpoint which updates user.image
 
   const updatedUser = await getDbTransaction().transaction(async (tx) => {
@@ -170,9 +174,10 @@ function scopeTribeIds(shared: SharedTribe[], tribeId?: string): string[] {
   return tribeId === undefined ? ids : ids.includes(tribeId) ? [tribeId] : [];
 }
 
+/** A live user: a deleted account's tombstone (TRI-16) has no profile, so its routes answer 404. */
 async function userExists(userId: string) {
   if (!UUID_PATTERN.test(userId)) return false;
-  const [row] = await db.select({ id: user.id }).from(user).where(eq(user.id, userId)).limit(1);
+  const [row] = await db.select({ id: user.id }).from(user).where(and(eq(user.id, userId), isNull(user.deletedAt))).limit(1);
   return !!row;
 }
 
@@ -194,7 +199,7 @@ export type MemberProfile = {
 };
 
 /**
- * GET /users/{id}/profile. Null when the user does not exist (or the id is malformed).
+ * GET /users/{id}/profile. Null when the user does not exist, was deleted (TRI-16), or the id is malformed.
  *
  * Privacy (the member's `user_privacy`, defaults when no row), never applied to the member's own view:
  * - `profileVisibility = 'tribe_members'` and no shared tribe → only id, name, displayName, username, image;
@@ -220,7 +225,7 @@ export async function getMemberProfile(viewerId: string, targetId: string, tribe
       createdAt: user.createdAt,
     })
     .from(user)
-    .where(eq(user.id, targetId))
+    .where(and(eq(user.id, targetId), isNull(user.deletedAt)))
     .limit(1);
   if (!target) return null;
 

@@ -7,7 +7,8 @@ import { updateProfileSchema, validateApiRequest } from "@/lib/validations/profi
 /**
  * PATCH /api/user/profile
  * Update user profile. `socialLinks` (TRI-15) replaces all of the caller's links; `[]` clears them.
- * Returns the user row plus `socialLinks`.
+ * Account fields (TRI-16): `phone` and `timezone` (null clears), `language`, `birthday` (13+; 400 with
+ * code UNDER_MIN_AGE / BIRTHDAY_INVALID otherwise). Returns the user row plus `socialLinks`.
  */
 export async function PATCH(request: NextRequest) {
   try {
@@ -20,8 +21,12 @@ export async function PATCH(request: NextRequest) {
     const validation = validateApiRequest(updateProfileSchema, body);
 
     if (!validation.success) {
+      // A birthday under the minimum age (or not a real date) also carries its code (TRI-16)
+      const issueCode = validation.details?.issues
+        .map((issue) => (issue.code === "custom" ? issue.params?.code : undefined))
+        .find((code): code is string => typeof code === "string");
       return NextResponse.json(
-        { error: "Validation failed", details: validation.error },
+        { error: "Validation failed", details: validation.error, ...(issueCode ? { code: issueCode } : {}) },
         { status: 400 }
       );
     }
