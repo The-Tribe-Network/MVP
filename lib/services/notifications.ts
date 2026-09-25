@@ -18,7 +18,10 @@ import { tribeMember } from "@/lib/database/schemas/tribe";
 /** `db` or a transaction (`getDbTransaction().transaction(tx => …)`); both are PgDatabases. */
 export type NotifyExecutor = Pick<PgDatabase<PgQueryResultHKT, any, any>, "select" | "insert">;
 
-/** What each type may point at. The mobile contract's `Notification.type` plus server-only types. */
+/**
+ * What each type may point at. The mobile contract's `Notification.type` plus types the contract doesn't list yet
+ * (`event_cohost_request`, `new_post`, `new_event`, `poll_closed`; TRI-7 / TRI-223 add them to the app).
+ */
 const ENTITY_TYPES = {
   like: ["post", "comment", "media"],
   comment: ["post", "event"],
@@ -32,6 +35,11 @@ const ENTITY_TYPES = {
   media_added: ["album"],
   announcement: ["post", "event"],
   member_joined: ["tribe"],
+  // TRI-192: one collapsing row per tribe, so the entity is the tribe; the link opens the newest post / event
+  new_post: ["tribe"],
+  new_event: ["tribe"],
+  // TRI-219
+  poll_closed: ["poll"],
 } as const;
 
 export type NotificationType = keyof typeof ENTITY_TYPES;
@@ -46,9 +54,14 @@ export type NotificationEvent = {
     entityType: (typeof ENTITY_TYPES)[T][number];
     entityId: string;
     recipients: readonly string[];
+    /**
+     * The row's first line, read after the actor's name ("is going to Sunday Hike"); with no actor it stands
+     * alone ("Sunday Hike starts in 2 days"). Mobile NotificationRow.
+     */
     title: string;
+    /** Second line: a detail or quote ("+2 guests", the comment text). Empty when there is none. */
     message: string;
-    /** In-app path the row opens, e.g. `/tribes/<id>/events/<id>`. */
+    /** App link the row opens (`appLink`), resolved by the app's linking.ts. */
     link: string | null;
     /**
      * Collapse into the recipient's unread row for the same (type, entity): five likes on one post are one
@@ -56,8 +69,28 @@ export type NotificationEvent = {
      * type + entity; a string keys more narrowly (e.g. per requester).
      */
     collapse?: boolean | string;
+    /**
+     * With `collapse`: skip recipients who ever had a row with this key, read or not. For scheduled emits (reminders,
+     * poll results), so a second cron tick after the recipient read the first row sends nothing.
+     */
+    once?: boolean;
   };
 }[NotificationType];
+
+/** Links in the form the app resolves (`tribe://tribe/<id>/…`, tribe-mobile src/navigation/linking.ts). */
+export const appLink = {
+  tribe: (tribeId: string) => `tribe://tribe/${tribeId}`,
+  event: (tribeId: string, eventId: string) => `tribe://tribe/${tribeId}/events/${eventId}`,
+  eventManage: (tribeId: string, eventId: string) => `tribe://tribe/${tribeId}/events/${eventId}/manage`,
+  post: (tribeId: string, postId: string) => `tribe://tribe/${tribeId}/posts/${postId}`,
+  invite: (invitationId: string) => `tribe://invite/${invitationId}`,
+};
+
+/** A one-line quote for a row's second line: whitespace collapsed, cut at `max` characters. */
+export function excerpt(text: string | null | undefined, max = 140) {
+  const flat = (text ?? "").replace(/\s+/g, " ").trim();
+  return flat.length > max ? `${flat.slice(0, max - 1).trimEnd()}…` : flat;
+}
 
 export function dedupeKeyFor(event: Pick<NotificationEvent, "type" | "entityType" | "entityId" | "collapse">) {
   if (!event.collapse) return null;
@@ -67,10 +100,18 @@ export function dedupeKeyFor(event: Pick<NotificationEvent, "type" | "entityType
 
 /** Inserts (or collapses into) one row per recipient, minus the actor. Returns how many recipients it wrote for. */
 export async function notify(executor: NotifyExecutor, event: NotificationEvent): Promise<number> {
-  const recipients = [...new Set(event.recipients)].filter((id) => id !== event.actorId);
+  let recipients = [...new Set(event.recipients)].filter((id) => id !== event.actorId);
+  const dedupeKey = dedupeKeyFor(event);
+  if (event.once && dedupeKey && recipients.length > 0) {
+    const had = await executor
+      .select({ userId: notification.userId })
+      .from(notification)
+      .where(and(eq(notification.dedupeKey, dedupeKey), inArray(notification.userId, recipients)));
+    const done = new Set(had.map((row) => row.userId));
+    recipients = recipients.filter((id) => !done.has(id));
+  }
   if (recipients.length === 0) return 0;
 
-  const dedupeKey = dedupeKeyFor(event);
   const rows = recipients.map((userId) => ({
     userId,
     type: event.type,
@@ -78,6 +119,8 @@ export async function notify(executor: NotifyExecutor, event: NotificationEvent)
     message: event.message,
     link: event.link,
     actorId: event.actorId,
+    actorIds: event.actorId ? [event.actorId] : [],
+    actorCount: event.actorId ? 1 : 0,
     tribeId: event.tribeId,
     entityType: event.entityType,
     entityId: event.entityId,
@@ -100,8 +143,9 @@ export async function notify(executor: NotifyExecutor, event: NotificationEvent)
         message: sql`excluded.message`,
         link: sql`excluded.link`,
         actorId: sql`excluded.actor_id`,
-        // Approximate: counts events from a different actor than the last one, not distinct actors
-        actorCount: sql`${notification.actorCount} + CASE WHEN ${notification.actorId} IS DISTINCT FROM excluded.actor_id THEN 1 ELSE 0 END`,
+        // Distinct actors: someone already counted (like, unlike, like again) doesn't count twice
+        actorIds: sql`CASE WHEN excluded.actor_id IS NULL OR excluded.actor_id = ANY(${notification.actorIds}) THEN ${notification.actorIds} ELSE array_append(${notification.actorIds}, excluded.actor_id) END`,
+        actorCount: sql`CASE WHEN excluded.actor_id IS NULL OR excluded.actor_id = ANY(${notification.actorIds}) THEN ${notification.actorCount} ELSE ${notification.actorCount} + 1 END`,
         latestAt: sql`now()`,
       },
     });

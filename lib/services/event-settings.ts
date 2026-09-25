@@ -10,7 +10,7 @@ import type { Event, EventSettings } from "@/lib/database/types";
 import { userWithUsernameColumns } from "@/lib/database/user-columns";
 import type { EventLinkInput, UpdateEventSettingsInput } from "@/lib/validations/event-settings";
 
-import { eventAttendeeIds, findUnreadNotification, notify } from "./notifications";
+import { appLink, eventAttendeeIds, findUnreadNotification, notify } from "./notifications";
 import type { MemberWithPermissions } from "./permissions";
 
 // TRI-13 · event settings, co-hosts, links, announce (tribe-mobile DATA-MODEL-DELTA §6).
@@ -254,11 +254,9 @@ export async function getEventSettingsBundle(
 
 // ── announce / co-host request ──
 
-const eventLinkFor = (tribeId: string, eventId: string) => `/tribes/${tribeId}/events/${eventId}`;
-
 /**
- * EVT-09 "Send to all attendees": a notification per going/maybe attendee (the sender excluded), returned
- * as `{ recipients }`. The type becomes `announcement` with TRI-189; it stays `event_update` until then.
+ * EVT-09 "Send to all attendees": an `announcement` per going/maybe attendee (the sender excluded), returned
+ * as `{ recipients }` (TRI-189). Every send is its own row: two updates are two messages.
  */
 export async function announceToAttendees(
   eventRow: Pick<Event, "id" | "tribeId" | "title">,
@@ -267,15 +265,15 @@ export async function announceToAttendees(
 ): Promise<number> {
   const recipients = await eventAttendeeIds(db, eventRow.id);
   return notify(db, {
-    type: "event_update",
+    type: "announcement",
     actorId: senderId,
     tribeId: eventRow.tribeId,
     entityType: "event",
     entityId: eventRow.id,
     recipients,
-    title: eventRow.title,
+    title: `sent an update about ${eventRow.title}`,
     message,
-    link: eventLinkFor(eventRow.tribeId, eventRow.id),
+    link: appLink.event(eventRow.tribeId, eventRow.id),
   });
 }
 
@@ -299,14 +297,13 @@ export async function requestCoHostAccess(
     actorId: requester.id,
     tribeId: eventRow.tribeId,
     recipients: [eventRow.createdBy],
-    title: eventRow.title,
-    message: coHostRequestMessage(requester.name),
-    link: eventLinkFor(eventRow.tribeId, eventRow.id),
+    title: `asked to co-host ${eventRow.title}`,
+    message: "",
+    // EVT-04, where the creator adds co-hosts
+    link: appLink.eventManage(eventRow.tribeId, eventRow.id),
   });
   return "sent";
 }
-
-const coHostRequestMessage = (name: string) => `${name} asked to co-host this event`;
 
 /** Load the event row the routes gate on, scoped to the tribe in the URL. */
 export async function findTribeEvent(tribeId: string, eventId: string) {

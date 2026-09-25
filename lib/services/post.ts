@@ -32,6 +32,7 @@ import { getTribeSettings } from "./tribe-settings";
 import { getPollsByIds } from "./poll";
 import { getAgendaItems, type AgendaItemPreview } from "./event";
 import { userPreviewColumns, userWithProfileColumns, userWithUsernameColumns } from "@/lib/database/user-columns";
+import { appLink, excerpt, notify, tribeMemberIds, type NotifyExecutor } from "./notifications";
 
 /**
  * Check if user can post in a tribe
@@ -260,6 +261,23 @@ export async function createPost(
         );
       }
     }
+
+    // TRI-189: a post created as an announcement tells every other member, in the same transaction
+    if (isPinned) await announcePost(tx, newPost, userId, "posted an announcement");
+    // TRI-192: any other post tells the members through one collapsing "new posts" row per tribe
+    else
+      await notify(tx, {
+        type: "new_post",
+        actorId: userId,
+        tribeId,
+        entityType: "tribe",
+        entityId: tribeId,
+        recipients: await tribeMemberIds(tx, tribeId),
+        title: "shared a new post",
+        message: excerpt(newPost.content),
+        link: appLink.post(tribeId, newPost.id),
+        collapse: true,
+      });
 
     return newPost;
   });
@@ -850,10 +868,21 @@ export async function togglePostLike(postId: string, userId: string): Promise<bo
       .where(and(eq(postLike.postId, postId), eq(postLike.userId, userId)));
     return false;
   } else {
-    // Like
-    await db.insert(postLike).values({
-      postId,
-      userId,
+    // Like, and tell the author in the same transaction (TRI-193). An unlike leaves the row alone.
+    await getDbTransaction().transaction(async (tx) => {
+      await tx.insert(postLike).values({ postId, userId });
+      await notify(tx, {
+        type: "like",
+        actorId: userId,
+        tribeId: postData.tribeId,
+        entityType: "post",
+        entityId: postId,
+        recipients: [postData.authorId],
+        title: "liked your post",
+        message: excerpt(postData.content),
+        link: appLink.post(postData.tribeId, postId),
+        collapse: true,
+      });
     });
 
     // Get updated like count
@@ -895,21 +924,51 @@ export async function togglePostPin(postId: string, tribeId: string, userId: str
     throw new Error("You do not have permission to pin posts: pinned posts are turned off for this tribe");
   }
 
-  // Single statement, so two moderators toggling at once cannot leave pinnedAt out of step
-  const [updated] = await db
-    .update(post)
-    .set({
-      isPinned: sql`NOT ${post.isPinned}`,
-      pinnedAt: sql`CASE WHEN ${post.isPinned} THEN NULL ELSE now() END`,
-      pinnedBy: sql`CASE WHEN ${post.isPinned} THEN NULL ELSE ${userId}::uuid END`,
-    })
-    .where(and(eq(post.id, postId), eq(post.tribeId, tribeId)))
-    .returning({ isPinned: post.isPinned });
+  const updated = await getDbTransaction().transaction(async (tx) => {
+    // Single statement, so two moderators toggling at once cannot leave pinnedAt out of step
+    const [row] = await tx
+      .update(post)
+      .set({
+        isPinned: sql`NOT ${post.isPinned}`,
+        pinnedAt: sql`CASE WHEN ${post.isPinned} THEN NULL ELSE now() END`,
+        pinnedBy: sql`CASE WHEN ${post.isPinned} THEN NULL ELSE ${userId}::uuid END`,
+      })
+      .where(and(eq(post.id, postId), eq(post.tribeId, tribeId)))
+      .returning({ id: post.id, tribeId: post.tribeId, content: post.content, isPinned: post.isPinned });
+    // TRI-189: pinning announces (owner: both announcements and pins notify, TRI-257); unpinning says nothing
+    if (row?.isPinned) await announcePost(tx, row, userId, "pinned a post");
+    return row;
+  });
 
   if (!updated) {
     throw new Error("Post not found");
   }
   return updated.isPinned;
+}
+
+/**
+ * TRI-189: every member but the actor hears about an announcement. One row per member per post: pin, unpin and
+ * pin again while it is unread stays one row. One insert of (members − 1) rows inside the author's transaction;
+ * fine at alpha tribe sizes (hundreds), revisit with a broadcast row if tribes reach thousands.
+ */
+async function announcePost(
+  tx: NotifyExecutor,
+  row: { id: string; tribeId: string; content: string | null },
+  actorId: string,
+  title: string
+) {
+  await notify(tx, {
+    type: "announcement",
+    actorId,
+    tribeId: row.tribeId,
+    entityType: "post",
+    entityId: row.id,
+    recipients: await tribeMemberIds(tx, row.tribeId),
+    title,
+    message: excerpt(row.content),
+    link: appLink.post(row.tribeId, row.id),
+    collapse: true,
+  });
 }
 
 /**

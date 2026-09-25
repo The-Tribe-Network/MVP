@@ -1,14 +1,15 @@
-import { db } from "@/lib/database/client";
+import { db, getDbTransaction } from "@/lib/database/client";
 import { comment, commentLike, post } from "@/lib/database/schemas/post";
-import { event } from "@/lib/database/schemas/event";
+import { event, eventSettings } from "@/lib/database/schemas/event";
 import { tribeMember, tribeMemberPermission } from "@/lib/database/schemas/tribe";
 import { user } from "@/lib/database/schemas/auth";
-import { eq, and, asc, count, inArray, or, isNull } from "drizzle-orm";
+import { eq, and, asc, count, inArray, or, isNull, sql } from "drizzle-orm";
 import type { Comment, CommentInsert, CommentWithAuthor } from "@/lib/database/types";
 import { getMemberWithPermissions } from "./permissions";
 import { getPostById } from "./post";
 import { getEventById } from "./event";
 import { userWithProfileColumns } from "@/lib/database/user-columns";
+import { appLink, eventHostIds, excerpt, notify, type NotifyExecutor } from "./notifications";
 
 /**
  * Check if user can moderate comments (can edit/delete any comment)
@@ -34,6 +35,47 @@ async function canUserModerateComments(tribeId: string, userId: string): Promise
 /**
  * Create a new comment on a post
  */
+/**
+ * TRI-186: a reply tells the parent comment's author, unless they already got the comment row (`alreadyTold`) or
+ * wrote the reply. One collapsing row per parent comment.
+ */
+async function notifyParentAuthor(
+  tx: NotifyExecutor,
+  reply: Comment,
+  actorId: string,
+  tribeId: string,
+  alreadyTold: string[],
+  link: string
+) {
+  if (!reply.parentCommentId) return;
+  const [parent] = await tx
+    .select({ authorId: comment.authorId })
+    .from(comment)
+    .where(eq(comment.id, reply.parentCommentId));
+  if (!parent || alreadyTold.includes(parent.authorId)) return;
+  await notify(tx, {
+    type: "reply",
+    actorId,
+    tribeId,
+    entityType: "comment",
+    entityId: reply.parentCommentId,
+    recipients: [parent.authorId],
+    title: "replied to your comment",
+    message: excerpt(reply.content),
+    link,
+    collapse: true,
+  });
+}
+
+/** EVT-11 "Comments": whether the hosts hear about comments on the event (default on). */
+async function hostsWantCommentNotices(tx: NotifyExecutor, eventId: string) {
+  const [settings] = await tx
+    .select({ on: eventSettings.notifyOnComments })
+    .from(eventSettings)
+    .where(eq(eventSettings.eventId, eventId));
+  return settings?.on ?? true;
+}
+
 export async function createComment(
   postId: string,
   userId: string,
@@ -46,16 +88,33 @@ export async function createComment(
     throw new Error("Post not found");
   }
 
-  // Create comment
-  const [createdComment] = await db
-    .insert(comment)
-    .values({
-      postId,
-      authorId: userId,
-      content: content.trim(),
-      parentCommentId: parentCommentId || null,
-    } as CommentInsert)
-    .returning();
+  // The comment and its notifications commit together (TRI-186)
+  const createdComment = await getDbTransaction().transaction(async (tx) => {
+    const [row] = await tx
+      .insert(comment)
+      .values({
+        postId,
+        authorId: userId,
+        content: content.trim(),
+        parentCommentId: parentCommentId || null,
+      } as CommentInsert)
+      .returning();
+    const link = `${appLink.post(postData.tribeId, postId)}?commentId=${row.id}`;
+    await notify(tx, {
+      type: "comment",
+      actorId: userId,
+      tribeId: postData.tribeId,
+      entityType: "post",
+      entityId: postId,
+      recipients: [postData.authorId],
+      title: "commented on your post",
+      message: excerpt(row.content),
+      link,
+      collapse: true,
+    });
+    await notifyParentAuthor(tx, row, userId, postData.tribeId, [postData.authorId], link);
+    return row;
+  });
 
   // Fetch author info
   const [author] = await db
@@ -318,10 +377,36 @@ export async function toggleCommentLike(commentId: string, userId: string): Prom
       .where(and(eq(commentLike.commentId, commentId), eq(commentLike.userId, userId)));
     return false;
   } else {
-    // Like
-    await db.insert(commentLike).values({
-      commentId,
-      userId,
+    // Like, and tell the comment's author in the same transaction (TRI-193). An unlike leaves the row alone.
+    await getDbTransaction().transaction(async (tx) => {
+      await tx.insert(commentLike).values({ commentId, userId });
+      const [target] = await tx
+        .select({
+          authorId: comment.authorId,
+          content: comment.content,
+          postId: comment.postId,
+          eventId: comment.eventId,
+          tribeId: sql<string>`coalesce(${post.tribeId}, ${event.tribeId})`,
+        })
+        .from(comment)
+        .leftJoin(post, eq(post.id, comment.postId))
+        .leftJoin(event, eq(event.id, comment.eventId))
+        .where(eq(comment.id, commentId));
+      if (!target) return;
+      await notify(tx, {
+        type: "like",
+        actorId: userId,
+        tribeId: target.tribeId,
+        entityType: "comment",
+        entityId: commentId,
+        recipients: [target.authorId],
+        title: "liked your comment",
+        message: excerpt(target.content),
+        link: target.postId
+          ? `${appLink.post(target.tribeId, target.postId)}?commentId=${commentId}`
+          : appLink.event(target.tribeId, target.eventId!),
+        collapse: true,
+      });
     });
     return true;
   }
@@ -342,16 +427,34 @@ export async function createEventComment(
     throw new Error("Event not found");
   }
 
-  // Create comment
-  const [createdComment] = await db
-    .insert(comment)
-    .values({
-      eventId,
-      authorId: userId,
-      content: content.trim(),
-      parentCommentId: parentCommentId || null,
-    } as CommentInsert)
-    .returning();
+  // The comment and its notifications commit together (TRI-186)
+  const createdComment = await getDbTransaction().transaction(async (tx) => {
+    const [row] = await tx
+      .insert(comment)
+      .values({
+        eventId,
+        authorId: userId,
+        content: content.trim(),
+        parentCommentId: parentCommentId || null,
+      } as CommentInsert)
+      .returning();
+    const link = appLink.event(eventData.tribeId, eventId);
+    const hosts = (await hostsWantCommentNotices(tx, eventId)) ? await eventHostIds(tx, eventId) : [];
+    await notify(tx, {
+      type: "comment",
+      actorId: userId,
+      tribeId: eventData.tribeId,
+      entityType: "event",
+      entityId: eventId,
+      recipients: hosts,
+      title: `commented on ${eventData.title}`,
+      message: excerpt(row.content),
+      link,
+      collapse: true,
+    });
+    await notifyParentAuthor(tx, row, userId, eventData.tribeId, hosts, link);
+    return row;
+  });
 
   // Fetch author info
   const [author] = await db

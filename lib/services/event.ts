@@ -1,13 +1,14 @@
 import { db, getDbTransaction } from "@/lib/database/client";
 import { event, eventAttendee, eventSettings } from "@/lib/database/schemas/event";
 import { user } from "@/lib/database/schemas/auth";
-import { tribe } from "@/lib/database/schemas/tribe";
+import { tribe, tribeSettings } from "@/lib/database/schemas/tribe";
 import { media } from "@/lib/database/schemas/media";
 import { poll, pollOption } from "@/lib/database/schemas/poll";
 import { comment } from "@/lib/database/schemas/post";
 import { activity } from "@/lib/database/schemas/activity";
 import { eq, and, desc, sql, inArray, asc, or, isNull, gt, lte } from "drizzle-orm";
 import { createActivity } from "./activity";
+import { appLink, eventAttendeeIds, eventHostIds, notify, tribeMemberIds, type NotifyExecutor } from "./notifications";
 
 /**
  * The status an event has now (TRI-240). `event.status` is written once at creation and never
@@ -386,6 +387,20 @@ export async function createEvent(
       status: "going",
     });
 
+    // TRI-192: members hear about new events through one collapsing "new events" row per tribe
+    await notify(tx, {
+      type: "new_event",
+      actorId: userId,
+      tribeId,
+      entityType: "tribe",
+      entityId: tribeId,
+      recipients: await tribeMemberIds(tx, tribeId),
+      title: "created an event",
+      message: newEvent.title,
+      link: appLink.event(tribeId, newEvent.id),
+      collapse: true,
+    });
+
     // 5. Fetch event with creator info
     const [eventWithCreator] = await tx
       .select({
@@ -641,6 +656,31 @@ export async function getEventById(
   } as unknown as EventWithDetails;
 }
 
+type EventChangeRow = Pick<Event, "id" | "tribeId" | "title" | "startDate" | "endDate" | "location" | "status">;
+
+/**
+ * TRI-191: what attendees hear about an edit. Cancel wins over a new time, a new time over a new place; title and
+ * description edits say nothing. Events that are over (or already cancelled) notify nobody.
+ */
+export function eventChangeNotice(before: EventChangeRow, after: EventChangeRow) {
+  const over = (row: EventChangeRow) => (row.endDate ?? row.startDate).getTime() < Date.now();
+  if (before.status === "cancelled" || over(before)) return null;
+  if (after.status === "cancelled") return { kind: "cancelled", title: `cancelled ${after.title}` } as const;
+  const sameTime = (x: Date | null, y: Date | null) => (x?.getTime() ?? null) === (y?.getTime() ?? null);
+  if (!sameTime(before.startDate, after.startDate) || !sameTime(before.endDate, after.endDate)) {
+    return { kind: "rescheduled", title: `changed the time of ${after.title}` } as const;
+  }
+  if ((before.location ?? null) !== (after.location ?? null)) {
+    return { kind: "changed", title: `changed the location of ${after.title}` } as const;
+  }
+  return null;
+}
+
+/** Going + maybe attendees and the hosts (creator, co-hosts); `notify()` drops the actor. */
+async function eventAudience(executor: NotifyExecutor, eventId: string) {
+  return [...(await eventAttendeeIds(executor, eventId)), ...(await eventHostIds(executor, eventId))];
+}
+
 /**
  * Update event
  * IMPORTANT: Check permissions before calling
@@ -658,14 +698,34 @@ export async function updateEvent(
     status: "upcoming" | "ongoing" | "completed" | "cancelled";
   }>
 ): Promise<EventWithCreator | null> {
-  const [updated] = await db
-    .update(event)
-    .set({
-      ...data,
-      updatedAt: new Date(),
-    })
-    .where(eq(event.id, eventId))
-    .returning();
+  // The edit and its notification commit together (TRI-183)
+  const updated = await getDbTransaction().transaction(async (tx) => {
+    const [before] = await tx.select().from(event).where(eq(event.id, eventId)).for("update");
+    if (!before) return null;
+    const [after] = await tx
+      .update(event)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(event.id, eventId))
+      .returning();
+
+    const notice = eventChangeNotice(before, after);
+    if (notice) {
+      await notify(tx, {
+        type: "event_update",
+        actorId: userId,
+        tribeId: after.tribeId,
+        entityType: "event",
+        entityId: after.id,
+        recipients: await eventAudience(tx, after.id),
+        title: notice.title,
+        message: "",
+        link: appLink.event(after.tribeId, after.id),
+        // Repeat edits of one kind collapse; cancel, reschedule and change never merge with each other
+        collapse: notice.kind,
+      });
+    }
+    return after;
+  });
 
   if (!updated) return null;
 
@@ -686,10 +746,92 @@ export async function updateEvent(
 /**
  * Delete event
  * IMPORTANT: Check permissions before calling
+ * TRI-191: attendees of an upcoming, not yet cancelled event hear it was cancelled, in the same transaction. The
+ * row links to the tribe, since the event is gone.
  */
-export async function deleteEvent(eventId: string): Promise<boolean> {
-  const result = await db.delete(event).where(eq(event.id, eventId));
-  return (result.rowCount ?? 0) > 0;
+export async function deleteEvent(eventId: string, userId: string): Promise<boolean> {
+  return getDbTransaction().transaction(async (tx) => {
+    const [row] = await tx.select().from(event).where(eq(event.id, eventId)).for("update");
+    if (!row) return false;
+    if (eventChangeNotice(row, { ...row, status: "cancelled" })) {
+      await notify(tx, {
+        type: "event_update",
+        actorId: userId,
+        tribeId: row.tribeId,
+        entityType: "event",
+        entityId: row.id,
+        recipients: await eventAudience(tx, row.id),
+        title: `cancelled ${row.title}`,
+        message: "",
+        link: appLink.tribe(row.tribeId),
+        collapse: "cancelled",
+      });
+    }
+    const result = await tx.delete(event).where(eq(event.id, eventId));
+    return (result.rowCount ?? 0) > 0;
+  });
+}
+
+/**
+ * TRI-188: the first line hosts read after the attendee's name, or null when there is nothing to say. Only a
+ * change of answer counts (a guest-count or note edit says nothing); a first "can't go" is not news, dropping
+ * out is.
+ */
+export function rsvpNoticeTitle(previous: RsvpStatus | null, next: RsvpStatus | null, eventTitle: string) {
+  if (previous === next) return null;
+  const wasIn = previous === "going" || previous === "maybe";
+  if (next === "going") return `is going to ${eventTitle}`;
+  if (next === "maybe") return `might go to ${eventTitle}`;
+  if (next === "not_going") return wasIn ? `can't go to ${eventTitle}` : null;
+  return wasIn ? `is no longer going to ${eventTitle}` : null;
+}
+
+/** EVT-11 "RSVP changes": the event's own setting, else the tribe default, else on. */
+async function hostsWantRsvpNotices(executor: NotifyExecutor, eventId: string, tribeId: string) {
+  const [own] = await executor
+    .select({ on: eventSettings.notifyOnRsvpChanges })
+    .from(eventSettings)
+    .where(eq(eventSettings.eventId, eventId));
+  if (own) return own.on ?? true;
+  const [tribeDefault] = await executor
+    .select({ on: tribeSettings.notifyOnRsvpChanges })
+    .from(tribeSettings)
+    .where(eq(tribeSettings.tribeId, tribeId));
+  return tribeDefault?.on ?? true;
+}
+
+/**
+ * RSVP changes to the creator and co-hosts (TRI-188). A host's own RSVP notifies nobody (`notify()` drops the
+ * actor). All RSVPs to one event collapse into each host's unread row. Off when the event's "RSVP changes"
+ * setting is off: that setting is the hosts' "don't notify me at all", so no row (owner, 2026-09-24).
+ */
+async function notifyHostsOfRsvp(
+  executor: NotifyExecutor,
+  eventId: string,
+  userId: string,
+  previous: RsvpStatus | null,
+  next: RsvpStatus | null,
+  guestCount: number
+) {
+  const [row] = await executor
+    .select({ id: event.id, tribeId: event.tribeId, title: event.title, status: event.status })
+    .from(event)
+    .where(eq(event.id, eventId));
+  if (!row || row.status === "cancelled") return;
+  const title = rsvpNoticeTitle(previous, next, row.title);
+  if (!title || !(await hostsWantRsvpNotices(executor, eventId, row.tribeId))) return;
+  await notify(executor, {
+    type: "rsvp",
+    actorId: userId,
+    tribeId: row.tribeId,
+    entityType: "event",
+    entityId: row.id,
+    recipients: await eventHostIds(executor, row.id),
+    title,
+    message: guestCount > 0 ? `+${guestCount} guest${guestCount === 1 ? "" : "s"}` : "",
+    link: appLink.event(row.tribeId, row.id),
+    collapse: true,
+  });
 }
 
 /**
@@ -726,20 +868,28 @@ export async function addEventAttendee(
     }
   }
 
-  // Upsert pattern: insert or update if exists
-  await db
-    .insert(eventAttendee)
-    .values({
-      eventId,
-      userId,
-      status,
-      guestCount,
-      note: note?.trim() ? note.trim() : null,
-    })
-    .onConflictDoUpdate({
-      target: [eventAttendee.eventId, eventAttendee.userId],
-      set: { status, guestCount, note: note?.trim() ? note.trim() : null, updatedAt: new Date() },
-    });
+  // Upsert and tell the hosts in one transaction (TRI-188)
+  await getDbTransaction().transaction(async (tx) => {
+    const [previous] = await tx
+      .select({ status: eventAttendee.status })
+      .from(eventAttendee)
+      .where(and(eq(eventAttendee.eventId, eventId), eq(eventAttendee.userId, userId)))
+      .for("update");
+    await tx
+      .insert(eventAttendee)
+      .values({
+        eventId,
+        userId,
+        status,
+        guestCount,
+        note: note?.trim() ? note.trim() : null,
+      })
+      .onConflictDoUpdate({
+        target: [eventAttendee.eventId, eventAttendee.userId],
+        set: { status, guestCount, note: note?.trim() ? note.trim() : null, updatedAt: new Date() },
+      });
+    await notifyHostsOfRsvp(tx, eventId, userId, previous?.status ?? null, status, guestCount);
+  });
 
   // Get event for activity
   const eventData = await db
@@ -767,14 +917,13 @@ export async function removeEventAttendee(
   eventId: string,
   userId: string
 ): Promise<void> {
-  await db
-    .delete(eventAttendee)
-    .where(
-      and(
-        eq(eventAttendee.eventId, eventId),
-        eq(eventAttendee.userId, userId)
-      )
-    );
+  await getDbTransaction().transaction(async (tx) => {
+    const [removed] = await tx
+      .delete(eventAttendee)
+      .where(and(eq(eventAttendee.eventId, eventId), eq(eventAttendee.userId, userId)))
+      .returning({ status: eventAttendee.status });
+    if (removed) await notifyHostsOfRsvp(tx, eventId, userId, removed.status, null, 0);
+  });
 }
 
 /**
