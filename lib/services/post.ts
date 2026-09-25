@@ -695,6 +695,39 @@ export async function getTribePosts(
 }
 
 /**
+ * A member's posts in the given tribes, newest first, in the feed shape (PROF-02 Posts tab, TRI-15).
+ * The caller decides which tribes the viewer may see; no pin boost on a profile.
+ */
+export async function getPostsByAuthor(
+  authorId: string,
+  tribeIds: string[],
+  limit: number,
+  offset: number,
+  currentUserId?: string
+): Promise<PostWithMetadata[]> {
+  if (tribeIds.length === 0) return [];
+  const posts = await db
+    .select({ ...postColumns, author: authorColumns })
+    .from(post)
+    .innerJoin(user, eq(post.authorId, user.id))
+    .where(and(eq(post.authorId, authorId), inArray(post.tribeId, tribeIds)))
+    .orderBy(desc(post.createdAt), desc(post.id))
+    .limit(limit)
+    .offset(offset);
+  return attachPostMetadata(posts, currentUserId);
+}
+
+/** How many posts `getPostsByAuthor` can page through: `MemberProfile.counts.posts`. */
+export async function countPostsByAuthor(authorId: string, tribeIds: string[]): Promise<number> {
+  if (tribeIds.length === 0) return 0;
+  const [row] = await db
+    .select({ n: count() })
+    .from(post)
+    .where(and(eq(post.authorId, authorId), inArray(post.tribeId, tribeIds)));
+  return Number(row?.n ?? 0);
+}
+
+/**
  * Posts by id with author, counts, like state, photos, linked album, event and poll — the shape
  * of a feed row — in no particular order. A constant number of queries for any number of posts.
  */

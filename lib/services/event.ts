@@ -1,12 +1,12 @@
 import { db, getDbTransaction } from "@/lib/database/client";
-import { event, eventAttendee, eventSettings } from "@/lib/database/schemas/event";
+import { event, eventAttendee, eventCoHost, eventSettings } from "@/lib/database/schemas/event";
 import { user } from "@/lib/database/schemas/auth";
 import { tribe, tribeSettings } from "@/lib/database/schemas/tribe";
 import { media } from "@/lib/database/schemas/media";
 import { poll, pollOption } from "@/lib/database/schemas/poll";
 import { comment } from "@/lib/database/schemas/post";
 import { activity } from "@/lib/database/schemas/activity";
-import { eq, and, desc, sql, inArray, asc, or, isNull, gt, lte } from "drizzle-orm";
+import { eq, and, desc, sql, inArray, asc, or, isNull, gt, lte, exists, type SQL } from "drizzle-orm";
 import { createActivity } from "./activity";
 import { appLink, eventAttendeeIds, eventHostIds, notify, tribeMemberIds, type NotifyExecutor } from "./notifications";
 
@@ -450,15 +450,56 @@ export async function createEvent(
  * Get all events for a tribe
  * OPTIMIZED: Single query with join
  */
+type EventListOptions = {
+  status?: "upcoming" | "ongoing" | "completed" | "cancelled";
+  limit?: number;
+  offset?: number;
+  userId?: string;
+};
+
 export async function getTribeEvents(
   tribeId: string,
-  options?: {
-    status?: "upcoming" | "ongoing" | "completed" | "cancelled";
-    limit?: number;
-    offset?: number;
-    userId?: string;
-  }
+  options?: EventListOptions
 ): Promise<EventWithDetails[]> {
+  return listEvents(eq(event.tribeId, tribeId), options);
+}
+
+/**
+ * Events a member hosts (creator or co-host) in the given tribes, in the tribe list's shape and order
+ * (PROF-02 Events tab, TRI-15). The caller decides which tribes the viewer may see.
+ */
+export async function getEventsHostedBy(
+  hostId: string,
+  tribeIds: string[],
+  options?: EventListOptions
+): Promise<EventWithDetails[]> {
+  if (tribeIds.length === 0) return [];
+  return listEvents(and(inArray(event.tribeId, tribeIds), hostedBy(hostId))!, options);
+}
+
+/** Events a member hosts in the given tribes: the count behind `MemberProfile.counts.events`. */
+export async function countEventsHostedBy(hostId: string, tribeIds: string[]): Promise<number> {
+  if (tribeIds.length === 0) return 0;
+  const [row] = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(event)
+    .where(and(inArray(event.tribeId, tribeIds), hostedBy(hostId)));
+  return row?.n ?? 0;
+}
+
+function hostedBy(userId: string): SQL {
+  return or(
+    eq(event.createdBy, userId),
+    exists(
+      db
+        .select({ one: sql`1` })
+        .from(eventCoHost)
+        .where(and(eq(eventCoHost.eventId, event.id), eq(eventCoHost.userId, userId)))
+    )
+  )!;
+}
+
+async function listEvents(scope: SQL, options?: EventListOptions): Promise<EventWithDetails[]> {
   // Main query; RSVP counts are attached afterwards from event_attendee (TRI-10)
   const baseSelect = db
     .select({
@@ -497,8 +538,8 @@ export async function getTribeEvents(
     .$dynamic();
 
   const conditions = options?.status
-    ? and(eq(event.tribeId, tribeId), sql`${effectiveEventStatus} = ${options.status}`)
-    : eq(event.tribeId, tribeId);
+    ? and(scope, sql`${effectiveEventStatus} = ${options.status}`)
+    : scope;
 
   let query = baseSelect.where(conditions).orderBy(desc(event.startDate));
 

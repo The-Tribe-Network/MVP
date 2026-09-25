@@ -103,3 +103,6 @@ export const notificationDeliveryStatus = pgEnum("notification_delivery_status",
   "failed",
   "suppressed",
 ]);
+
+// Member profile social links (TRI-15, owner decision TRI-81): one link per network per user
+export const socialNetwork = pgEnum("social_network", ["youtube", "instagram", "tiktok", "x", "website"]);
