@@ -158,6 +158,9 @@ export async function POST(
   } catch (error) {
     console.error("Error creating event comment:", error);
     if (error instanceof Error) {
+      if (error.message.includes("permission")) {
+        return NextResponse.json({ error: error.message }, { status: 403 });
+      }
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
     return NextResponse.json(

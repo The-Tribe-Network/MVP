@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
 import { getMemberWithPermissions } from "@/lib/services/permissions";
+import { checkPermission } from "@/lib/services/role-permissions";
 import { getTribeSettings } from "@/lib/services/tribe-settings";
 import { db } from "@/lib/database/client";
 import { tribeSettings } from "@/lib/database/schemas";
@@ -89,10 +90,8 @@ export async function PATCH(
       );
     }
 
-    // Overrides win; otherwise owners and admins may edit (same rule as settings/timeline)
-    const canEdit =
-      member.permissions?.canEditTribeSettings ??
-      (member.member.role === "owner" || member.member.role === "admin");
+    // Effective canEditTribeSettings (override → tribe role default → system default)
+    const canEdit = await checkPermission(tribe_id, user.id, "canEditTribeSettings");
 
     if (!canEdit) {
       return NextResponse.json(

@@ -3,6 +3,7 @@ import { getServerUser } from "@/lib/services/auth";
 import { getEventById, updateEvent, deleteEvent } from "@/lib/services/event";
 import { eventEditability } from "@/lib/services/event-settings";
 import { getMemberWithPermissions } from "@/lib/services/permissions";
+import { checkPermission } from "@/lib/services/role-permissions";
 import { updateEventDetailsSchema } from "@/lib/validations/event";
 
 type Context = RouteContext<'/api/tribes/[tribe_id]/events/[event_id]'>;
@@ -121,8 +122,7 @@ export async function DELETE(
 
     const canDelete =
       existingEvent.createdBy === user.id ||
-      memberData.permissions?.canDeleteEvents === true ||
-      ["owner", "admin"].includes(memberData.member.role);
+      (await checkPermission(tribe_id, user.id, "canDeleteEvents"));
 
     if (!canDelete) {
       return NextResponse.json(
