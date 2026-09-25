@@ -131,7 +131,7 @@ export async function DELETE(
       );
     }
 
-    await deleteEvent(event_id);
+    await deleteEvent(event_id, user.id);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error deleting event:", error);

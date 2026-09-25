@@ -9,12 +9,39 @@ import { sendTribeInvitationEmail } from "@/lib/email/templates/tribe-invitation
 import { sendTribeInvitationRejectedEmail } from "@/lib/email/templates/tribe-invitation-rejected/send-tribe-invitation-rejected-email";
 import { sendTribeInvitationAcceptedEmail } from "@/lib/email/templates/tribe-invitation-accepted/send-tribe-invitation-accepted-email";
 import { userPreviewColumns } from "@/lib/database/user-columns";
+import { appLink, notify, type NotifyExecutor } from "./notifications";
 
 /**
  * Create invitations for a tribe
  * OPTIMIZED: Batch queries instead of N+1 loops
  * Reduces from 4N database calls to ~5 database calls total
  */
+/**
+ * TRI-187 "invited you to {tribe}", to an invitee who has an account. The tribe is set but the user hasn't joined,
+ * so the feed puts it in the personal group (TRI-7). One row per invitation: a resend collapses into it while unread.
+ */
+async function notifyInvitee(
+  tx: NotifyExecutor,
+  invitationId: string,
+  tribeId: string,
+  tribeName: string,
+  inviterId: string,
+  inviteeId: string
+) {
+  await notify(tx, {
+    type: "invite",
+    actorId: inviterId,
+    tribeId,
+    entityType: "invitation",
+    entityId: invitationId,
+    recipients: [inviteeId],
+    title: `invited you to ${tribeName}`,
+    message: "",
+    link: appLink.invite(invitationId),
+    collapse: true,
+  });
+}
+
 export async function createTribeInvitations(
   tribeId: string,
   tribeName: string,
@@ -78,19 +105,28 @@ export async function createTribeInvitations(
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + 7);
 
-  const createdInvitations = await db
-    .insert(tribeInvitation)
-    .values(
-      validInvitations.map(invitation => ({
-        tribeId,
-        email: invitation.email,
-        role: invitation.role,
-        invitedBy,
-        status: "pending" as const,
-        expiresAt,
-      }))
-    )
-    .returning();
+  // TRI-187: invitees who already have an account also get an in-app row, in the same transaction
+  const userIdByEmail = new Map(existingUsers.map((u) => [u.email, u.id]));
+  const createdInvitations = await getDbTransaction().transaction(async (tx) => {
+    const rows = await tx
+      .insert(tribeInvitation)
+      .values(
+        validInvitations.map(invitation => ({
+          tribeId,
+          email: invitation.email,
+          role: invitation.role,
+          invitedBy,
+          status: "pending" as const,
+          expiresAt,
+        }))
+      )
+      .returning();
+    for (const row of rows) {
+      const inviteeId = userIdByEmail.get(row.email);
+      if (inviteeId) await notifyInvitee(tx, row.id, tribeId, tribeName, invitedBy, inviteeId);
+    }
+    return rows;
+  });
 
   // Send invitation emails (non-blocking)
   for (const createdInvitation of createdInvitations) {
@@ -176,16 +212,20 @@ export async function resendTribeInvitation(
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + 7);
 
-  await db
-    .update(tribeInvitation)
-    .set({ status: "pending", expiresAt })
-    .where(eq(tribeInvitation.id, invitationId));
-
   // Fetch tribe and inviter info for email
-  const [tribeData, inviter] = await Promise.all([
+  const [tribeData, inviter, invitee] = await Promise.all([
     db.select().from(tribe).where(eq(tribe.id, tribeId)).limit(1),
     db.select().from(user).where(eq(user.id, userId)).limit(1),
+    db.select({ id: user.id }).from(user).where(eq(user.email, invitation.email)).limit(1),
   ]);
+
+  // A resend collapses into the invitee's unread row (TRI-187); once read, it is a fresh nudge
+  await getDbTransaction().transaction(async (tx) => {
+    await tx.update(tribeInvitation).set({ status: "pending", expiresAt }).where(eq(tribeInvitation.id, invitationId));
+    if (invitee[0] && tribeData[0]) {
+      await notifyInvitee(tx, invitationId, tribeId, tribeData[0].name, userId, invitee[0].id);
+    }
+  });
 
   // Resend email (non-blocking)
   if (tribeData[0] && inviter[0]) {
@@ -302,6 +342,11 @@ export async function acceptInvitation(
   // Add user as member and update invitation in a transaction
   // OPTIMIZED: Wrapped in transaction to ensure data consistency
   // Must use the WebSocket driver — the neon-http `db` has no transaction support
+  const [tribeData, inviter] = await Promise.all([
+    db.select().from(tribe).where(eq(tribe.id, invitation.tribeId)).limit(1),
+    db.select().from(user).where(eq(user.id, invitation.invitedBy)).limit(1),
+  ]);
+
   await getDbTransaction().transaction(async (tx) => {
     await tx.insert(tribeMember).values({
       tribeId: invitation.tribeId,
@@ -312,13 +357,20 @@ export async function acceptInvitation(
     await tx.update(tribeInvitation)
       .set({ status: "accepted" })
       .where(eq(tribeInvitation.id, invitationId));
-  });
 
-  // Get tribe and inviter information for email notification in parallel
-  const [tribeData, inviter] = await Promise.all([
-    db.select().from(tribe).where(eq(tribe.id, invitation.tribeId)).limit(1),
-    db.select().from(user).where(eq(user.id, invitation.invitedBy)).limit(1),
-  ]);
+    // TRI-187: the inviter hears it was accepted
+    await notify(tx, {
+      type: "invite",
+      actorId: userId,
+      tribeId: invitation.tribeId,
+      entityType: "invitation",
+      entityId: invitationId,
+      recipients: [invitation.invitedBy],
+      title: `accepted your invite to ${tribeData[0]?.name ?? "your tribe"}`,
+      message: "",
+      link: appLink.tribe(invitation.tribeId),
+    });
+  });
 
   // Send acceptance email to inviter (non-blocking)
   if (tribeData[0] && inviter[0] && acceptedUser[0]) {

@@ -37,8 +37,9 @@ export const notification = pgTable(
     title: text("title").notNull(),
     message: text("message").notNull(),
     link: text("link"),
-    // Latest actor; a collapsed row counts the others in `actorCount`
+    // Latest actor; a collapsed row keeps every distinct actor in `actorIds` and their number in `actorCount`
     actorId: uuid("actor_id").references(() => user.id, { onDelete: "set null" }),
+    actorIds: uuid("actor_ids").array().notNull().default(sql`'{}'::uuid[]`),
     actorCount: integer("actor_count").notNull().default(1),
     // Null for account-level notifications; NOTIF-01 groups by it
     tribeId: uuid("tribe_id").references(() => tribe.id, { onDelete: "cascade" }),
