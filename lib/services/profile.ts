@@ -176,13 +176,13 @@ function scopeTribeIds(shared: SharedTribe[], tribeId?: string): string[] {
 }
 
 /**
- * A live user the viewer may look at: a deleted account's tombstone (TRI-16) has no profile, and neither side
+ * A live user the viewer may look at: a deleted account's tombstone (TRI-16) and a deactivated account (TRI-293) have no profile, and neither side
  * of a block sees the other's (TRI-238), so those routes answer 404 exactly as for an unknown id.
  */
 async function profileVisible(viewerId: string, userId: string) {
   if (!UUID_PATTERN.test(userId)) return false;
   const [[row], blocked] = await Promise.all([
-    db.select({ id: user.id }).from(user).where(and(eq(user.id, userId), isNull(user.deletedAt))).limit(1),
+    db.select({ id: user.id }).from(user).where(and(eq(user.id, userId), isNull(user.deletedAt), isNull(user.deactivatedAt))).limit(1),
     isBlockedPair(viewerId, userId),
   ]);
   return !!row && !blocked;
@@ -233,7 +233,7 @@ export async function getMemberProfile(viewerId: string, targetId: string, tribe
       createdAt: user.createdAt,
     })
     .from(user)
-    .where(and(eq(user.id, targetId), isNull(user.deletedAt)))
+    .where(and(eq(user.id, targetId), isNull(user.deletedAt), isNull(user.deactivatedAt)))
     .limit(1);
   if (!target) return null;
   if (await isBlockedPair(viewerId, targetId)) return null;

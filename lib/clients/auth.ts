@@ -85,14 +85,18 @@ export const auth = betterAuth({
   databaseHooks: {
     session: {
       create: {
-        // A deleted account's tombstone (TRI-16) never gets a session, whatever path tries to create one
+        // A deleted account's tombstone (TRI-16) never gets a session, whatever path tries to create one.
+        // A deactivated account (TRI-293) signing in is reactivated: every session comes from a sign-in.
         before: async (newSession) => {
           const [row] = await db
-            .select({ deletedAt: user.deletedAt })
+            .select({ deletedAt: user.deletedAt, deactivatedAt: user.deactivatedAt })
             .from(user)
             .where(eq(user.id, newSession.userId))
             .limit(1);
           if (!row || row.deletedAt) return false;
+          if (row.deactivatedAt) {
+            await db.update(user).set({ deactivatedAt: null }).where(eq(user.id, newSession.userId));
+          }
         },
       },
     },

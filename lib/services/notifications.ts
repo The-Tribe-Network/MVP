@@ -5,6 +5,7 @@ import { notification } from "@/lib/database/schemas/activity";
 import { event, eventAttendee, eventCoHost } from "@/lib/database/schemas/event";
 import { tribeMember } from "@/lib/database/schemas/tribe";
 import { userBlock } from "@/lib/database/schemas/safety";
+import { user } from "@/lib/database/schemas/auth";
 
 /**
  * The one way to emit a notification (TRI-183, ADR-17): a transactional outbox, not a broker.
@@ -112,6 +113,17 @@ export async function notify(executor: NotifyExecutor, event: NotificationEvent)
     if (pairs.length > 0) {
       const peers = new Set(pairs.map((p) => (p.blockerId === actorId ? p.blockedId : p.blockerId)));
       recipients = recipients.filter((id) => !peers.has(id));
+    }
+  }
+  if (recipients.length > 0) {
+    // TRI-293: a deactivated account hears nothing until it signs in again
+    const away = await executor
+      .select({ id: user.id })
+      .from(user)
+      .where(and(inArray(user.id, recipients), sql`${user.deactivatedAt} IS NOT NULL`));
+    if (away.length > 0) {
+      const skip = new Set(away.map((row) => row.id));
+      recipients = recipients.filter((id) => !skip.has(id));
     }
   }
   const dedupeKey = dedupeKeyFor(event);

@@ -164,3 +164,26 @@ export async function deleteAccount(userId: string): Promise<DeleteAccountResult
 
   return { ok: true, removedMedia: removable.length };
 }
+
+export type DeactivateAccountResult = { ok: true } | { ok: false; code: "OWNS_TRIBES"; tribes: OwnedTribe[] };
+
+/**
+ * POST /me/account/deactivate (TRI-293). Blocked while the user owns a tribe, like delete. Otherwise sets
+ * `deactivated_at` and revokes every session, in one transaction. Nothing else is touched: memberships, posts,
+ * comments, events, RSVPs and likes stay (content stays visible under their name). While deactivated the user is
+ * left out of member lists and their search, their profile routes 404, `notify()` skips them and invitations to
+ * their email are skipped. Signing in again clears `deactivated_at` (session-create hook in lib/clients/auth.ts).
+ */
+export async function deactivateAccount(userId: string): Promise<DeactivateAccountResult> {
+  const owned = await getOwnedTribes(userId);
+  if (owned.length > 0) return { ok: false, code: "OWNS_TRIBES", tribes: owned };
+
+  await getDbTransaction().transaction(async (tx) => {
+    await tx
+      .update(user)
+      .set({ deactivatedAt: sql`coalesce(${user.deactivatedAt}, now())`, updatedAt: new Date() })
+      .where(eq(user.id, userId));
+    await tx.delete(session).where(eq(session.userId, userId));
+  });
+  return { ok: true };
+}

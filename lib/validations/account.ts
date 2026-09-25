@@ -102,6 +102,14 @@ export const timezoneSchema = z.union([
  * DELETE /me/account body. `confirmation` must be exactly "DELETE" (same field as DELETE /tribes/{id});
  * `confirm` is accepted as an alias. `mode`, if sent, must be "delete" (deactivate is TRI-293, not built).
  */
+/** POST /me/account/deactivate (TRI-293). `confirm` is accepted as an alias, like delete. */
+export const deactivateAccountSchema = z
+  .object({ confirmation: z.string().optional(), confirm: z.string().optional() })
+  .refine((body) => (body.confirmation ?? body.confirm) === "DEACTIVATE", {
+    message: 'Type "DEACTIVATE" to confirm',
+    path: ["confirmation"],
+  });
+
 export const deleteAccountSchema = z
   .object({
     confirmation: z.string().optional(),

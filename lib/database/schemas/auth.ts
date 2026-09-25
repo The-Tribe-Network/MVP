@@ -20,6 +20,9 @@ export const user = pgTable("user", {
   // Set by DELETE /me/account: the row stays as a PII-scrubbed tombstone so the user's posts, comments and
   // events (FKs cascade on user delete) survive, attributed to "Deleted user". See lib/services/account.ts.
   deletedAt: timestamp("deleted_at"),
+  // Set by POST /me/account/deactivate (TRI-293): hidden from member lists, profiles, notifications and invites
+  // until the user signs in again, which clears it (session-create hook in lib/clients/auth.ts)
+  deactivatedAt: timestamp("deactivated_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .defaultNow()
