@@ -574,6 +574,7 @@ export async function getMediaByTribe(
       uploader: {
         id: user.id,
         name: user.name,
+        displayName: user.displayName,
         image: user.image,
       },
       likeCount: mediaLikeCount,
@@ -628,6 +629,7 @@ export async function getLooseMedia(tribeId: string) {
       uploader: {
         id: user.id,
         name: user.name,
+        displayName: user.displayName,
         image: user.image,
       },
       likeCount: count(mediaLike.id),
@@ -687,6 +689,7 @@ export async function getAllTribeMedia(
       uploader: {
         id: user.id,
         name: user.name,
+        displayName: user.displayName,
         image: user.image,
       },
       likeCount: count(sql`DISTINCT ${mediaLike.id}`),

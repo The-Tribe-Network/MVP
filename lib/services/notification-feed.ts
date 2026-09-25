@@ -85,6 +85,7 @@ async function loadNotifications(ids: string[]) {
       latestAt: notification.latestAt,
       actorId: user.id,
       actorName: user.name,
+      actorDisplayName: user.displayName,
       actorImage: user.image,
       tribeId: tribe.id,
       tribeName: tribe.name,
@@ -105,7 +106,7 @@ async function loadNotifications(ids: string[]) {
         message: row.message,
         link: row.link,
         isRead: row.readAt !== null,
-        actor: row.actorId ? { id: row.actorId, name: row.actorName!, image: row.actorImage } : null,
+        actor: row.actorId ? { id: row.actorId, name: row.actorName!, displayName: row.actorDisplayName, image: row.actorImage } : null,
         actorCount: row.actorCount,
         tribe: row.tribeId
           ? { id: row.tribeId, name: row.tribeName!, avatar: row.tribeAvatar, color: row.tribeColor }
@@ -126,7 +127,7 @@ export type NotificationDto = {
   message: string;
   link: string | null;
   isRead: boolean;
-  actor: { id: string; name: string; image: string | null } | null;
+  actor: { id: string; name: string; displayName: string | null; image: string | null } | null;
   actorCount: number;
   tribe: { id: string; name: string; avatar: string | null; color: string | null } | null;
   entityType: string | null;

@@ -262,7 +262,7 @@ export async function getCatchUp(userId: string, params: CatchUpParams): Promise
       id: `post:${p.id}`,
       kind: postPollIds.has(id) && !postMeta.has(id) ? "poll" : "post",
       tribe: tribeRef,
-      actor: { id: p.author.id, name: p.author.name, image: p.author.image ?? null },
+      actor: { id: p.author.id, name: p.author.name, displayName: p.author.displayName ?? null, image: p.author.image ?? null },
       reasons,
       post: { ...p, tribe: tribeRef },
       event: null,

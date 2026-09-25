@@ -502,7 +502,7 @@ async function getPostLikers(postIds: string[], viewerId?: string): Promise<Map<
 
   for (const row of rows) {
     const list = likers.get(row.postId) ?? [];
-    list.push({ id: row.id, name: row.name, image: row.image });
+    list.push({ id: row.id, name: row.name, displayName: row.displayName, image: row.image });
     likers.set(row.postId, list);
   }
 

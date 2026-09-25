@@ -159,7 +159,7 @@ async function rsvpCountsFor(eventIds: string[]): Promise<Map<string, RsvpCounts
 /** How many attendee avatars an event card stacks (mobile contract: AgendaItem.attendeePreview). */
 export const ATTENDEE_PREVIEW_SIZE = 4;
 
-export type UserPreview = { id: string; name: string; image: string | null };
+export type UserPreview = { id: string; name: string; displayName: string | null; image: string | null };
 
 /**
  * An event as a card (mobile contract: AgendaItem) — used wherever an event is embedded rather than

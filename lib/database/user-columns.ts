@@ -11,10 +11,15 @@ import { user } from "@/lib/database/schemas/auth";
  * `email` belongs to `userBasicColumns` only, which is for member management (MemberListItem).
  */
 
-/** UserPreview — the default for an embedded user: author, creator, voter, activity actor. */
+/**
+ * UserPreview — the default for an embedded user: author, creator, voter, activity actor.
+ * `displayName` is the profile name clients show first (`displayName ?? name`); a deleted user's
+ * tombstone has it scrubbed to null, so they read as `name` = "Deleted user".
+ */
 export const userPreviewColumns = {
   id: user.id,
   name: user.name,
+  displayName: user.displayName,
   image: user.image,
 };
 
@@ -24,15 +29,8 @@ export const userWithUsernameColumns = {
   username: user.username,
 };
 
-/**
- * UserWithUsername plus `displayName`, for comment authors: the web comment list prefers a user's
- * chosen display name over their account name. Not in the mobile contract, which declares comment
- * authors as UserWithUsername — either the contract gains the field or web drops the preference.
- */
-export const userWithProfileColumns = {
-  ...userWithUsernameColumns,
-  displayName: user.displayName,
-};
+/** Kept for existing callers; identical to `userWithUsernameColumns` now that every preview carries `displayName`. */
+export const userWithProfileColumns = userWithUsernameColumns;
 
 /** UserBasic — includes `email`. Member management only; never embed this in feed-shaped data. */
 export const userBasicColumns = {
