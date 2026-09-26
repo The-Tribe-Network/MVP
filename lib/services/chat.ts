@@ -8,14 +8,16 @@ import { userPreviewColumns } from "@/lib/database/user-columns";
 import { getMemberWithPermissions, type MemberWithPermissions } from "./permissions";
 import { resolveEffectivePermissions } from "./member-permissions";
 import { excludeBlocked, isBlockedPair } from "./blocks";
-import { excerpt } from "./notifications";
+import { appLink, excerpt, notify, type NotifyExecutor } from "./notifications";
+import { timelineMute } from "@/lib/database/schemas/timeline";
 import { getTimelineInTribe, roleMeetsTimelinePermission, type Timeline } from "./timeline";
 import { fetchLinkPreview, firstUrl } from "./link-preview";
 
 /**
  * Chat in chat timelines (TRI-315, PRD §5.13 R13.6). Messages have text, photos, a reply, @mentions and
  * reactions; authors edit and delete their own, whoever has `canDeleteAnyPost` deletes any. Blocked pairs never
- * see each other's messages (TRI-238). Live delivery is TRI-316; mention and reply notifications TRI-317.
+ * see each other's messages (TRI-238). Live delivery is TRI-316. Only @mentions and replies notify (TRI-317,
+ * owner 2026-09-25), one collapsing row per chat timeline, never for a member who muted it.
  */
 
 export const CHAT_PAGE_DEFAULT = 30;
@@ -233,6 +235,64 @@ export async function getMessage(tribeId: string, timelineId: string, messageId:
   return dto;
 }
 
+/** Who muted the timeline, among `userIds`. */
+async function mutedIn(executor: NotifyExecutor, timelineId: string, userIds: string[]): Promise<Set<string>> {
+  if (userIds.length === 0) return new Set();
+  const rows = await executor
+    .select({ userId: timelineMute.userId })
+    .from(timelineMute)
+    .where(and(eq(timelineMute.timelineId, timelineId), inArray(timelineMute.userId, userIds)));
+  return new Set(rows.map((row) => row.userId));
+}
+
+/**
+ * The reply and @mention rows for a message (TRI-317). The replied-to author gets a `reply` row and no `mention`
+ * row for the same message; everyone else mentioned gets a `mention` row. Both collapse per chat timeline.
+ * notify() drops the author, blocked pairs and deactivated accounts; muted members are dropped here.
+ */
+async function notifyChat(
+  executor: NotifyExecutor,
+  args: { target: Timeline; authorId: string; body: string; hasPhotos: boolean; replyToAuthorId: string | null; mentionUserIds: string[] },
+) {
+  const { target, authorId } = args;
+  const where = [target.emoji, target.name].filter(Boolean).join(" ");
+  const message = excerpt(args.body) || (args.hasPhotos ? "Sent a photo" : "");
+  const link = appLink.timeline(target.tribeId, target.id);
+  const replyTo = args.replyToAuthorId && args.replyToAuthorId !== authorId ? args.replyToAuthorId : null;
+  const mentioned = args.mentionUserIds.filter((id) => id !== authorId && id !== replyTo);
+  const muted = await mutedIn(executor, target.id, [...(replyTo ? [replyTo] : []), ...mentioned]);
+
+  if (replyTo && !muted.has(replyTo)) {
+    await notify(executor, {
+      type: "reply",
+      actorId: authorId,
+      tribeId: target.tribeId,
+      entityType: "timeline",
+      entityId: target.id,
+      recipients: [replyTo],
+      title: `replied to you in ${where}`,
+      message,
+      link,
+      collapse: true,
+    });
+  }
+  const mentionRecipients = mentioned.filter((id) => !muted.has(id));
+  if (mentionRecipients.length > 0) {
+    await notify(executor, {
+      type: "mention",
+      actorId: authorId,
+      tribeId: target.tribeId,
+      entityType: "timeline",
+      entityId: target.id,
+      recipients: mentionRecipients,
+      title: `mentioned you in ${where}`,
+      message,
+      link,
+      collapse: true,
+    });
+  }
+}
+
 /** Mentioned ids that are members of the tribe, deduped, in the order given. */
 async function memberIdsOf(tribeId: string, ids: string[] | undefined): Promise<string[]> {
   const unique = [...new Set(ids ?? [])];
@@ -285,11 +345,13 @@ export async function sendMessage(
     }
   }
 
+  let replyToAuthorId: string | null = null;
   if (input.replyToId) {
     const parent = await getVisibleMessage(timelineId, input.replyToId, userId);
     if (!parent) {
       throw new ChatError("INVALID_REPLY", "The message you're replying to isn't in this timeline", 400);
     }
+    replyToAuthorId = parent.deletedAt ? null : parent.authorId;
   }
 
   const mentionUserIds = await memberIdsOf(tribeId, input.mentionUserIds);
@@ -302,6 +364,8 @@ export async function sendMessage(
     if (mediaIds.length > 0) {
       await tx.insert(chatMessageMedia).values(mediaIds.map((mediaId, index) => ({ messageId: row.id, mediaId, displayOrder: index })));
     }
+    // In the same transaction: the message and its notifications commit together (ADR-17)
+    await notifyChat(tx, { target, authorId: userId, body, hasPhotos: mediaIds.length > 0, replyToAuthorId, mentionUserIds });
     return row;
   });
 
@@ -325,7 +389,7 @@ export async function editMessage(
   userId: string,
   input: { body: string; mentionUserIds?: string[] },
 ): Promise<ChatMessageDto> {
-  await chatContext(tribeId, timelineId, userId);
+  const { timeline: target } = await chatContext(tribeId, timelineId, userId);
   const row = await visibleOrThrow(timelineId, messageId, userId);
   if (row.authorId !== userId) {
     throw new ChatError("FORBIDDEN", "You can only edit your own messages", 403);
@@ -348,6 +412,13 @@ export async function editMessage(
     .set({ body, mentionUserIds, editedAt: new Date(), ...(urlChanged ? { linkPreview: null } : {}) })
     .where(eq(chatMessage.id, messageId))
     .returning();
+
+  // Only members the edit newly mentions hear about it
+  const before = new Set(row.mentionUserIds);
+  const added = mentionUserIds.filter((id) => !before.has(id));
+  if (added.length > 0) {
+    await notifyChat(db, { target, authorId: userId, body, hasPhotos: false, replyToAuthorId: null, mentionUserIds: added });
+  }
   const [dto] = await hydrate([updated], userId);
   return dto;
 }
