@@ -7,6 +7,7 @@ import { tribe, tribeMember, tribeMemberPermission } from "@/lib/database/schema
 import { user } from "@/lib/database/schemas/auth";
 import { album, albumMedia, media } from "@/lib/database/schemas/media";
 import { eq, and, desc, count, inArray, sql, isNotNull, isNull, asc, lte, type SQL } from "drizzle-orm";
+import { getGlobalTimelineId } from "./timeline";
 import type {
   Post,
   PostInsert,
@@ -192,12 +193,15 @@ export async function createPost(
   }
 
   const kind = derivePostKind({ isPinned, eventId, pollId, mediaCount: mediaIds.length, linkedAlbumId });
+  // Every post lives in a timeline; choosing one is TRI-314, until then new posts go to Global
+  const timelineId = await getGlobalTimelineId(tribeId);
 
   const createdPost = await getDbTransaction().transaction(async (tx) => {
     const [newPost] = await tx
       .insert(post)
       .values({
         tribeId,
+        timelineId,
         authorId: userId,
         content,
         linkedAlbumId,
@@ -301,6 +305,7 @@ export type PostWithMetadata = PostWithAuthor & {
 const postColumns = {
   id: post.id,
   tribeId: post.tribeId,
+  timelineId: post.timelineId,
   authorId: post.authorId,
   content: post.content,
   linkedAlbumId: post.linkedAlbumId,

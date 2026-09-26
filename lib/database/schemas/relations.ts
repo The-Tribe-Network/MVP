@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { user, account, event, tribe, activity, media, post, comment, commentLike, eventAttendee, eventSettings, eventCoHost, eventLink, message, messageRead, notification, notificationDelivery, hashtag, postHashtag, postLike, postMedia, session, tribeInvitation, tribeMember, tribeMemberPermission, album, mediaLike, tribeMemberPreference, albumMedia, poll, pollOption, pollVote, draft } from "@/lib/database/schemas";
+import { user, account, event, tribe, activity, media, post, comment, commentLike, eventAttendee, eventSettings, eventCoHost, eventLink, message, messageRead, notification, notificationDelivery, hashtag, postHashtag, postLike, postMedia, session, tribeInvitation, tribeMember, tribeMemberPermission, album, mediaLike, tribeMemberPreference, albumMedia, poll, pollOption, pollVote, draft, timeline } from "@/lib/database/schemas";
 
 export const accountRelations = relations(account, ({ one }) => ({
 	user: one(user, {
@@ -121,6 +121,7 @@ export const tribeRelations = relations(tribe, ({ one, many }) => ({
 	events: many(event),
 	activities: many(activity),
 	posts: many(post),
+	timelines: many(timeline),
 	media_avatar: one(media, {
 		fields: [tribe.avatar],
 		references: [media.id],
@@ -209,6 +210,10 @@ export const postRelations = relations(post, ({ one, many }) => ({
 	tribe: one(tribe, {
 		fields: [post.tribeId],
 		references: [tribe.id]
+	}),
+	timeline: one(timeline, {
+		fields: [post.timelineId],
+		references: [timeline.id]
 	}),
 	comments: many(comment),
 	postHashtags: many(postHashtag),
@@ -508,4 +513,16 @@ export const draftRelations = relations(draft, ({ one }) => ({
 		fields: [draft.tribeId],
 		references: [tribe.id]
 	}),
+}));
+
+export const timelineRelations = relations(timeline, ({ one, many }) => ({
+	tribe: one(tribe, {
+		fields: [timeline.tribeId],
+		references: [tribe.id]
+	}),
+	creator: one(user, {
+		fields: [timeline.createdBy],
+		references: [user.id]
+	}),
+	posts: many(post),
 }));

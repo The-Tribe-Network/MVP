@@ -1,5 +1,6 @@
 import { pgTable, text, timestamp, boolean, unique, uuid, integer, jsonb } from "drizzle-orm/pg-core";
 import { user } from "./auth";
+import { timeline } from "./timeline";
 import {
   privacyType,
   tribeRole,
@@ -136,6 +137,9 @@ export const tribeMemberPreference = pgTable("tribe_member_preference", {
 
   // NOTIF-04 "Mute {tribe}": no push and no badges from this tribe; its rows still reach the feed (TRI-7)
   notificationsMuted: boolean("notifications_muted").default(false).notNull(),
+
+  // The timeline the member last picked on the Timeline tab; null means Global (TRI-313)
+  selectedTimelineId: uuid("selected_timeline_id").references((): any => timeline.id, { onDelete: "set null" }),
 
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")

@@ -9,6 +9,7 @@ import { getDbTransaction, db } from "@/lib/database/client";
 import { tribe, tribeMember, tribeSettings } from "@/lib/database/schemas/tribe";
 import type { SeedTribeData, SeedUserData } from "./types";
 import { REAL_USER_ID, logSuccess } from "./utils";
+import { createGlobalTimeline } from "@/lib/services/timeline";
 
 /**
  * Create a tribe with its owner, settings, and all members
@@ -62,6 +63,9 @@ export async function seedTribe(
     await tx.insert(tribeSettings).values({
       tribeId: newTribe.id,
     });
+
+    // 4. Global timeline (TRI-313)
+    await createGlobalTimeline(tx, newTribe.id, ownerId);
 
     return newTribe;
   });

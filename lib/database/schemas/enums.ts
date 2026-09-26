@@ -120,3 +120,8 @@ export const reportReason = pgEnum("report_reason", [
   "other",
 ]);
 export const reportStatus = pgEnum("report_status", ["open", "dismissed", "removed"]);
+
+// Timelines (TRI-313, PRD §5.13): a tribe's post feeds and chats. `voice` / `automation` come later.
+export const timelineType = pgEnum("timeline_type", ["posts", "chat"]);
+// Who can post in a timeline: everyone, or the owner and admins only
+export const timelinePostPermission = pgEnum("timeline_post_permission", ["everyone", "admins"]);

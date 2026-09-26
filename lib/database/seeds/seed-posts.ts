@@ -9,6 +9,7 @@ import { db } from "@/lib/database/client";
 import { post } from "@/lib/database/schemas/post";
 import type { SeedPostData, SeedUserData } from "./types";
 import { daysAgo, logSuccess } from "./utils";
+import { getGlobalTimelineId } from "@/lib/services/timeline";
 
 /**
  * Create posts for a tribe
@@ -26,6 +27,7 @@ export async function seedPosts(
   emailToIdMap: Map<string, string>
 ): Promise<Map<number, string>> {
   const postIndexToIdMap = new Map<number, string>();
+  const timelineId = await getGlobalTimelineId(tribeId);
 
   for (let i = 0; i < posts.length; i++) {
     const postData = posts[i];
@@ -48,6 +50,7 @@ export async function seedPosts(
       .insert(post)
       .values({
         tribeId,
+        timelineId,
         authorId,
         content: postData.content,
         createdAt,
