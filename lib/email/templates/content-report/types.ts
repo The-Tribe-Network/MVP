@@ -5,7 +5,7 @@ export interface ContentReportEmailData {
   tribeId: string;
   tribeName: string;
   reporterName: string;
-  targetType: "post" | "comment" | "media" | "user";
+  targetType: "post" | "comment" | "media" | "user" | "message";
   targetId: string;
   /** Who wrote / uploaded / is the reported target. */
   targetAuthorName: string;

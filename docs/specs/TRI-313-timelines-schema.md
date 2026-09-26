@@ -28,7 +28,7 @@ PRD §5.13 (tribe-mobile), DATA-MODEL-DELTA §9b. Routes are TRI-314; chat messa
 | Database | Part 1 | Part 2 |
 |---|---|---|
 | Development (`ep-divine-term-ahpw8jvi`) | 2026-09-25 (run twice, re-runnable): 8 tribes → 8 Globals, 60/60 posts moved | 2026-09-25 |
-| Production (`ep-sweet-smoke-ah2qfclb`) | 2026-09-25 (0 tribes, 0 posts); cascade FK swapped in the same day | **after the deploy** (`SET NOT NULL`) |
+| Production (`ep-sweet-smoke-ah2qfclb`) | 2026-09-25 (0 tribes, 0 posts); cascade FK swapped in the same day | 2026-09-26, after #69 deployed |
 
 ## Verified (local, Development, 2026-09-25)
 

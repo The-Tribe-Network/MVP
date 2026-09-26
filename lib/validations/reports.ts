@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 /** TRI-237. Values mirror the `report_target_type` / `report_reason` enums (lib/database/schemas/enums.ts). */
-export const REPORT_TARGET_TYPES = ["post", "comment", "media", "user"] as const;
+export const REPORT_TARGET_TYPES = ["post", "comment", "media", "user", "message"] as const;
 export const REPORT_REASONS = ["spam", "harassment", "hate", "sexual_content", "violence", "self_harm", "other"] as const;
 export const REPORT_NOTE_MAX = 1000;
 

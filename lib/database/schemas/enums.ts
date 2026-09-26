@@ -56,8 +56,6 @@ export const eventStatus = pgEnum("event_status", [
   "cancelled",
 ]);
 
-export const messageType = pgEnum("message_type", ["group", "direct"]);
-
 export const albumPrivacy = pgEnum("album_privacy", ["public", "private", "admin_only"]);
 
 export const permissionLevel = pgEnum("permission_level", [
@@ -109,7 +107,7 @@ export const socialNetwork = pgEnum("social_network", ["youtube", "instagram", "
 
 // Reports (TRI-237, owner decision TRI-105): what can be reported, why, and the report's state.
 // `status` values are the ones DATA-MODEL-DELTA §9 reserved; only `open` is written until the TRI-19 queue.
-export const reportTargetType = pgEnum("report_target_type", ["post", "comment", "media", "user"]);
+export const reportTargetType = pgEnum("report_target_type", ["post", "comment", "media", "user", "message"]);
 export const reportReason = pgEnum("report_reason", [
   "spam",
   "harassment",

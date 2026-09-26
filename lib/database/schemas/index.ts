@@ -16,7 +16,6 @@ export {
   postKind,
   invitationStatus,
   eventStatus,
-  messageType,
   albumPrivacy,
   permissionLevel,
   eventEditPermission,
@@ -108,11 +107,8 @@ export {
   postHashtag,
 } from "@/lib/database/schemas/hashtag";
 
-// Message tables
-export {
-  message,
-  messageRead,
-} from "@/lib/database/schemas/message";
+// Chat tables (TRI-315)
+export { chatMessage, chatMessageMedia, chatMessageReaction } from "@/lib/database/schemas/chat";
 
 // Waitlist tables and enums
 export {
@@ -137,8 +133,6 @@ export {
   commentRelations,
   commentLikeRelations,
   eventAttendeeRelations,
-  messageRelations,
-  messageReadRelations,
   notificationRelations,
   notificationDeliveryRelations,
   postHashtagRelations,
@@ -158,5 +152,8 @@ export {
   pollVoteRelations,
   draftRelations,
   timelineRelations,
+  chatMessageRelations,
+  chatMessageMediaRelations,
+  chatMessageReactionRelations,
 } from "@/lib/database/schemas/relations";
 

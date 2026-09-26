@@ -2,11 +2,12 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getServerUser } from "@/lib/services/auth";
 import { TimelineError } from "@/lib/services/timeline";
+import { ChatError } from "@/lib/services/chat";
 import { validateApiRequest } from "@/lib/validations/post";
 
 /**
- * The shared shell of the timeline routes: 401 without a session, 400 on bad params or body, and a
- * TimelineError as `{ error, code }` with its status.
+ * The shared shell of the timeline and chat routes: 401 without a session, 400 on bad params or body, and a
+ * TimelineError or ChatError as `{ error, code }` with its status.
  */
 export async function timelineRoute(
   label: string,
@@ -19,7 +20,7 @@ export async function timelineRoute(
     }
     return await handler(user.id);
   } catch (error) {
-    if (error instanceof TimelineError) {
+    if (error instanceof TimelineError || error instanceof ChatError) {
       return NextResponse.json({ error: error.message, code: error.code }, { status: error.status });
     }
     console.error(`Error ${label}:`, error);

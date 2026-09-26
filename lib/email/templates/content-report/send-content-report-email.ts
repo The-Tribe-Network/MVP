@@ -3,7 +3,7 @@ import type { ContentReportEmailData } from './types';
 import { generateContentReportEmailHtml } from './template-html';
 import { generateContentReportEmailText } from './template-text';
 
-const TARGET_LABEL = { post: 'post', comment: 'comment', media: 'photo', user: 'member' } as const;
+const TARGET_LABEL = { post: 'post', comment: 'comment', media: 'photo', user: 'member', message: 'chat message' } as const;
 
 /**
  * Sends one report email to every address in `to` (TRI-237). Resend answers API errors in `error` rather
