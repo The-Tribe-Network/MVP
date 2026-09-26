@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
+import { after, NextRequest, NextResponse } from "next/server";
+import { publishChatEvent } from "@/lib/services/realtime";
 import { addReaction, removeReaction } from "@/lib/services/chat";
 import { jsonBody, parse, timelineRoute } from "@/lib/services/timeline-routes";
 import { chatMessageParamsSchema, reactionSchema } from "@/lib/validations/chat";
@@ -14,6 +15,7 @@ export async function POST(request: NextRequest, ctx: Ctx) {
     if (!body.ok) return body.response;
     const { tribe_id, timeline_id, message_id } = params.data;
     const reactions = await addReaction(tribe_id, timeline_id, message_id, userId, body.data.emoji);
+    after(() => publishChatEvent("reaction", timeline_id, message_id, userId));
     return NextResponse.json({ reactions });
   });
 }
@@ -27,6 +29,7 @@ export async function DELETE(request: NextRequest, ctx: Ctx) {
     if (!query.ok) return query.response;
     const { tribe_id, timeline_id, message_id } = params.data;
     const reactions = await removeReaction(tribe_id, timeline_id, message_id, userId, query.data.emoji);
+    after(() => publishChatEvent("reaction", timeline_id, message_id, userId));
     return NextResponse.json({ reactions });
   });
 }

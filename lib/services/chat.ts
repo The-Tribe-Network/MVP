@@ -177,12 +177,16 @@ async function getVisibleMessage(timelineId: string, messageId: string, viewerId
   return row ?? null;
 }
 
-/** History, newest first, `limit` per page before the `before` message. Deleted messages stay as placeholders. */
+/**
+ * History. Default and `before`: newest first, older pages. `after`: the messages newer than that one, **oldest
+ * first** (catching up after a live event or a return to the foreground; page on with the last id). Deleted
+ * messages stay as placeholders.
+ */
 export async function listMessages(
   tribeId: string,
   timelineId: string,
   userId: string,
-  options: { before?: string; limit?: number } = {},
+  options: { before?: string; after?: string; limit?: number } = {},
 ): Promise<{ messages: ChatMessageDto[]; hasMore: boolean }> {
   await chatContext(tribeId, timelineId, userId);
   const limit = options.limit ?? CHAT_PAGE_DEFAULT;
@@ -190,18 +194,23 @@ export async function listMessages(
   const conditions = [eq(chatMessage.timelineId, timelineId)];
   const notBlocked = excludeBlocked(userId, chatMessage.authorId);
   if (notBlocked) conditions.push(notBlocked);
-  if (options.before) {
+  const cursorId = options.before ?? options.after;
+  const forward = Boolean(options.after);
+  if (cursorId) {
     const [cursor] = await db
       .select({ id: chatMessage.id })
       .from(chatMessage)
-      .where(and(eq(chatMessage.id, options.before), eq(chatMessage.timelineId, timelineId)))
+      .where(and(eq(chatMessage.id, cursorId), eq(chatMessage.timelineId, timelineId)))
       .limit(1);
     if (!cursor) {
-      throw new ChatError("NOT_FOUND", "The `before` message is not in this timeline", 404);
+      throw new ChatError("NOT_FOUND", "The cursor message is not in this timeline", 404);
     }
     // Compared in SQL: a JS Date would drop the timestamp's microseconds and shift its zone
+    const at = sql`(select c.created_at, c.id from ${chatMessage} c where c.id = ${cursor.id}::uuid)`;
     conditions.push(
-      sql`(${chatMessage.createdAt}, ${chatMessage.id}) < (select c.created_at, c.id from ${chatMessage} c where c.id = ${cursor.id}::uuid)`,
+      forward
+        ? sql`(${chatMessage.createdAt}, ${chatMessage.id}) > ${at}`
+        : sql`(${chatMessage.createdAt}, ${chatMessage.id}) < ${at}`,
     );
   }
 
@@ -209,11 +218,19 @@ export async function listMessages(
     .select(messageColumns)
     .from(chatMessage)
     .where(and(...conditions))
-    .orderBy(desc(chatMessage.createdAt), desc(chatMessage.id))
+    .orderBy(...(forward ? [asc(chatMessage.createdAt), asc(chatMessage.id)] : [desc(chatMessage.createdAt), desc(chatMessage.id)]))
     .limit(limit + 1);
 
   const page = rows.slice(0, limit);
   return { messages: await hydrate(page, userId), hasMore: rows.length > limit };
+}
+
+/** One message as the viewer sees it (after a live event); hidden by a block or missing → NOT_FOUND. */
+export async function getMessage(tribeId: string, timelineId: string, messageId: string, userId: string): Promise<ChatMessageDto> {
+  await chatContext(tribeId, timelineId, userId);
+  const row = await visibleOrThrow(timelineId, messageId, userId);
+  const [dto] = await hydrate([row], userId);
+  return dto;
 }
 
 /** Mentioned ids that are members of the tribe, deduped, in the order given. */
@@ -386,20 +403,22 @@ export async function removeReaction(tribeId: string, timelineId: string, messag
   return dto.reactions;
 }
 
-/** After a send or an edit: unfurl the first URL, if the message still says the same thing. */
-export async function refreshLinkPreview(messageId: string): Promise<void> {
+/** After a send or an edit: unfurl the first URL, if the message still says the same thing. True when stored. */
+export async function refreshLinkPreview(messageId: string): Promise<boolean> {
   const [row] = await db
     .select({ body: chatMessage.body, deletedAt: chatMessage.deletedAt, linkPreview: chatMessage.linkPreview })
     .from(chatMessage)
     .where(eq(chatMessage.id, messageId))
     .limit(1);
-  if (!row || row.deletedAt || row.linkPreview) return;
+  if (!row || row.deletedAt || row.linkPreview) return false;
   const url = firstUrl(row.body);
-  if (!url) return;
+  if (!url) return false;
   const preview = await fetchLinkPreview(url);
-  if (!preview) return;
-  await db
+  if (!preview) return false;
+  const updated = await db
     .update(chatMessage)
     .set({ linkPreview: preview })
-    .where(and(eq(chatMessage.id, messageId), eq(chatMessage.body, row.body), isNull(chatMessage.deletedAt)));
+    .where(and(eq(chatMessage.id, messageId), eq(chatMessage.body, row.body), isNull(chatMessage.deletedAt)))
+    .returning({ id: chatMessage.id });
+  return updated.length > 0;
 }

@@ -57,6 +57,7 @@
     "@tanstack/react-table": "^8.21.3",
     "@types/react-joyride": "^2.0.5",
     "@vercel/analytics": "^1.6.1",
+    "ably": "2.29.0",
     "autoprefixer": "^10.4.20",
     "better-auth": "1.7.5",
     "class-variance-authority": "^0.7.1",
