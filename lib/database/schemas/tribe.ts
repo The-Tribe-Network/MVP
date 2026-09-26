@@ -154,6 +154,22 @@ export const tribeMemberPreference = pgTable("tribe_member_preference", {
   memberUnique: unique("uq_tribe_member_preference_member").on(table.tribeMemberId),
 }));
 
+// HOME-03 items the member opened (`itemId` is the CatchUpItem id, e.g. `post:<id>`). Catch-up hides an item
+// read since its latest activity, and unread counts skip read posts (TRI-332).
+export const catchUpRead = pgTable("catch_up_read", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  tribeId: uuid("tribe_id")
+    .notNull()
+    .references(() => tribe.id, { onDelete: "cascade" }),
+  itemId: text("item_id").notNull(),
+  readAt: timestamp("read_at").defaultNow().notNull(),
+}, (table) => ({
+  userItemUnique: unique("uq_catch_up_read_user_item").on(table.userId, table.itemId),
+}));
+
 export const tribeInvitation = pgTable("tribe_invitation", {
   id: uuid("id").primaryKey().defaultRandom(),
   tribeId: uuid("tribe_id")

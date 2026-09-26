@@ -29,6 +29,12 @@ export const catchUpDoneSchema = z.object({
   tribeId: uuidSchema.optional(),
 });
 
+// A CatchUpItem id as GET /me/catch-up returns it: `<kind>:<uuid>` (TRI-332)
+export const catchUpReadSchema = z.object({
+  itemId: z.string().regex(/^(post|poll|event_rsvps|member_joined):[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i),
+  tribeId: uuidSchema,
+});
+
 export type AgendaQuery = z.infer<typeof agendaQuerySchema>;
 export type CatchUpQuery = z.infer<typeof catchUpQuerySchema>;
 

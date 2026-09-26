@@ -1,11 +1,11 @@
 import { db, getDbTransaction } from "@/lib/database/client";
 import { deleteDraftsForMember } from "@/lib/services/draft";
-import { tribe, tribeMember, tribeMemberPermission, tribeMemberPreference, tribeSettings } from "@/lib/database/schemas/tribe";
+import { catchUpRead, tribe, tribeMember, tribeMemberPermission, tribeMemberPreference, tribeSettings } from "@/lib/database/schemas/tribe";
 import { user } from "@/lib/database/schemas/auth";
 import { media } from "@/lib/database/schemas/media";
 import { event } from "@/lib/database/schemas/event";
 import { post } from "@/lib/database/schemas/post";
-import { eq, ne, asc, count, and, inArray, aliasedTable, sql } from "drizzle-orm";
+import { eq, ne, asc, count, and, inArray, aliasedTable, lte, sql } from "drizzle-orm";
 import type { TribeInsert, TribeWithCreator, TribeWithMembers, Tribe } from "@/lib/database/types";
 import { getMemberWithPermissions } from "./permissions";
 import { checkPermission } from "./role-permissions";
@@ -272,7 +272,9 @@ export async function getUnreadPostCounts(userId: string): Promise<Map<string, n
       and(
         eq(post.tribeId, tribeMember.tribeId),
         ne(post.authorId, tribeMember.userId),
-        sql`${post.createdAt} > greatest(coalesce(${tribeMemberPreference.lastCatchUpAt}, ${UNREAD_FALLBACK}), ${tribeMember.joinedAt})`
+        sql`${post.createdAt} > greatest(coalesce(${tribeMemberPreference.lastCatchUpAt}, ${UNREAD_FALLBACK}), ${tribeMember.joinedAt})`,
+        // Opened from Catch up already (TRI-332)
+        sql`not exists (select 1 from ${catchUpRead} where ${catchUpRead.userId} = ${tribeMember.userId} and ${catchUpRead.itemId} = 'post:' || ${post.id})`
       )
     )
     .where(eq(tribeMember.userId, userId))
@@ -313,8 +315,37 @@ export async function markCatchUpDone(userId: string, tribeId?: string): Promise
         .insert(tribeMemberPreference)
         .values(missing.map((tribeMemberId) => ({ tribeMemberId, userId, lastCatchUpAt: markedAt })));
     }
+    // Reads up to now are covered by the new watermark (TRI-332)
+    await tx
+      .delete(catchUpRead)
+      .where(
+        and(
+          eq(catchUpRead.userId, userId),
+          lte(catchUpRead.readAt, markedAt),
+          ...(tribeId ? [eq(catchUpRead.tribeId, tribeId)] : [])
+        )
+      );
   });
   return markedAt;
+}
+
+/**
+ * HOME-03: the caller opened a Catch up item (`itemId` as GET /me/catch-up returns it). Upserts the read
+ * time, so an item with newer activity (more RSVPs) comes back. False when the caller isn't in the tribe.
+ */
+export async function markCatchUpItemRead(userId: string, tribeId: string, itemId: string): Promise<boolean> {
+  const [membership] = await db
+    .select({ id: tribeMember.id })
+    .from(tribeMember)
+    .where(and(eq(tribeMember.userId, userId), eq(tribeMember.tribeId, tribeId)))
+    .limit(1);
+  if (!membership) return false;
+  const readAt = new Date();
+  await db
+    .insert(catchUpRead)
+    .values({ userId, tribeId, itemId, readAt })
+    .onConflictDoUpdate({ target: [catchUpRead.userId, catchUpRead.itemId], set: { tribeId, readAt } });
+  return true;
 }
 
 /**

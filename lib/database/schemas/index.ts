@@ -42,6 +42,7 @@ export {
   tribeInvitation,
   tribeMemberPreference,
   tribeSettings,
+  catchUpRead,
 } from "@/lib/database/schemas/tribe";
 
 // Permission tables

@@ -2,7 +2,7 @@ import { db } from "@/lib/database/client";
 import { event, eventAttendee } from "@/lib/database/schemas/event";
 import { poll } from "@/lib/database/schemas/poll";
 import { post, postLike } from "@/lib/database/schemas/post";
-import { tribe, tribeMember, tribeMemberPreference } from "@/lib/database/schemas/tribe";
+import { catchUpRead, tribe, tribeMember, tribeMemberPreference } from "@/lib/database/schemas/tribe";
 import { user } from "@/lib/database/schemas/auth";
 import { media } from "@/lib/database/schemas/media";
 import { and, asc, desc, eq, gt, gte, inArray, lte, ne, or, sql, type AnyColumn, type SQL } from "drizzle-orm";
@@ -167,7 +167,7 @@ export async function getCatchUp(userId: string, params: CatchUpParams): Promise
     )
     .as("recent_rsvps");
 
-  const [me, recentPosts, closingPolls, rsvpRows, joinedRows, unread] = await Promise.all([
+  const [me, recentPosts, closingPolls, rsvpRows, joinedRows, unread, reads] = await Promise.all([
     db.select({ username: user.username }).from(user).where(eq(user.id, userId)).limit(1),
     db
       .select({
@@ -234,6 +234,10 @@ export async function getCatchUp(userId: string, params: CatchUpParams): Promise
       .orderBy(desc(tribeMember.joinedAt))
       .limit(SOURCE_CAP),
     getUnreadPostCounts(userId),
+    db
+      .select({ itemId: catchUpRead.itemId, readAt: catchUpRead.readAt })
+      .from(catchUpRead)
+      .where(and(eq(catchUpRead.userId, userId), inArray(catchUpRead.tribeId, tribeIds))),
   ]);
 
   // Polls whose parent is an event keep the event card; post polls ride on their post
@@ -322,13 +326,21 @@ export async function getCatchUp(userId: string, params: CatchUpParams): Promise
     });
   }
 
-  items.sort(
+  // Opened since its latest activity (TRI-332). A poll's `createdAt` is when it closes, so any read counts.
+  const readAt = new Map(reads.map((r) => [r.itemId, r.readAt]));
+  const now = new Date();
+  const unreadItems = items.filter((item) => {
+    const read = readAt.get(item.id);
+    return !read || (read < item.createdAt && item.createdAt <= now);
+  });
+
+  unreadItems.sort(
     (a, b) => a.tier - b.tier || b.likeCount - a.likeCount || b.createdAt.getTime() - a.createdAt.getTime()
   );
 
   const offset = decodeCursor(params.cursor);
-  const page = items.slice(offset, offset + params.limit).map(({ tier: _tier, likeCount: _likes, ...item }) => item);
-  const nextCursor = offset + params.limit < items.length ? encodeCursor(offset + params.limit) : null;
+  const page = unreadItems.slice(offset, offset + params.limit).map(({ tier: _tier, likeCount: _likes, ...item }) => item);
+  const nextCursor = offset + params.limit < unreadItems.length ? encodeCursor(offset + params.limit) : null;
 
   return {
     items: page,
