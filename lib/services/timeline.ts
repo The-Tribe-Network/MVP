@@ -1,8 +1,9 @@
 import { db, getDbTransaction } from "@/lib/database/client";
-import { timeline, timelineRead } from "@/lib/database/schemas/timeline";
+import { timeline, timelineMute, timelineRead } from "@/lib/database/schemas/timeline";
 import { post } from "@/lib/database/schemas/post";
 import { chatMessage, chatMessageMedia } from "@/lib/database/schemas/chat";
 import { media } from "@/lib/database/schemas/media";
+import { notification } from "@/lib/database/schemas/activity";
 import { tribeMemberPreference } from "@/lib/database/schemas/tribe";
 import { and, asc, count, eq, gt, inArray, isNull, max, ne, sql } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
@@ -25,6 +26,8 @@ export type TimelineForMember = Timeline & {
   unreadCount: number;
   // Whether the member may post (posts) or send (chat) here: the tribe permission and the timeline's rule
   canPost: boolean;
+  // The member muted it: no @mention or reply notifications from it (TRI-317)
+  isMuted: boolean;
 };
 
 /** A timeline route failure the route turns into `{ error, code }` with `status`. */
@@ -125,7 +128,7 @@ export async function listTimelines(
   const chatNotBlocked = excludeBlocked(userId, chatMessage.authorId);
   if (chatNotBlocked) chatUnread.push(chatNotBlocked);
 
-  const [rows, permissions, [preference], unread, chatUnreadRows] = await Promise.all([
+  const [rows, permissions, [preference], unread, chatUnreadRows, mutes] = await Promise.all([
     db
       .select()
       .from(timeline)
@@ -147,12 +150,19 @@ export async function listTimelines(
       .from(chatMessage)
       .where(and(...chatUnread))
       .groupBy(chatMessage.timelineId),
+    db
+      .select({ timelineId: timelineMute.timelineId })
+      .from(timelineMute)
+      .innerJoin(timeline, eq(timelineMute.timelineId, timeline.id))
+      .where(and(eq(timeline.tribeId, tribeId), eq(timelineMute.userId, userId))),
   ]);
+  const mutedIds = new Set(mutes.map((m) => m.timelineId));
   const unreadMap = new Map([...unread, ...chatUnreadRows].map((u) => [u.timelineId, Number(u.count)]));
 
   const timelines = rows.map((row) => ({
     ...row,
     unreadCount: unreadMap.get(row.id) ?? 0,
+    isMuted: mutedIds.has(row.id),
     canPost:
       (row.type === "chat" ? permissions.canSendMessages : permissions.canPost) === true &&
       roleMeetsTimelinePermission(role, row.postPermission),
@@ -257,6 +267,10 @@ export async function deleteTimeline(tribeId: string, timelineId: string, userId
           .where(eq(chatMessage.timelineId, timelineId)),
       ),
     );
+    // Its chat @mention / reply rows quote its messages (TRI-317)
+    await tx
+      .delete(notification)
+      .where(and(eq(notification.entityType, "timeline"), eq(notification.entityId, timelineId)));
     await tx.delete(timeline).where(eq(timeline.id, timelineId));
   });
 }
@@ -304,6 +318,20 @@ export async function selectTimeline(tribeId: string, userId: string, timelineId
     });
 
   return timelineId ?? (await getGlobalTimelineId(tribeId));
+}
+
+/** Mute or unmute a timeline for the member (TRI-317). Idempotent; returns the new state. */
+export async function setTimelineMuted(tribeId: string, timelineId: string, userId: string, muted: boolean): Promise<boolean> {
+  await memberOrThrow(tribeId, userId);
+  if (!(await getTimelineInTribe(tribeId, timelineId))) {
+    throw new TimelineError("NOT_FOUND", "Timeline not found", 404);
+  }
+  if (muted) {
+    await db.insert(timelineMute).values({ timelineId, userId }).onConflictDoNothing();
+  } else {
+    await db.delete(timelineMute).where(and(eq(timelineMute.timelineId, timelineId), eq(timelineMute.userId, userId)));
+  }
+  return muted;
 }
 
 /** The member opened the timeline: its unread count starts again from now. */

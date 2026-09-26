@@ -27,8 +27,9 @@ export type NotifyExecutor = Pick<PgDatabase<PgQueryResultHKT, any, any>, "selec
 const ENTITY_TYPES = {
   like: ["post", "comment", "media"],
   comment: ["post", "event"],
-  reply: ["comment"],
-  mention: ["post", "comment"],
+  // Chat (TRI-317): one collapsing row per chat timeline, so a busy chat is one row, not one per message
+  reply: ["comment", "timeline"],
+  mention: ["post", "comment", "timeline"],
   event_reminder: ["event"],
   event_update: ["event"],
   event_cohost_request: ["event"],
@@ -85,6 +86,7 @@ export const appLink = {
   event: (tribeId: string, eventId: string) => `tribe://tribe/${tribeId}/events/${eventId}`,
   eventManage: (tribeId: string, eventId: string) => `tribe://tribe/${tribeId}/events/${eventId}/manage`,
   post: (tribeId: string, postId: string) => `tribe://tribe/${tribeId}/posts/${postId}`,
+  timeline: (tribeId: string, timelineId: string) => `tribe://tribe/${tribeId}/timelines/${timelineId}`,
   invite: (invitationId: string) => `tribe://invite/${invitationId}`,
 };
 

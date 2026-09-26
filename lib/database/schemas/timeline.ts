@@ -48,3 +48,17 @@ export const timelineRead = pgTable("timeline_read", {
 }, (table) => ({
   timelineUserUnique: unique("uq_timeline_read_timeline_user").on(table.timelineId, table.userId),
 }));
+
+// A member muted this timeline: no @mention or reply notifications from it (TRI-317, owner 2026-09-25)
+export const timelineMute = pgTable("timeline_mute", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  timelineId: uuid("timeline_id")
+    .notNull()
+    .references(() => timeline.id, { onDelete: "cascade" }),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  timelineUserUnique: unique("uq_timeline_mute_timeline_user").on(table.timelineId, table.userId),
+}));
