@@ -43,6 +43,9 @@ const permissionSetSchema = z.object({
 
   // Messaging permissions
   canSendMessages: z.boolean().nullable().optional(),
+
+  // Timelines (TRI-314)
+  canCreateTimelines: z.boolean().nullable().optional(),
 });
 
 /**

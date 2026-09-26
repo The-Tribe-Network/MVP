@@ -55,6 +55,8 @@ export const updateMemberPermissionsSchema = z
     canTransferOwnership: z.boolean().optional(),
     // Messaging permissions
     canSendMessages: z.boolean().optional(),
+    // Timelines (TRI-314)
+    canCreateTimelines: z.boolean().optional(),
   })
   .refine(
     (data) => {

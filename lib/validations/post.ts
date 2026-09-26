@@ -30,6 +30,8 @@ export const createPostSchema = z
     eventId: z.string().uuid("Invalid event ID format").optional().nullable(),
     pollId: z.string().uuid("Invalid poll ID format").optional().nullable(),
     isPinned: z.boolean().optional(),
+    // The posts timeline to post in; Global when omitted (TRI-314)
+    timelineId: z.string().uuid("Invalid timeline ID format").optional().nullable(),
   })
   .superRefine((data, ctx) => {
     const hasMedia = (data.mediaIds?.length ?? 0) > 0 || Boolean(data.mediaId);
@@ -58,6 +60,8 @@ export const listPostsQuerySchema = z.object({
   offset: z.coerce.number().int().min(0).default(0),
   sort: z.enum(["new", "hot", "top"]).default("new"),
   contentType: z.enum(["all", "text", "media", "announcements", "events", "polls"]).default("all"),
+  // One posts timeline's feed; Global when omitted (TRI-314)
+  timelineId: z.string().uuid("Invalid timeline ID format").optional(),
 });
 
 // Update post schema

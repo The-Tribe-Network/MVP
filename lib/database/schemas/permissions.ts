@@ -61,6 +61,9 @@ export const tribeRolePermission = pgTable(
     // Messaging permissions
     canSendMessages: boolean("can_send_messages"),
 
+    // Timelines (TRI-314): create posts or chat timelines
+    canCreateTimelines: boolean("can_create_timelines"),
+
     // Metadata
     updatedBy: uuid("updated_by").references(() => user.id, { onDelete: "restrict" }),
     createdAt: timestamp("created_at").defaultNow().notNull(),

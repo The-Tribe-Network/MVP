@@ -105,6 +105,9 @@ export const tribeMemberPermission = pgTable("tribe_member_permission", {
   // Messaging permissions
   canSendMessages: boolean("can_send_messages"),
 
+  // Timelines (TRI-314): create posts or chat timelines
+  canCreateTimelines: boolean("can_create_timelines"),
+
   // Notes
   restrictionReason: text("restriction_reason"),
   setBy: uuid("set_by")
