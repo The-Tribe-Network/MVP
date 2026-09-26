@@ -23,10 +23,13 @@ export const editMessageSchema = z.object({
 
 export const reactionSchema = z.object({ emoji });
 
-export const listMessagesQuerySchema = z.object({
-  before: uuid.optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(30),
-});
+export const listMessagesQuerySchema = z
+  .object({
+    before: uuid.optional(),
+    after: uuid.optional(),
+    limit: z.coerce.number().int().min(1).max(100).default(30),
+  })
+  .refine((query) => !(query.before && query.after), { message: "Use before or after, not both" });
 
 export const chatMessageParamsSchema = z.object({
   tribe_id: uuid,
