@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
 import { createPost, getTribePosts, PostInputError } from "@/lib/services/post";
 import { checkTribeMembership } from "@/lib/services/permissions";
+import { getTimelineInTribe } from "@/lib/services/timeline";
 import { AlbumForbiddenError, InvalidAlbumError } from "@/lib/services/album";
 import { createPostSchema, listPostsQuerySchema, tribeIdParamSchema, validateApiRequest } from "@/lib/validations/post";
 
@@ -43,6 +44,7 @@ export async function GET(
       offset: searchParams.get("offset") ?? undefined,
       sort: searchParams.get("sort") ?? undefined,
       contentType: searchParams.get("contentType") ?? undefined,
+      timelineId: searchParams.get("timelineId") ?? undefined,
     });
     if (!queryValidation.success) {
       return NextResponse.json(
@@ -50,7 +52,18 @@ export async function GET(
         { status: 400 }
       );
     }
-    const { limit, offset, sort, contentType } = queryValidation.data;
+    const { limit, offset, sort, contentType, timelineId } = queryValidation.data;
+
+    // A posts timeline of this tribe; a chat's history is its messages (TRI-315)
+    if (timelineId) {
+      const target = await getTimelineInTribe(tribeValidation.data.tribe_id, timelineId);
+      if (!target || target.type !== "posts") {
+        return NextResponse.json(
+          { error: "Timeline not found in this tribe, or it is a chat", code: "INVALID_TIMELINE" },
+          { status: 404 }
+        );
+      }
+    }
 
     // Fetch posts
     const posts = await getTribePosts(
@@ -59,7 +72,8 @@ export async function GET(
       offset,
       user.id,
       sort,
-      contentType
+      contentType,
+      timelineId
     );
 
     return NextResponse.json(posts);

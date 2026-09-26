@@ -7,7 +7,8 @@ import { tribe, tribeMember, tribeMemberPermission } from "@/lib/database/schema
 import { user } from "@/lib/database/schemas/auth";
 import { album, albumMedia, media } from "@/lib/database/schemas/media";
 import { eq, and, desc, count, inArray, sql, isNotNull, isNull, asc, lte, type SQL } from "drizzle-orm";
-import { getGlobalTimelineId } from "./timeline";
+import { getGlobalTimelineId, resolvePostTimeline } from "./timeline";
+import { getUserTribeRole } from "./permissions";
 import type {
   Post,
   PostInsert,
@@ -63,7 +64,7 @@ async function canUserDeleteAnyPost(tribeId: string, userId: string): Promise<bo
  */
 export class PostInputError extends Error {
   constructor(
-    public readonly code: "INVALID_MEDIA" | "INVALID_EVENT" | "INVALID_POLL",
+    public readonly code: "INVALID_MEDIA" | "INVALID_EVENT" | "INVALID_POLL" | "INVALID_TIMELINE",
     message: string,
   ) {
     super(message);
@@ -104,6 +105,17 @@ export async function createPost(
   if (!canPost) {
     throw new Error("You do not have permission to post in this tribe");
   }
+
+  // Every post lives in a posts timeline: the one asked for, or Global (TRI-314)
+  const role = (await getUserTribeRole(tribeId, userId)) ?? "member";
+  const target = await resolvePostTimeline(tribeId, input.timelineId, role);
+  if (!target.ok) {
+    if (target.reason === "FORBIDDEN") {
+      throw new Error("You do not have permission to post in this timeline: only the owner and admins can");
+    }
+    throw new PostInputError("INVALID_TIMELINE", "Timeline not found in this tribe, or it is a chat");
+  }
+  const timelineId = target.timelineId;
 
   const content = input.content.trim();
   const linkedAlbumId = input.linkedAlbumId || null;
@@ -193,8 +205,6 @@ export async function createPost(
   }
 
   const kind = derivePostKind({ isPinned, eventId, pollId, mediaCount: mediaIds.length, linkedAlbumId });
-  // Every post lives in a timeline; choosing one is TRI-314, until then new posts go to Global
-  const timelineId = await getGlobalTimelineId(tribeId);
 
   const createdPost = await getDbTransaction().transaction(async (tx) => {
     const [newPost] = await tx
@@ -637,9 +647,12 @@ export async function getTribePosts(
   offset: number = 0,
   currentUserId?: string,
   sort: PostSortOption = 'new',
-  contentType: PostContentType = 'all'
+  contentType: PostContentType = 'all',
+  timelineId?: string
 ): Promise<PostWithMetadata[]> {
-  const conditions = [eq(post.tribeId, tribeId)];
+  // One timeline's feed: the one asked for (the route checks it is this tribe's), or Global (TRI-314)
+  const feedTimelineId = timelineId ?? (await getGlobalTimelineId(tribeId));
+  const conditions = [eq(post.tribeId, tribeId), eq(post.timelineId, feedTimelineId)];
   const typeCondition = contentTypeCondition(contentType);
   if (typeCondition) {
     conditions.push(typeCondition);

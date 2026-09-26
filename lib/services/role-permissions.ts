@@ -34,6 +34,7 @@ export const SYSTEM_ROLE_DEFAULTS: Record<string, Record<string, boolean>> = {
     canDeleteAnyMedia: true,
     canEditTribeSettings: true,
     canSendMessages: true,
+    canCreateTimelines: true,
   },
   admin: {
     canPost: true,
@@ -57,6 +58,7 @@ export const SYSTEM_ROLE_DEFAULTS: Record<string, Record<string, boolean>> = {
     canDeleteAnyMedia: true,
     canEditTribeSettings: true,
     canSendMessages: true,
+    canCreateTimelines: true,
   },
   moderator: {
     canPost: true,
@@ -80,6 +82,7 @@ export const SYSTEM_ROLE_DEFAULTS: Record<string, Record<string, boolean>> = {
     canDeleteAnyMedia: false,
     canEditTribeSettings: false,
     canSendMessages: true,
+    canCreateTimelines: false,
   },
   member: {
     canPost: true,
@@ -103,6 +106,7 @@ export const SYSTEM_ROLE_DEFAULTS: Record<string, Record<string, boolean>> = {
     canDeleteAnyMedia: false,
     canEditTribeSettings: false,
     canSendMessages: true,
+    canCreateTimelines: false,
   },
 };
 

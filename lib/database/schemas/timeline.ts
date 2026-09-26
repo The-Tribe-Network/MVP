@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, uuid, boolean, integer, index, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, uuid, boolean, integer, index, unique, uniqueIndex } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { tribe } from "./tribe";
 import { user } from "./auth";
@@ -27,4 +27,24 @@ export const timeline = pgTable("timeline", {
 }, (table) => ({
   tribePositionIdx: index("idx_timeline_tribe_position").on(table.tribeId, table.position),
   oneGlobalPerTribe: uniqueIndex("uq_timeline_global_per_tribe").on(table.tribeId).where(sql`${table.isGlobal}`),
+}));
+
+// When a member last opened a timeline; drives the switcher's unread counts (TRI-314). Chat's last-read
+// message joins it in TRI-315.
+export const timelineRead = pgTable("timeline_read", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  timelineId: uuid("timeline_id")
+    .notNull()
+    .references(() => timeline.id, { onDelete: "cascade" }),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  lastReadAt: timestamp("last_read_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
+}, (table) => ({
+  timelineUserUnique: unique("uq_timeline_read_timeline_user").on(table.timelineId, table.userId),
 }));

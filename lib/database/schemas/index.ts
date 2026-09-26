@@ -51,7 +51,7 @@ export {
 } from "@/lib/database/schemas/permissions";
 
 // Timeline tables
-export { timeline } from "@/lib/database/schemas/timeline";
+export { timeline, timelineRead } from "@/lib/database/schemas/timeline";
 
 // Post tables
 export {
