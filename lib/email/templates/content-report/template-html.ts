@@ -2,7 +2,7 @@ import { appName } from '../../client';
 import { escapeHtml } from './escape';
 import type { ContentReportEmailData } from './types';
 
-const TARGET_LABEL = { post: 'post', comment: 'comment', media: 'photo', user: 'member' } as const;
+const TARGET_LABEL = { post: 'post', comment: 'comment', media: 'photo', user: 'member', message: 'chat message' } as const;
 
 export function generateContentReportEmailHtml(data: Omit<ContentReportEmailData, 'to'>) {
   const e = escapeHtml;

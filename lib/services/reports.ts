@@ -6,11 +6,13 @@ import { event } from "@/lib/database/schemas/event";
 import { media } from "@/lib/database/schemas/media";
 import { comment, post } from "@/lib/database/schemas/post";
 import { report } from "@/lib/database/schemas/safety";
+import { chatMessage } from "@/lib/database/schemas/chat";
 import { tribe, tribeMember } from "@/lib/database/schemas/tribe";
 import type { CreateReportInput } from "@/lib/validations/reports";
 import { canUserSeeMedia } from "./album";
 import { excerpt } from "./notifications";
 import { checkTribeMembership } from "./permissions";
+import { isBlockedPair } from "./blocks";
 
 /**
  * Reports (TRI-237; owner decision TRI-105: a report floor for the alpha). A member reports a post, comment,
@@ -82,6 +84,17 @@ async function resolveTarget(input: CreateReportInput, reporterId: string): Prom
         .limit(1);
       if (!row || !(await canUserSeeMedia(targetId, tribeId, reporterId))) return null;
       return { authorId: row.authorId, authorName: row.authorName, excerpt: row.fileUrl };
+    }
+    case "message": {
+      // A chat message of this tribe that the reporter may see (not deleted, not a blocked pair's)
+      const [row] = await db
+        .select({ authorId: chatMessage.authorId, authorName: user.name, body: chatMessage.body })
+        .from(chatMessage)
+        .innerJoin(user, eq(chatMessage.authorId, user.id))
+        .where(and(eq(chatMessage.id, targetId), eq(chatMessage.tribeId, tribeId), isNull(chatMessage.deletedAt)))
+        .limit(1);
+      if (!row || (await isBlockedPair(reporterId, row.authorId))) return null;
+      return { authorId: row.authorId, authorName: row.authorName, excerpt: excerpt(row.body, 280) || null };
     }
     case "user": {
       const [row] = await db

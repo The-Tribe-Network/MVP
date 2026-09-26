@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { user, account, event, tribe, activity, media, post, comment, commentLike, eventAttendee, eventSettings, eventCoHost, eventLink, message, messageRead, notification, notificationDelivery, hashtag, postHashtag, postLike, postMedia, session, tribeInvitation, tribeMember, tribeMemberPermission, album, mediaLike, tribeMemberPreference, albumMedia, poll, pollOption, pollVote, draft, timeline } from "@/lib/database/schemas";
+import { user, account, event, tribe, activity, media, post, comment, commentLike, eventAttendee, eventSettings, eventCoHost, eventLink, notification, notificationDelivery, hashtag, postHashtag, postLike, postMedia, session, tribeInvitation, tribeMember, tribeMemberPermission, album, mediaLike, tribeMemberPreference, albumMedia, poll, pollOption, pollVote, draft, timeline, chatMessage, chatMessageMedia, chatMessageReaction } from "@/lib/database/schemas";
 
 export const accountRelations = relations(account, ({ one }) => ({
 	user: one(user, {
@@ -29,13 +29,6 @@ export const userRelations = relations(user, ({ many }) => ({
 		relationName: "eventCoHost_addedBy_user_id"
 	}),
 	eventLinks: many(eventLink),
-	messages_recipientId: many(message, {
-		relationName: "message_recipientId_user_id"
-	}),
-	messages_senderId: many(message, {
-		relationName: "message_senderId_user_id"
-	}),
-	messageReads: many(messageRead),
 	notifications: many(notification, {
 		relationName: "notification_userId_user_id"
 	}),
@@ -136,7 +129,6 @@ export const tribeRelations = relations(tribe, ({ one, many }) => ({
 		fields: [tribe.createdBy],
 		references: [user.id]
 	}),
-	messages: many(message),
 	tribeInvitations: many(tribeInvitation),
 	tribeMembers: many(tribeMember),
 	tribeMemberPermissions: many(tribeMemberPermission),
@@ -279,35 +271,6 @@ export const eventAttendeeRelations = relations(eventAttendee, ({ one }) => ({
 	}),
 	user: one(user, {
 		fields: [eventAttendee.userId],
-		references: [user.id]
-	}),
-}));
-
-export const messageRelations = relations(message, ({ one, many }) => ({
-	user_recipientId: one(user, {
-		fields: [message.recipientId],
-		references: [user.id],
-		relationName: "message_recipientId_user_id"
-	}),
-	user_senderId: one(user, {
-		fields: [message.senderId],
-		references: [user.id],
-		relationName: "message_senderId_user_id"
-	}),
-	tribe: one(tribe, {
-		fields: [message.tribeId],
-		references: [tribe.id]
-	}),
-	messageReads: many(messageRead),
-}));
-
-export const messageReadRelations = relations(messageRead, ({ one }) => ({
-	message: one(message, {
-		fields: [messageRead.messageId],
-		references: [message.id]
-	}),
-	user: one(user, {
-		fields: [messageRead.userId],
 		references: [user.id]
 	}),
 }));
@@ -525,4 +488,40 @@ export const timelineRelations = relations(timeline, ({ one, many }) => ({
 		references: [user.id]
 	}),
 	posts: many(post),
+	chatMessages: many(chatMessage),
+}));
+
+export const chatMessageRelations = relations(chatMessage, ({ one, many }) => ({
+	timeline: one(timeline, {
+		fields: [chatMessage.timelineId],
+		references: [timeline.id]
+	}),
+	author: one(user, {
+		fields: [chatMessage.authorId],
+		references: [user.id]
+	}),
+	media: many(chatMessageMedia),
+	reactions: many(chatMessageReaction),
+}));
+
+export const chatMessageMediaRelations = relations(chatMessageMedia, ({ one }) => ({
+	message: one(chatMessage, {
+		fields: [chatMessageMedia.messageId],
+		references: [chatMessage.id]
+	}),
+	media: one(media, {
+		fields: [chatMessageMedia.mediaId],
+		references: [media.id]
+	}),
+}));
+
+export const chatMessageReactionRelations = relations(chatMessageReaction, ({ one }) => ({
+	message: one(chatMessage, {
+		fields: [chatMessageReaction.messageId],
+		references: [chatMessage.id]
+	}),
+	user: one(user, {
+		fields: [chatMessageReaction.userId],
+		references: [user.id]
+	}),
 }));

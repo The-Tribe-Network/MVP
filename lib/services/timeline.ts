@@ -1,8 +1,10 @@
 import { db, getDbTransaction } from "@/lib/database/client";
 import { timeline, timelineRead } from "@/lib/database/schemas/timeline";
 import { post } from "@/lib/database/schemas/post";
+import { chatMessage, chatMessageMedia } from "@/lib/database/schemas/chat";
+import { media } from "@/lib/database/schemas/media";
 import { tribeMemberPreference } from "@/lib/database/schemas/tribe";
-import { and, asc, count, eq, gt, inArray, max, ne, sql } from "drizzle-orm";
+import { and, asc, count, eq, gt, inArray, isNull, max, ne, sql } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import { getMemberWithPermissions, type MemberWithPermissions } from "./permissions";
 import { resolveEffectivePermissions } from "./member-permissions";
@@ -19,7 +21,7 @@ export type TimelinePostPermission = Timeline["postPermission"];
 
 /** A timeline as the switcher shows it to one member. */
 export type TimelineForMember = Timeline & {
-  // Posts (or, from TRI-315, messages) by others since the member last opened it
+  // Posts (posts timelines) or messages (chat) by others since the member last opened it
   unreadCount: number;
   // Whether the member may post (posts) or send (chat) here: the tribe permission and the timeline's rule
   canPost: boolean;
@@ -107,14 +109,23 @@ export async function listTimelines(
   const memberData = await memberOrThrow(tribeId, userId);
   const role = memberData.member.role;
 
-  // Unread = posts by others since the member last opened the timeline, or since they joined the tribe
-  const since = sql`coalesce((select ${timelineRead.lastReadAt} from ${timelineRead}
-    where ${timelineRead.timelineId} = ${post.timelineId} and ${timelineRead.userId} = ${userId}::uuid), ${memberData.member.joinedAt})`;
-  const unreadConditions = [eq(post.tribeId, tribeId), ne(post.authorId, userId), gt(post.createdAt, since)];
+  // Unread = posts or messages by others since the member last opened the timeline, or since they joined
+  const since = (timelineColumn: typeof post.timelineId | typeof chatMessage.timelineId) =>
+    sql`coalesce((select ${timelineRead.lastReadAt} from ${timelineRead}
+      where ${timelineRead.timelineId} = ${timelineColumn} and ${timelineRead.userId} = ${userId}::uuid), ${memberData.member.joinedAt})`;
+  const postUnread = [eq(post.tribeId, tribeId), ne(post.authorId, userId), gt(post.createdAt, since(post.timelineId))];
   const notBlocked = excludeBlocked(userId, post.authorId);
-  if (notBlocked) unreadConditions.push(notBlocked);
+  if (notBlocked) postUnread.push(notBlocked);
+  const chatUnread = [
+    eq(chatMessage.tribeId, tribeId),
+    ne(chatMessage.authorId, userId),
+    isNull(chatMessage.deletedAt),
+    gt(chatMessage.createdAt, since(chatMessage.timelineId)),
+  ];
+  const chatNotBlocked = excludeBlocked(userId, chatMessage.authorId);
+  if (chatNotBlocked) chatUnread.push(chatNotBlocked);
 
-  const [rows, permissions, [preference], unread] = await Promise.all([
+  const [rows, permissions, [preference], unread, chatUnreadRows] = await Promise.all([
     db
       .select()
       .from(timeline)
@@ -129,10 +140,15 @@ export async function listTimelines(
     db
       .select({ timelineId: post.timelineId, count: count() })
       .from(post)
-      .where(and(...unreadConditions))
+      .where(and(...postUnread))
       .groupBy(post.timelineId),
+    db
+      .select({ timelineId: chatMessage.timelineId, count: count() })
+      .from(chatMessage)
+      .where(and(...chatUnread))
+      .groupBy(chatMessage.timelineId),
   ]);
-  const unreadMap = new Map(unread.map((u) => [u.timelineId, Number(u.count)]));
+  const unreadMap = new Map([...unread, ...chatUnreadRows].map((u) => [u.timelineId, Number(u.count)]));
 
   const timelines = rows.map((row) => ({
     ...row,
@@ -210,8 +226,8 @@ export async function updateTimeline(
 }
 
 /**
- * Delete a timeline and everything in it (owner, 2026-09-25): its posts go with it, with their comments, likes
- * and photos, exactly as if each post were deleted, so nothing meant for one timeline surfaces anywhere else.
+ * Delete a timeline and everything in it (owner, 2026-09-25): its posts and chat messages go with it, with their
+ * comments, likes, reactions and photos, so nothing meant for one timeline surfaces anywhere else.
  * Members who had it selected fall back to Global. Global can't be deleted.
  */
 export async function deleteTimeline(tribeId: string, timelineId: string, userId: string): Promise<void> {
@@ -228,8 +244,21 @@ export async function deleteTimeline(tribeId: string, timelineId: string, userId
     throw new TimelineError("FORBIDDEN", "You do not have permission to delete this timeline", 403);
   }
 
-  // post.timeline_id and timeline_read cascade; tribe_member_preference.selected_timeline_id is set null
-  await db.delete(timeline).where(eq(timeline.id, timelineId));
+  // Chat photos first (they hang off media, not the timeline); then post.timeline_id, chat_message and
+  // timeline_read cascade, and tribe_member_preference.selected_timeline_id is set null
+  await getDbTransaction().transaction(async (tx) => {
+    await tx.delete(media).where(
+      inArray(
+        media.id,
+        tx
+          .select({ id: chatMessageMedia.mediaId })
+          .from(chatMessageMedia)
+          .innerJoin(chatMessage, eq(chatMessageMedia.messageId, chatMessage.id))
+          .where(eq(chatMessage.timelineId, timelineId)),
+      ),
+    );
+    await tx.delete(timeline).where(eq(timeline.id, timelineId));
+  });
 }
 
 /** Put the tribe's timelines in this order. The list must hold every timeline of the tribe exactly once. */

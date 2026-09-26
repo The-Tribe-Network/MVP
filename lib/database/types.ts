@@ -42,9 +42,10 @@ import {
   postHashtag,
 } from "./schemas/hashtag";
 import {
-  message,
-  messageRead,
-} from "./schemas/message";
+  chatMessage,
+  chatMessageMedia,
+  chatMessageReaction,
+} from "./schemas/chat";
 import {
   waitlistSurvey,
 } from "./schemas/waitlist";
@@ -194,10 +195,10 @@ export type PostHashtagInsert = InferInsertModel<typeof postHashtag>;
 // ============================================
 // Message types
 // ============================================
-export type Message = InferSelectModel<typeof message>;
-export type MessageInsert = InferInsertModel<typeof message>;
-export type MessageRead = InferSelectModel<typeof messageRead>;
-export type MessageReadInsert = InferInsertModel<typeof messageRead>;
+export type ChatMessage = InferSelectModel<typeof chatMessage>;
+export type ChatMessageInsert = InferInsertModel<typeof chatMessage>;
+export type ChatMessageMedia = InferSelectModel<typeof chatMessageMedia>;
+export type ChatMessageReaction = InferSelectModel<typeof chatMessageReaction>;
 
 // ============================================
 // Utility types for composing extended types
@@ -429,13 +430,6 @@ export type AlbumWithMedia = AlbumWithCreator & AlbumContributors & {
   photoCount: number; // Override optional to required
   /** Whether the caller may add media to this album (TRI-274); set when the album is read for a user. */
   canAddMedia?: boolean;
-};
-
-// Message extended types
-export type MessageWithSender = Message & {
-  sender: User;
-  recipient?: User;
-  tribe?: Tribe;
 };
 
 // Activity extended types
