@@ -5,12 +5,18 @@ import { album, media } from "./media";
 import { event } from "./event";
 import { poll } from "./poll";
 import { postKind } from "./enums";
+import { timeline } from "./timeline";
 
 export const post = pgTable("post", {
   id: uuid("id").primaryKey().defaultRandom(),
   tribeId: uuid("tribe_id")
     .notNull()
     .references(() => tribe.id, { onDelete: "cascade" }),
+  // The posts timeline this post lives in; pre-timeline posts were moved into the tribe's Global (TRI-313).
+  // Deleting a timeline deletes its posts (owner, 2026-09-25): a private timeline's posts must never leak into Global.
+  timelineId: uuid("timeline_id")
+    .notNull()
+    .references((): any => timeline.id, { onDelete: "cascade" }),
   authorId: uuid("author_id")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
@@ -35,6 +41,12 @@ export const post = pgTable("post", {
   linkedAlbumIdIdx: index("idx_post_linked_album_id").on(table.linkedAlbumId),
   tribePinnedCreatedIdx: index("idx_post_tribe_pinned_created").on(
     table.tribeId,
+    table.isPinned.desc(),
+    table.createdAt.desc(),
+  ),
+  // The feed of one timeline, pinned first (TRI-313)
+  timelinePinnedCreatedIdx: index("idx_post_timeline_pinned_created").on(
+    table.timelineId,
     table.isPinned.desc(),
     table.createdAt.desc(),
   ),

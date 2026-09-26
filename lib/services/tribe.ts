@@ -14,6 +14,7 @@ import { userPreviewColumns } from "@/lib/database/user-columns";
 import { getAgendaItems, type AgendaItemPreview } from "./event";
 import { getTribeAnnouncement, type PostWithMetadata } from "./post";
 import { mutedTribeIdsOf } from "./notification-feed";
+import { createGlobalTimeline } from "./timeline";
 
 /**
  * Create a new tribe and add the creator as owner
@@ -63,6 +64,8 @@ export async function createTribe(
       tribeId: newTribe.id,
       // All other fields use schema defaults
     } as any);
+
+    await createGlobalTimeline(tx, newTribe.id, userId);
 
     return newTribe;
   });

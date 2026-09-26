@@ -31,6 +31,8 @@ export {
   reportTargetType,
   reportReason,
   reportStatus,
+  timelineType,
+  timelinePostPermission,
 } from "@/lib/database/schemas/enums";
 
 // Tribe tables
@@ -47,6 +49,9 @@ export {
 export {
   tribeRolePermission,
 } from "@/lib/database/schemas/permissions";
+
+// Timeline tables
+export { timeline } from "@/lib/database/schemas/timeline";
 
 // Post tables
 export {
@@ -152,5 +157,6 @@ export {
   pollOptionRelations,
   pollVoteRelations,
   draftRelations,
+  timelineRelations,
 } from "@/lib/database/schemas/relations";
 
