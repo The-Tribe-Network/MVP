@@ -81,6 +81,23 @@ export const auth = betterAuth({
         if (problem) {
           throw new APIError("BAD_REQUEST", { code: problem, message: BIRTHDAY_MESSAGES[problem] });
         }
+        // A taken email is 422 USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL in every environment (owner, 2026-09-27).
+        // With requireEmailVerification (production) Better-Auth would answer it with a fake 200 instead, and the
+        // app would send the real owner a verification code. Change email already reveals a taken address (409).
+        const email = (ctx.body as { email?: unknown } | undefined)?.email;
+        if (typeof email === "string" && email.trim()) {
+          const [taken] = await db
+            .select({ id: user.id })
+            .from(user)
+            .where(sql`lower(${user.email}) = ${email.trim().toLowerCase()}`)
+            .limit(1);
+          if (taken) {
+            throw new APIError("UNPROCESSABLE_ENTITY", {
+              code: "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL",
+              message: "User already exists. Use another email.",
+            });
+          }
+        }
         return;
       }
       if (ctx.path === "/email-otp/request-email-change" || ctx.path === "/email-otp/change-email") {
@@ -205,9 +222,16 @@ export const auth = betterAuth({
   secret: process.env.BETTER_AUTH_SECRET as string,
   baseURL: process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_APP_URL,
   // Email configuration
+  // Entering the code (POST /email-otp/verify-email) signs the user in: in production it's the first session
+  emailVerification: {
+    autoSignInAfterVerification: true,
+  },
   emailAndPassword: {
     enabled: true,
-    requireEmailVerification: /*isProduction*/ false,
+    // Production only (owner, 2026-09-27): sign-up returns no session and signing in unverified answers 403
+    // EMAIL_NOT_VERIFIED until the 6-digit code is entered. Elsewhere sign-up signs in straight away and the app
+    // still sends the user to AUTH-03, so local passes don't need a code for every test account.
+    requireEmailVerification: isProduction,
     // A reset is often because the account was compromised: sign every other device out (TRI-235).
     revokeSessionsOnPasswordReset: true,
   },
