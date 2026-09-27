@@ -99,6 +99,9 @@ export { userSocialLink, userPrivacy } from "@/lib/database/schemas/profile";
 // Reports and blocks (TRI-237, TRI-238)
 export { report, userBlock } from "@/lib/database/schemas/safety";
 
+// Email opt-outs (TRI-344)
+export { userEmailPreference } from "@/lib/database/schemas/email";
+
 // Draft tables
 export { draft } from "@/lib/database/schemas/draft";
 
