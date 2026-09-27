@@ -1,5 +1,6 @@
 import { Resend } from 'resend';
 import { publicBaseUrl } from '@/lib/constants/urls';
+import { unsubscribeHeaders, type EmailCategory } from './unsubscribe';
 
 if (!process.env.RESEND_API_KEY) {
   throw new Error('RESEND_API_KEY environment variable is required');
@@ -18,6 +19,8 @@ interface SendEmailOptions {
   subject: string;
   html: string;
   text: string;
+  /** Opt-out category: adds the RFC 8058 one-click unsubscribe headers (TRI-344) */
+  unsubscribe?: { userId: string; category: EmailCategory };
 }
 
 /**
@@ -25,7 +28,7 @@ interface SendEmailOptions {
  * them into a thrown Error so a failed send is never mistaken for a sent one. Logs name the recipient's domain
  * only, never the address.
  */
-export async function sendEmail({ to, subject, html, text }: SendEmailOptions) {
+export async function sendEmail({ to, subject, html, text, unsubscribe }: SendEmailOptions) {
   const result = await resend.emails.send({
     from: fromEmail,
     to,
@@ -33,6 +36,7 @@ export async function sendEmail({ to, subject, html, text }: SendEmailOptions) {
     html,
     text,
     ...(supportEmail && { replyTo: supportEmail }),
+    ...(unsubscribe && { headers: unsubscribeHeaders(unsubscribe.userId, unsubscribe.category) }),
   });
   if (result.error) {
     const domains = [to].flat().map((address) => address.split('@')[1] ?? '?').join(', ');
