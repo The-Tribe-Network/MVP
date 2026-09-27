@@ -6,12 +6,12 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { APIError, createAuthMiddleware } from "better-auth/api";
 import { and, eq, gt, sql } from "drizzle-orm";
 import * as z from "zod";
-import { isProduction } from "@/lib/utils"
 import { db } from "../database/client";
-import { sendVerificationEmail, sendPasswordResetEmail, sendWelcomeEmail, sendMagicLinkEmail } from "../email/email";
 import { account, session, user, verification } from "@/lib/database/schemas";
 import { sendEmailChangedNotice, sendEmailChangeOTP, sendOTPEmailVerification, sendOTPForgetPasswordEmail } from "../email";
 import { BIRTHDAY_MESSAGES, birthdayProblem, birthdaySchema } from "@/lib/validations/account";
+import { AUTH_CONSTANTS } from "@/lib/constants/auth";
+import { isProduction } from "@/lib/utils";
 
 const { LOCAL_ORIGIN, NODE_ENV } = process.env;
 
@@ -87,16 +87,25 @@ export const auth = betterAuth({
         await checkEmailChange(ctx, ctx.path === "/email-otp/request-email-change");
       }
     }),
-    // Change email: tell the OLD address once the change is done (a hijacked session can't move the account quietly)
     after: createAuthMiddleware(async (ctx) => {
+      // A code that never left surfaces as 502 EMAIL_NOT_SENT instead of Better-Auth's 200 (TRI-341)
+      if (ctx.request && codeSendFailed.has(ctx.request)) {
+        throw new APIError("BAD_GATEWAY", {
+          code: "EMAIL_NOT_SENT",
+          message: "We couldn't send the code. Try again in a moment.",
+        });
+      }
+      // Change email: tell the OLD address once the change is done (a hijacked session can't move the account quietly)
       if (ctx.path !== "/email-otp/change-email") return;
       const returned = ctx.context.returned as { success?: boolean } | undefined;
       const oldEmail = ctx.request ? emailChangeOldEmail.get(ctx.request) : undefined;
       const newEmail = (ctx.body as { newEmail?: string } | undefined)?.newEmail?.toLowerCase();
       if (returned?.success !== true || !oldEmail || !newEmail || oldEmail.toLowerCase() === newEmail) return;
-      sendEmailChangedNotice({ to: oldEmail, newEmail }).catch((error) => {
-        console.error("Failed to send email-changed notice:", error);
-      });
+      try {
+        await sendEmailChangedNotice({ to: oldEmail, newEmail });
+      } catch (error) {
+        console.error("Failed to send email-changed notice:", error instanceof Error ? error.message : error);
+      }
     }),
   },
   databaseHooks: {
@@ -163,23 +172,27 @@ export const auth = betterAuth({
     // }),
     emailOTP({
       otpLength: 6,
+      expiresIn: AUTH_CONSTANTS.OTP_EXPIRES_MINUTES * 60,
       // OTP verifies and resets only; accounts are created by email sign-up, which enforces the age gate (TRI-106)
       disableSignUp: true,
       sendVerificationOnSignUp: false,
-      sendVerificationOTP: async ({ email, type, otp }) => {
-        if (type === "email-verification") {
-          sendOTPEmailVerification({
-            to: email,
-            otp,
-          });
-        } else if (type === "forget-password") {
-          sendOTPForgetPasswordEmail({
-            to: email,
-            otp,
-          });
-        } else if (type === "change-email") {
-          // `email` is the NEW address here
-          sendEmailChangeOTP({ to: email, otp });
+      // Awaited, so Vercel can't cut the send off. Better-Auth logs and swallows a throw here and still answers
+      // 200, so in production a failure is marked on the request and hooks.after turns it into an error the app
+      // can show. Elsewhere it stays a logged 200: Development sends from resend.dev, which only reaches the Resend
+      // account owner, and local passes read seed users' codes from the verification table.
+      sendVerificationOTP: async ({ email, type, otp }, ctx) => {
+        try {
+          if (type === "email-verification") {
+            await sendOTPEmailVerification({ to: email, otp });
+          } else if (type === "forget-password") {
+            await sendOTPForgetPasswordEmail({ to: email, otp });
+          } else if (type === "change-email") {
+            // `email` is the NEW address here
+            await sendEmailChangeOTP({ to: email, otp });
+          }
+        } catch (error) {
+          if (isProduction && ctx?.request) codeSendFailed.add(ctx.request);
+          throw error;
         }
       },
       // Change email with a code sent to the new address (USET-03): POST /email-otp/request-email-change
@@ -197,58 +210,6 @@ export const auth = betterAuth({
     requireEmailVerification: /*isProduction*/ false,
     // A reset is often because the account was compromised: sign every other device out (TRI-235).
     revokeSessionsOnPasswordReset: true,
-    sendEmailVerification: async ({ user, verificationUrl }: { user: any; verificationUrl: string }) => {
-      try {
-        await sendVerificationEmail({
-          to: user.email,
-          verificationUrl,
-          userName: user.name || undefined,
-        });
-      } catch (error) {
-        console.error('Failed to send verification email:', error);
-        throw error;
-      }
-    },
-    sendPasswordReset: async ({ user, resetUrl }: { user: any; resetUrl: string }) => {
-      try {
-        await sendPasswordResetEmail({
-          to: user.email,
-          resetUrl,
-          userName: user.name || undefined,
-        });
-      } catch (error) {
-        console.error('Failed to send password reset email:', error);
-        throw error;
-      }
-    },
-    sendWelcomeEmail: async ({ user, loginUrl }: { user: any; loginUrl: string }) => {
-      try {
-        await sendWelcomeEmail({
-          to: user.email,
-          userName: user.name || 'User',
-          loginUrl,
-        });
-      } catch (error) {
-        console.error('Failed to send welcome email:', error);
-        // Don't throw here as welcome email is not critical
-      }
-    },
-  },
-  // Magic link configuration
-  magicLink: {
-    enabled: true,
-    sendMagicLink: async ({ user, magicLink }: { user: any; magicLink: string }) => {
-      try {
-        await sendMagicLinkEmail({
-          to: user.email,
-          magicLink,
-          userName: user.name || undefined,
-        });
-      } catch (error) {
-        console.error('Failed to send magic link email:', error);
-        throw error;
-      }
-    },
   },
 })
 
@@ -260,6 +221,8 @@ const EMAIL_CHANGE_SENDS_PER_HOUR = 5;
 
 // The caller's address before the change, for the notice in hooks.after (keyed by the HTTP request)
 const emailChangeOldEmail = new WeakMap<Request, string>();
+/** Requests whose email code failed to send (TRI-341); read by hooks.after */
+const codeSendFailed = new WeakSet<Request>();
 
 async function checkEmailChange(ctx: Parameters<Parameters<typeof createAuthMiddleware>[0]>[0], isSend: boolean): Promise<void> {
   // Hooks see the raw request (the bearer plugin's cookie rewrite only reaches the endpoint), so resolve the

@@ -143,7 +143,7 @@ export async function createTribeInvitations(
         invitationId: createdInvitation.id,
       });
     } catch (error) {
-      console.error(`Failed to send invitation email to ${createdInvitation.email}:`, error);
+      console.error(`Failed to send invitation email for invitation ${createdInvitation.id}:`, error instanceof Error ? error.message : error);
     }
   }
 
@@ -242,7 +242,7 @@ export async function resendTribeInvitation(
         invitationId: invitation.id,
       });
     } catch (error) {
-      console.error(`Failed to resend invitation email:`, error);
+      console.error(`Failed to resend invitation email:`, error instanceof Error ? error.message : error);
     }
   }
 
@@ -388,7 +388,7 @@ export async function acceptInvitation(
         tribeId: invitation.tribeId,
       });
     } catch (error) {
-      console.error(`Failed to send acceptance email:`, error);
+      console.error(`Failed to send acceptance email:`, error instanceof Error ? error.message : error);
     }
   }
 
@@ -565,7 +565,7 @@ export async function rejectInvitation(
         tribeId: invitation.tribeId,
       });
     } catch (error) {
-      console.error(`Failed to send rejection email:`, error);
+      console.error(`Failed to send rejection email:`, error instanceof Error ? error.message : error);
     }
   }
 
