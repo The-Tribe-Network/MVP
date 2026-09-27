@@ -16,6 +16,24 @@ decides what a failed send means:
 - **Everything else** (invites, report emails, the email-changed notice) is awaited inside a `try`/`catch` and
   logged: a failed email never fails or undoes the action that triggered it.
 
+## New emails: layout, opt-outs, skip rules (TRI-344)
+
+- **Layout.** `renderEmail()` (`layout.ts`) returns `{ html, text }` for one shell: heading, paragraphs (plain text,
+  escaped) or custom blocks, an optional button, and a footer with why the email came, the support address and, for
+  opt-out categories, an unsubscribe link. Inline styles, Tribe colours. New emails use it; old templates can move
+  over time.
+- **Categories.** `EMAIL_CATEGORIES` (`unsubscribe.ts`): `eventUpdates` (event cancelled or moved, day-before
+  reminder) and `digest`. Security and account emails have no category and no unsubscribe.
+- **Unsubscribe.** `unsubscribeUrl(userId, category)` carries a signed token (HMAC of `BETTER_AUTH_SECRET`, never
+  expires, switches only that category). Pass `unsubscribe: { userId, category }` to both `renderEmail()` and
+  `sendEmail()`: the second adds `List-Unsubscribe` + `List-Unsubscribe-Post` (RFC 8058 one-click). The public
+  route `/api/email/unsubscribe?token=` shows a confirm page on GET (mail scanners open links) and unsubscribes on
+  POST, with a "Subscribe again" undo.
+- **Opt-outs** live in `user_email_preference` (no row = everything on; `tri344-email-preferences.sql`).
+- **Skip rules.** `emailRecipients(userIds, { category, actorId?, mutedTribeId? })`
+  (`lib/services/email-preferences.ts`) keeps only live, verified, opted-in users, drops the actor and anyone
+  blocked either way with them, and, when `mutedTribeId` is given, anyone who muted that tribe. One query.
+
 ## Links
 
 Links in emails start from `appUrl`, which is `publicBaseUrl()` (`lib/constants/urls.ts`): `BETTER_AUTH_URL`, then
