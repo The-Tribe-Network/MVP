@@ -7,6 +7,8 @@ export const AUTH_CONSTANTS = {
   PASSWORD_REQUIREMENTS: "Password must be at least 8 characters with uppercase, lowercase, and number",
   MIN_AGE: 13,
   MIN_PASSWORD_LENGTH: 8,
+  /** How long a 6-digit email code works: the emailOTP plugin's expiresIn and the emails' copy (TRI-342) */
+  OTP_EXPIRES_MINUTES: 5,
 } as const
 
 export const AUTH_MESSAGES = {

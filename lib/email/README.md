@@ -1,194 +1,48 @@
-# Email System Architecture
+# Email
 
-This directory contains a modular email system for Better Auth integration with Resend. Each email type is organized in its own folder for better maintainability and separation of concerns.
+Transactional email through [Resend](https://resend.com). One folder per email under `templates/`, each with a
+`send-*.ts` sender, an HTML and a plain-text template, and its data type.
 
-## 📁 Directory Structure
+## Sending
 
-```
-lib/email/
-├── index.ts                    # Main exports file
-├── email.ts                    # Re-exports all email functions
-├── README.md                   # This documentation
-├── sign-up-verification/       # Email verification for new signups
-│   ├── types.ts               # TypeScript interfaces
-│   ├── template-html.ts       # HTML email template
-│   ├── template-text.ts       # Plain text fallback
-│   └── send-verification-email.ts # Main sending function
-├── password-reset/            # Password reset emails
-│   ├── types.ts
-│   ├── template-html.ts
-│   ├── template-text.ts
-│   └── send-password-reset-email.ts
-├── welcome/                   # Welcome emails after verification
-│   ├── types.ts
-│   ├── template-html.ts
-│   ├── template-text.ts
-│   └── send-welcome-email.ts
-└── magic-link/               # Magic link authentication
-    ├── types.ts
-    ├── template-html.ts
-    ├── template-text.ts
-    └── send-magic-link-email.ts
-```
+Every sender calls `sendEmail()` from `client.ts`. It sets the sender (`RESEND_FROM_EMAIL`) and, when
+`SUPPORT_EMAIL` is set, the reply-to address. Resend reports API errors in its result rather than by throwing;
+`sendEmail()` throws on them and logs the recipient's domain only, never the address (TRI-341). So every caller
+decides what a failed send means:
 
-## 🚀 Usage
+- **Codes** (verify email, reset password, change email) are awaited in the Better-Auth `emailOTP` plugin
+  (`lib/clients/auth.ts`). In production a failed send answers **502 `EMAIL_NOT_SENT`** instead of Better-Auth's usual 200;
+  elsewhere it is logged and still answers 200 (Development's `resend.dev` sender reaches only the Resend account owner).
+- **Everything else** (invites, report emails, the email-changed notice) is awaited inside a `try`/`catch` and
+  logged: a failed email never fails or undoes the action that triggered it.
 
-### Basic Usage (Recommended)
-```typescript
-import { 
-  sendVerificationEmail, 
-  sendPasswordResetEmail,
-  sendWelcomeEmail,
-  sendMagicLinkEmail 
-} from '@/lib/email';
+## Links
 
-// Send verification email
-await sendVerificationEmail({
-  to: 'user@example.com',
-  verificationUrl: 'https://app.com/verify?token=abc123',
-  userName: 'John Doe'
-});
-```
+Links in emails start from `appUrl`, which is `publicBaseUrl()` (`lib/constants/urls.ts`): `BETTER_AUTH_URL`, then
+`NEXT_PUBLIC_APP_URL`. Production must set one; without it production logs an error and uses
+`https://api.tribehq.io`, never localhost (TRI-339). Share links for invite codes use `INVITE_LINK_BASE_URL` first.
 
-### Advanced Usage (Direct Access)
-```typescript
-// Import specific email functions
-import { sendVerificationEmail } from '@/lib/email/sign-up-verification/send-verification-email';
+Code lifetime is `AUTH_CONSTANTS.OTP_EXPIRES_MINUTES` (`lib/constants/auth.ts`): the plugin's `expiresIn` and the
+"expires in N minutes" copy both read it (TRI-342).
 
-// Import just templates
-import { generateVerificationEmailHtml } from '@/lib/email/sign-up-verification/template-html';
-```
+## Emails
 
-## 📧 Email Types
+| Folder | Sent when |
+| --- | --- |
+| `otp-email-verification` | a verification code is requested |
+| `otp-forget-password` | a password reset code is requested |
+| `email-change` | a code to the new address, and a notice to the old one once the change is done |
+| `tribe-invitation`, `-accepted`, `-rejected` | an invite is sent, accepted or declined |
+| `content-report` | content is reported (tribe owner + `PLATFORM_OWNER_EMAIL`) |
+| `waitlist` | someone joins the web waitlist |
+| `welcome` | not sent yet (the alpha emails project wires it up) |
 
-### 1. Sign-up Verification
-- **Purpose**: Verify new user email addresses
-- **Trigger**: User signs up with email/password
-- **Expiration**: 24 hours
-- **Features**: Welcome message, verification button, security notice
+## Environment
 
-### 2. Password Reset
-- **Purpose**: Allow users to reset forgotten passwords
-- **Trigger**: User requests password reset
-- **Expiration**: 1 hour
-- **Features**: Reset button, security notice, expiration warning
-
-### 3. Welcome Email
-- **Purpose**: Welcome users after email verification
-- **Trigger**: After successful email verification
-- **Features**: Getting started guide, feature highlights, login button
-
-### 4. Magic Link
-- **Purpose**: Passwordless authentication
-- **Trigger**: User requests magic link sign-in
-- **Expiration**: 10 minutes
-- **Features**: Sign-in button, security notice, expiration warning
-
-## 🎨 Customization
-
-### Styling
-Each email template uses inline CSS and can be customized by editing the respective `template-html.ts` files:
-
-- **Colors**: Update gradient backgrounds in `.header` styles
-- **Fonts**: Change `font-family` in body styles
-- **Layout**: Modify padding, margins, and spacing
-- **Branding**: Update app name and colors
-
-### Content
-Templates accept parameters for customization:
-- User names
-- URLs and links
-- App-specific messaging
-- Call-to-action buttons
-
-## 🔧 Adding New Email Types
-
-To add a new email type:
-
-1. **Create folder**: `lib/email/new-email-type/`
-2. **Add files**:
-   - `types.ts` - TypeScript interfaces
-   - `template-html.ts` - HTML template
-   - `template-text.ts` - Text fallback
-   - `send-new-email-type.ts` - Main function
-3. **Update exports**: Add to `email.ts` and `index.ts`
-4. **Update auth**: Add to Better Auth configuration
-
-### Example Structure
-```typescript
-// types.ts
-export interface NewEmailData {
-  to: string;
-  customField: string;
-}
-
-// template-html.ts
-export function generateNewEmailHtml({ to, customField }: NewEmailData) {
-  return `<!DOCTYPE html>...`;
-}
-
-// send-new-email-type.ts
-export async function sendNewEmail(data: NewEmailData) {
-  // Implementation
-}
-```
-
-## 🧪 Testing
-
-### Test Individual Emails
-```typescript
-import { sendVerificationEmail } from '@/lib/email';
-
-// Test verification email
-await sendVerificationEmail({
-  to: 'test@example.com',
-  verificationUrl: 'https://localhost:3000/verify?token=test',
-  userName: 'Test User'
-});
-```
-
-### Test All Emails
-Use the test utility:
-```bash
-npx tsx lib/utils/test-email.ts
-```
-
-## 🔒 Security Features
-
-- **Link Expiration**: All authentication links have expiration times
-- **HTTPS Only**: Production URLs must use HTTPS
-- **Email Validation**: All email addresses are validated
-- **Rate Limiting**: Resend provides built-in rate limiting
-- **Environment Variables**: Sensitive data stored in environment variables
-
-## 📱 Responsive Design
-
-All email templates are designed to work across:
-- Desktop email clients (Outlook, Thunderbird)
-- Web-based clients (Gmail, Yahoo)
-- Mobile email apps
-- Text-only clients (fallback support)
-
-## 🛠️ Troubleshooting
-
-### Common Issues
-
-1. **"Invalid API key"**: Check `RESEND_API_KEY` environment variable
-2. **"Unauthorized"**: Verify your domain in Resend dashboard
-3. **Emails not sending**: Check Resend dashboard for error logs
-4. **Templates not rendering**: Verify HTML syntax and inline CSS
-
-### Debug Mode
-Enable logging in your auth configuration:
-```typescript
-sendEmailVerification: async ({ user, verificationUrl }) => {
-  console.log('Sending verification email to:', user.email);
-  // ... rest of implementation
-}
-```
-
-## 📚 Related Documentation
-
-- [Resend Documentation](https://resend.com/docs)
-- [Better Auth Documentation](https://better-auth.com)
-- [Email Template Best Practices](https://resend.com/docs/email-best-practices)
+| Variable | Purpose |
+| --- | --- |
+| `RESEND_API_KEY` | required; the client throws at import without it |
+| `RESEND_FROM_EMAIL` | sender; must be on a domain verified in Resend (`tribehq.io`). `resend.dev` only reaches the Resend account owner |
+| `SUPPORT_EMAIL` | reply-to and the "contact support" address |
+| `BETTER_AUTH_URL` | public base URL for links |
+| `INVITE_LINK_BASE_URL` | host that serves `/join/:code` |

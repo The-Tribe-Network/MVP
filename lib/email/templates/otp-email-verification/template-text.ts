@@ -1,9 +1,10 @@
+import { AUTH_CONSTANTS } from '@/lib/constants/auth';
 import { appName } from '../../client';
 
 export function generateOTPEmailVerificationText({ 
   otp, 
   userName,
-  expirationMinutes = 10
+  expirationMinutes = AUTH_CONSTANTS.OTP_EXPIRES_MINUTES
 }: { 
   otp: string; 
   userName?: string;
