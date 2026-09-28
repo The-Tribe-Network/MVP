@@ -217,7 +217,10 @@ export type UserBasic = Pick<User, 'id' | 'name' | 'email' | 'image' | 'username
 // Tribe extended types
 // The invite code is the secret behind `POST /tribes/join/{code}` and only reaches callers with
 // `canInviteMembers` via the invite-link route, so the public tribe shape leaves both columns out.
-export type PublicTribe = Omit<Tribe, "inviteCode" | "inviteCodeExpiresAt">;
+export type PublicTribe = Omit<
+  Tribe,
+  "inviteCode" | "inviteCodeExpiresAt" | "inviteCodeMaxUses" | "inviteCodeUseCount"
+>;
 
 // The tribe as the activity feed, album and event reads embed it: the public columns without banner and colour.
 export type TribeSummary = Omit<PublicTribe, "banner" | "color">;

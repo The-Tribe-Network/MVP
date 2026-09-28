@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
 import { checkPermission } from "@/lib/services/role-permissions";
-import { getInviteLink, rotateInviteLink } from "@/lib/services/invite-link";
-import { tribeIdParamSchema, validateApiRequest } from "@/lib/validations/tribe";
+import { getInviteLink, rotateInviteLink, updateInviteLinkLimits, type InviteLinkLimits } from "@/lib/services/invite-link";
+import { inviteLinkLimitsSchema, tribeIdParamSchema, validateApiRequest } from "@/lib/validations/tribe";
 
 /**
- * GET  /api/tribes/[tribe_id]/invite-link  — current shareable link (generated on first call)
- * POST /api/tribes/[tribe_id]/invite-link  — rotate: new code, old one stops working
+ * GET   /api/tribes/[tribe_id]/invite-link  — current shareable link (generated on first call)
+ * POST  /api/tribes/[tribe_id]/invite-link  — rotate: new code, old one stops working; optional
+ *                                             `{ maxUses, expiresAt }` limits (TRI-307), none by default
+ * PATCH /api/tribes/[tribe_id]/invite-link  — change the limits and keep the code (TRI-307)
  *
  * Both need `canInviteMembers` (DATA-MODEL-DELTA §5), same gate as email invitations.
  * Non-members get 403 too, so the response never reveals whether a tribe id exists.
@@ -50,16 +52,35 @@ export async function GET(
   }
 }
 
+/** The limits in the body; an empty body means none (the web rotates without one). */
+async function readLimits(request: NextRequest): Promise<{ limits: InviteLinkLimits } | { error: NextResponse }> {
+  const text = await request.text();
+  if (!text.trim()) return { limits: {} };
+  let body: unknown;
+  try {
+    body = JSON.parse(text);
+  } catch {
+    return { error: NextResponse.json({ error: "Invalid JSON body" }, { status: 400 }) };
+  }
+  const validation = validateApiRequest(inviteLinkLimitsSchema, body);
+  if (!validation.success) {
+    return { error: NextResponse.json({ error: "Invalid invite link limits", details: validation.error }, { status: 400 }) };
+  }
+  return { limits: validation.data };
+}
+
 export async function POST(
-  _request: NextRequest,
+  request: NextRequest,
   ctx: RouteContext<'/api/tribes/[tribe_id]/invite-link'>
 ) {
   try {
     const { tribe_id } = await ctx.params;
     const auth = await authorize(tribe_id);
     if ("error" in auth) return auth.error;
+    const body = await readLimits(request);
+    if ("error" in body) return body.error;
 
-    const link = await rotateInviteLink(auth.tribeId);
+    const link = await rotateInviteLink(auth.tribeId, body.limits);
     if (!link) {
       return NextResponse.json({ error: "Tribe not found" }, { status: 404 });
     }
@@ -67,5 +88,27 @@ export async function POST(
   } catch (error) {
     console.error("Error rotating invite link:", error);
     return NextResponse.json({ error: "Failed to rotate invite link" }, { status: 500 });
+  }
+}
+
+export async function PATCH(
+  request: NextRequest,
+  ctx: RouteContext<'/api/tribes/[tribe_id]/invite-link'>
+) {
+  try {
+    const { tribe_id } = await ctx.params;
+    const auth = await authorize(tribe_id);
+    if ("error" in auth) return auth.error;
+    const body = await readLimits(request);
+    if ("error" in body) return body.error;
+
+    const link = await updateInviteLinkLimits(auth.tribeId, body.limits);
+    if (!link) {
+      return NextResponse.json({ error: "Tribe not found" }, { status: 404 });
+    }
+    return NextResponse.json(link);
+  } catch (error) {
+    console.error("Error updating invite link limits:", error);
+    return NextResponse.json({ error: "Failed to update invite link" }, { status: 500 });
   }
 }
