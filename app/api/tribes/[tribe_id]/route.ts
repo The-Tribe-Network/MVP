@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
 import { getTribeDetail, updateTribe, deleteTribe } from "@/lib/services/tribe";
-import { checkTribeMembership } from "@/lib/services/permissions";
+import { getMemberWithPermissions } from "@/lib/services/permissions";
+import { resolveEffectivePermissions } from "@/lib/services/member-permissions";
+import { getTribeSettings } from "@/lib/services/tribe-settings";
 import {
   tribeIdParamSchema,
   updateTribeSchema,
@@ -31,23 +33,39 @@ export async function GET(
       );
     }
 
-    // Fetch tribe
-    const tribeData = await getTribeDetail(validation.data.id, user.id);
+    // The tribe and the caller's membership, which is also the member check
+    const tribeId = validation.data.id;
+    const [tribeData, member] = await Promise.all([
+      getTribeDetail(tribeId, user.id),
+      getMemberWithPermissions(tribeId, user.id),
+    ]);
 
     if (!tribeData) {
       return NextResponse.json({ error: "Tribe not found" }, { status: 404 });
     }
-
-    // Check if user is a member of the tribe
-    const isMember = await checkTribeMembership(validation.data.id, user.id);
-    if (!isMember) {
+    if (!member) {
       return NextResponse.json(
         { error: "You must be a member of this tribe to access it" },
         { status: 403 }
       );
     }
 
-    return NextResponse.json(tribeData);
+    // TRI-359: the feature switches (`GET …/settings`) and my membership (`GET …/members/me`) ride along, so the
+    // tribe home needs neither call on a cold open. Both routes stay for the web and single refreshes.
+    const [settings, { effectivePermissions }] = await Promise.all([
+      getTribeSettings(tribeId),
+      resolveEffectivePermissions(tribeId, member),
+    ]);
+
+    return NextResponse.json({
+      ...tribeData,
+      settings: {
+        eventsEnabled: settings.eventsEnabled,
+        albumsEnabled: settings.albumsEnabled,
+        pollsEnabled: settings.pollsEnabled,
+      },
+      me: { ...member, effectivePermissions },
+    });
   } catch (error) {
     console.error("Error fetching tribe:", error);
     return NextResponse.json(
