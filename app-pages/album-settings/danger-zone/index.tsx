@@ -129,7 +129,7 @@ export function AlbumDangerZone({ tribeId, albumId }: AlbumDangerZoneProps) {
                 <li>Remove all album metadata and settings</li>
               </ul>
               <p className="text-sm text-muted-foreground mt-2">
-                Note: The photos will remain in the tribe's media library.
+                Note: The photos will remain in the tribe&apos;s media library.
               </p>
             </div>
 
@@ -150,7 +150,7 @@ export function AlbumDangerZone({ tribeId, albumId }: AlbumDangerZoneProps) {
                     <div className="space-y-4">
                       <p>
                         This action cannot be undone. This will permanently delete the
-                        album <strong>"{album.name}"</strong> and unlink all photos from it.
+                        album <strong>&quot;{album.name}&quot;</strong> and unlink all photos from it.
                       </p>
                       <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
                         <ul className="text-sm space-y-1 list-disc list-inside">

@@ -26,7 +26,8 @@ export async function GET(
 
     // Get query params
     const searchParams = request.nextUrl.searchParams;
-    const status = searchParams.get("status") as any;
+    // Not validated here: an unknown status matches no events
+    const status = searchParams.get("status") as NonNullable<Parameters<typeof getTribeEvents>[1]>["status"] | null;
     const limit = searchParams.get("limit");
     const offset = searchParams.get("offset");
 

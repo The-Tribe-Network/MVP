@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
 import { getUserPendingInvitations } from "@/lib/services/invitation";
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // Check authentication
     const user = await getServerUser();

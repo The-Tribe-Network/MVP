@@ -7,8 +7,7 @@
  */
 
 import { db } from "@/lib/database/client";
-import { tribe, tribeMember } from "@/lib/database/schemas/tribe";
-import { eq } from "drizzle-orm";
+import { tribeMember } from "@/lib/database/schemas/tribe";
 import { HOME_DASHBOARD_DATA, CROSS_TRIBE_MEMBERS } from "./data/home-dashboard";
 import { seedUsers } from "./seed-users";
 import { seedTribe } from "./seed-tribes";

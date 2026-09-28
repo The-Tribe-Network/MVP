@@ -1,10 +1,6 @@
-import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { X, Loader2, Image, Paperclip, ImagePlus, AlbumIcon, Calendar } from "lucide-react";
+import { X, Loader2, ImageIcon, Paperclip, ImagePlus, AlbumIcon, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,7 +14,6 @@ import { useTribeAlbums } from "@/lib/hooks/use-albums";
 import { useTribeMemberPreferences } from "@/lib/hooks/use-tribe-preferences";
 import { toast } from "sonner";
 import { validateImageFile } from "@/lib/utils/image";
-import { User } from "better-auth";
 import NewPostAlbumToggle from "../components/new-post-album-toggle";
 import AttachedAlbumPreview from "../components/attached-album-preview";
 import { useAuthUser } from "@/lib/hooks/use-auth";
@@ -136,10 +131,6 @@ export function NewPost({ tribeId, onViewChange }: NewPostProps) {
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
-  }
-
-  const handleImageClick = () => {
-    fileInputRef.current?.click()
   }
 
   const handleAttachMedia = () => {
@@ -283,7 +274,7 @@ export function NewPost({ tribeId, onViewChange }: NewPostProps) {
                     {isUploadingImage ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      <Image className="h-4 w-4" />
+                      <ImageIcon className="h-4 w-4" />
                     )}
                     <span className="hidden md:inline">Photos</span>
                   </Button>

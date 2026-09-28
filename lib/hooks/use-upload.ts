@@ -18,7 +18,6 @@ import {
   type UploadEventCoverParams,
   type UploadTribeBannerParams,
   type UploadTribeAvatarParams,
-  type UploadTribeMediaParams,
   type BatchUploadResult,
 } from '@/lib/api/upload';
 

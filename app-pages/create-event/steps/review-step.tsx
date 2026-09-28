@@ -126,7 +126,7 @@ export function ReviewStep({ formData }: ReviewStepProps) {
       <div className="p-4 bg-muted rounded-lg">
         <p className="text-sm text-muted-foreground">
           Once submitted, your event will be visible to all tribe members.
-          They can RSVP and see all the details you've provided.
+          They can RSVP and see all the details you&apos;ve provided.
         </p>
       </div>
     </div>

@@ -28,7 +28,7 @@ export default function ComingSoonPageContent() {
 
         {/* Description */}
         <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto leading-relaxed">
-          We're putting the finishing touches on Tribe — the privacy-first
+          We&apos;re putting the finishing touches on Tribe — the privacy-first
           community platform that will transform how your group stays connected,
           organized, and engaged.
         </p>
@@ -36,7 +36,7 @@ export default function ComingSoonPageContent() {
         {/* What to expect */}
         <div className="bg-muted/50 rounded-2xl p-6 md:p-8 mb-10">
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-4">
-            What you'll get
+            What you&apos;ll get
           </h2>
           <ul className="text-left space-y-3 max-w-md mx-auto">
             <li className="flex items-start gap-3">

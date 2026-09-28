@@ -25,7 +25,6 @@ import { userPreviewColumns, userWithUsernameColumns } from "@/lib/database/user
 import type {
   EventWithCreator,
   EventWithDetails,
-  Poll,
   Event,
   EventAttendeeWithUser,
 } from "@/lib/database/types";

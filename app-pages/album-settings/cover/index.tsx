@@ -16,7 +16,6 @@ import {
   AlertCircle,
   ImageIcon,
   Check,
-  Image,
 } from 'lucide-react';
 import { albumDetailOptions } from '@/lib/query-options/albums';
 import { useUpdateAlbum } from '@/lib/hooks/use-albums';
@@ -140,7 +139,7 @@ export function AlbumCover({ tribeId, albumId }: AlbumCoverProps) {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="flex items-center gap-2">
-                <Image className="h-5 w-5" />
+                <ImageIcon className="h-5 w-5" />
                 Select from Album
               </CardTitle>
               <CardDescription>
@@ -161,7 +160,7 @@ export function AlbumCover({ tribeId, albumId }: AlbumCoverProps) {
         <CardContent>
           {!hasPhotos ? (
             <div className="text-center py-12 text-muted-foreground">
-              <Image className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <ImageIcon className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p>No photos in this album</p>
               <p className="text-sm mt-1">
                 Add photos to this album first, then select one as the cover

@@ -3,10 +3,6 @@ import { getServerUser } from "@/lib/services/auth";
 import { checkTribeMembership } from "@/lib/services/permissions";
 import { getTribeMembersWithPermissions } from "@/lib/services/member-permissions";
 
-type RouteContext<T extends string> = {
-  params: Promise<Record<string, string>>;
-};
-
 /**
  * GET /api/tribes/[tribe_id]/members/permissions
  *

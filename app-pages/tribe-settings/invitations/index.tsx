@@ -27,7 +27,6 @@ export function InvitationsSettings({ tribeId }: InvitationsSettingsProps) {
     isLoading: isTribeLoading, 
     isError: isTribeError, 
     error: tribeError, 
-    refetch: refetchTribe,
   } = useQuery(tribeDetailOptions(tribeId));
   const {
     data: invitations,

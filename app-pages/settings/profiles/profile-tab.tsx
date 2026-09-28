@@ -25,7 +25,6 @@ export function ProfileTab() {
     isSubmitting,
     usernameError,
     isCheckingUsername,
-    unsavedAvatarMediaId,
     setUnsavedAvatarMediaId,
     originalAvatarUrl,
     setOriginalAvatarUrl,

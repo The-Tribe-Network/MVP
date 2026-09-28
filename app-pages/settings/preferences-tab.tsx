@@ -64,7 +64,7 @@ export function PreferencesTab() {
             <div className="space-y-0.5">
               <Label>Show Read Posts</Label>
               <p className="text-xs text-muted-foreground">
-                Display posts you've already seen
+                Display posts you&apos;ve already seen
               </p>
             </div>
             <Switch />

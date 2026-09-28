@@ -52,7 +52,7 @@ export function WaitlistForm({
       <div className={`text-center py-6 ${className}`}>
         <div className="flex items-center justify-center gap-3 mb-2">
           <CheckCircle2 className="w-6 h-6 text-primary" />
-          <p className="text-lg font-medium text-primary">You're on the list!</p>
+          <p className="text-lg font-medium text-primary">You&apos;re on the list!</p>
         </div>
         <p className="text-sm text-muted-foreground mb-4">
           Check your email for confirmation.

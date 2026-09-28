@@ -2,16 +2,8 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Image, Calendar, Plus } from 'lucide-react'
+import { LayoutDashboard, Image, Calendar } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { useDialogStore } from '@/lib/stores/dialog-store'
 
 interface TribeHeaderNavProps {
   tribeId: string
@@ -25,9 +17,8 @@ const NAV_ITEMS = [
   { label: 'Events', href: '/events', icon: Calendar },
 ]
 
-export function TribeHeaderNav({ tribeId, tribeName, className }: TribeHeaderNavProps) {
+export function TribeHeaderNav({ tribeId, className }: TribeHeaderNavProps) {
   const pathname = usePathname()
-  const openDialog = useDialogStore((s) => s.openDialog)
 
   const basePath = `/tribe/${tribeId}`
 

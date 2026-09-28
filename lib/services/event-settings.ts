@@ -2,7 +2,7 @@ import { and, count, eq } from "drizzle-orm";
 
 import { db } from "@/lib/database/client";
 import { user } from "@/lib/database/schemas/auth";
-import { event, eventAttendee, eventCoHost, eventLink, eventSettings } from "@/lib/database/schemas/event";
+import { event, eventCoHost, eventLink, eventSettings } from "@/lib/database/schemas/event";
 import { album, albumMedia, media } from "@/lib/database/schemas/media";
 import { canUserSeeAlbum } from "./album";
 import { tribeSettings } from "@/lib/database/schemas/tribe";

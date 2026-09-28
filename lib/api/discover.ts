@@ -1,4 +1,3 @@
-import { buildQueryString } from './client';
 
 // ============================================================================
 // Types
@@ -181,7 +180,7 @@ export async function fetchDiscoverTribes(
   await new Promise((resolve) => setTimeout(resolve, 300));
 
   // Filter tribes based on search and category
-  let filtered = mockTribes.filter((tribe) => {
+  const filtered = mockTribes.filter((tribe) => {
     const matchesSearch =
       !search ||
       tribe.name.toLowerCase().includes(search.toLowerCase()) ||

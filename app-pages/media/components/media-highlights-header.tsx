@@ -30,10 +30,6 @@ export function MediaHighlightsHeader({ tribeId }: MediaHighlightsHeaderProps) {
   const openDialog = useDialogStore((s) => s.openDialog)
   const [isOpen, setIsOpen] = useState(false)
 
-  const handleToggle = () => {
-    setIsOpen(!isOpen)
-  }
-
   const handleUploadMedia = () => {
     openDialog('media-upload', { tribeId })
   }

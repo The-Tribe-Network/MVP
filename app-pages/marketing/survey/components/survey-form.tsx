@@ -13,7 +13,6 @@ import {
   FormControl,
   FormField,
   FormItem,
-  FormLabel,
   FormMessage,
   FormDescription,
 } from "@/components/ui/form";
@@ -67,7 +66,7 @@ export function SurveyForm({ email }: SurveyFormProps) {
           </div>
           <h2 className="text-2xl font-bold mb-2">Thank You!</h2>
           <p className="text-muted-foreground mb-6">
-            Your feedback helps us build a better product. We'll be in touch soon
+            Your feedback helps us build a better product. We&apos;ll be in touch soon
             with updates and early access information.
           </p>
           <Link href="/home">
@@ -200,7 +199,7 @@ export function SurveyForm({ email }: SurveyFormProps) {
           <CardHeader>
             <CardTitle className="text-lg">3. What problem are you hoping to solve?</CardTitle>
             <FormDescription>
-              Tell us about the challenges you face with your current tools or what's missing
+              Tell us about the challenges you face with your current tools or what&apos;s missing
             </FormDescription>
           </CardHeader>
           <CardContent>

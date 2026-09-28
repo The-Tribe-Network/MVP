@@ -3,7 +3,7 @@ import { dehydrate, HydrationBoundary, QueryClient } from "@tanstack/react-query
 
 export default async function Page({ params, searchParams }: PageProps<'/tribe/[tribe_id]/events'>) {
   const { tribe_id } = await params
-  const { limit: limitParam = '20', offset: offsetParam = '0' } = await searchParams;
+  await searchParams;
 
   const queryClient = new QueryClient();
 

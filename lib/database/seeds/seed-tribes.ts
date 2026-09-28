@@ -7,7 +7,7 @@
 
 import { getDbTransaction, db } from "@/lib/database/client";
 import { tribe, tribeMember, tribeSettings } from "@/lib/database/schemas/tribe";
-import type { SeedTribeData, SeedUserData } from "./types";
+import type { SeedTribeData } from "./types";
 import { REAL_USER_ID, logSuccess } from "./utils";
 import { createGlobalTimeline } from "@/lib/services/timeline";
 

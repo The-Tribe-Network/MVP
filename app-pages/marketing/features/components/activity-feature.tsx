@@ -99,7 +99,7 @@ export function ActivityFeature() {
                       <span className="text-muted-foreground"> liked your post</span>
                     </p>
                     <p className="text-xs text-muted-foreground truncate">
-                      "Great progress on your fitness goals!"
+                      &quot;Great progress on your fitness goals!&quot;
                     </p>
                   </div>
                   <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -127,7 +127,7 @@ export function ActivityFeature() {
                       <span className="text-muted-foreground"> commented</span>
                     </p>
                     <p className="text-xs text-muted-foreground truncate">
-                      "Count me in for next week's session!"
+                      &quot;Count me in for next week&apos;s session!&quot;
                     </p>
                   </div>
                   <div className="flex items-center gap-1.5 flex-shrink-0">

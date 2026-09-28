@@ -67,7 +67,7 @@ export function ResetPasswordForm() {
           description: "Your password has been reset successfully.",
         })
       }
-    } catch (error) {
+    } catch {
       toast.error("Error", {
         description: "Failed to reset password. Please try again.",
       })

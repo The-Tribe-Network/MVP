@@ -112,7 +112,7 @@ export function GeneralSettings({ tribeId }: GeneralSettingsProps) {
       <div>
         <h1 className="text-3xl font-bold">General Settings</h1>
         <p className="text-muted-foreground mt-2">
-          Manage your tribe's basic information and settings
+          Manage your tribe&apos;s basic information and settings
         </p>
       </div>
 

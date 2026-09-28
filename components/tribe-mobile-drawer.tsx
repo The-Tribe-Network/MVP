@@ -10,8 +10,6 @@ import {
   UserPlus,
   Users,
   Info,
-  Bell,
-  LogOut,
   Plus,
 } from 'lucide-react'
 import {
@@ -20,7 +18,6 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
-import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
@@ -68,7 +65,7 @@ export function TribeMobileDrawer({ open, onOpenChange, tribeId }: TribeMobileDr
   const handleActionClick = (action: 'quick-post' | 'invite') => {
     onOpenChange(false)
     if (action === 'quick-post') {
-      openDialog('quick-post' as any, { tribeId })
+      openDialog('quick-post', { tribeId })
     } else if (action === 'invite') {
       openDialog('invite', { tribeId, tribeName: tribe?.name || 'Tribe' })
     }
@@ -76,7 +73,7 @@ export function TribeMobileDrawer({ open, onOpenChange, tribeId }: TribeMobileDr
 
   const handleTribeInfoClick = () => {
     onOpenChange(false)
-    openDialog('tribe-info-mobile' as any, { tribeId })
+    openDialog('tribe-info-mobile', { tribeId })
   }
 
   const handleMembersClick = () => {

@@ -32,7 +32,7 @@ export function FeaturesPreview() {
       <div className="max-w-6xl mx-auto space-y-16">
         <div className="text-center space-y-6">
           <h2 className="text-3xl md:text-5xl font-bold">
-            Everything You Need, Nothing You Don't
+            Everything You Need, Nothing You Don&apos;t
           </h2>
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
             Focused on what communities actually need to thrive.

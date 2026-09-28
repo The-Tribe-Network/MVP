@@ -3,7 +3,6 @@
 import type React from "react"
 
 import { QueryClientProvider } from "@tanstack/react-query"
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools"
 import { getQueryClient } from "@/lib/utils/query-server"
 
 interface QueryProviderProps {

@@ -13,7 +13,7 @@
 
 import { db } from "@/lib/database/client";
 import { tribe, tribeSettings } from "@/lib/database/schemas/tribe";
-import { eq, notExists, sql } from "drizzle-orm";
+import { eq, notExists } from "drizzle-orm";
 
 async function createMissingTribeSettings() {
   console.log("Starting tribe settings migration...");

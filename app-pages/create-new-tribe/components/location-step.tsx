@@ -75,7 +75,6 @@ export function LocationStep({ control }: LocationStepProps) {
       previousLocationRef.current = location
       isInitialMountRef.current = false
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Parse location when location prop changes

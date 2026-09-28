@@ -47,7 +47,7 @@ export function AthleticGroupsCase() {
                   </div>
                   <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 text-xs font-medium">
                     <Check className="w-3.5 h-3.5" />
-                    <span>You're going</span>
+                    <span>You&apos;re going</span>
                   </div>
                 </div>
               </div>
@@ -64,7 +64,7 @@ export function AthleticGroupsCase() {
                       <span className="text-xs text-muted-foreground">· 3h ago</span>
                     </div>
                     <p className="text-sm mt-1">
-                      Great practice today team! Keep up the energy for Saturday's game!
+                      Great practice today team! Keep up the energy for Saturday&apos;s game!
                     </p>
                   </div>
                 </div>
@@ -119,7 +119,7 @@ export function AthleticGroupsCase() {
                 Athletic & Recreation Groups
               </h2>
               <p className="text-lg text-muted-foreground leading-relaxed">
-                Whether you're organizing weekend leagues or training for your
+                Whether you&apos;re organizing weekend leagues or training for your
                 next adventure, keep your team coordinated and motivated
                 together.
               </p>

@@ -3,7 +3,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { Heart, ImageIcon, MoreVertical, Star, Trash2 } from 'lucide-react'
-import { useFeaturedMedia, useSetFeaturedMedia, useClearFeaturedMedia } from '@/lib/hooks/use-media'
+import { useFeaturedMedia, useClearFeaturedMedia } from '@/lib/hooks/use-media'
 import { useDialogStore, type CarouselPhoto } from '@/lib/stores/dialog-store'
 import { useMemberWithPermissions } from '@/lib/hooks/use-tribes'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -163,7 +163,7 @@ function FeaturedMediaEmpty({ tribeId }: { tribeId: string }) {
       <Star className="h-12 w-12 text-muted-foreground mb-4" />
       <h3 className="text-lg font-semibold text-foreground mb-2">No Featured Photo</h3>
       <p className="text-sm text-muted-foreground mb-4 max-w-md">
-        Set a featured photo to highlight it here. You can feature any photo from the tribe's media gallery.
+        Set a featured photo to highlight it here. You can feature any photo from the tribe&apos;s media gallery.
       </p>
       <Link href={`/tribe/${tribeId}/media/browse`}>
         <Button variant="outline">

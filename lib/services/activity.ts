@@ -2,7 +2,6 @@ import { db } from "@/lib/database/client";
 import { activity } from "@/lib/database/schemas/activity";
 import { user } from "@/lib/database/schemas/auth";
 import { tribe } from "@/lib/database/schemas/tribe";
-import { post } from "@/lib/database/schemas/post";
 import { eq, desc, and, inArray } from "drizzle-orm";
 import type { Activity, ActivityInsert, ActivityWithUser } from "@/lib/database/types";
 import { userPreviewColumns } from "@/lib/database/user-columns";

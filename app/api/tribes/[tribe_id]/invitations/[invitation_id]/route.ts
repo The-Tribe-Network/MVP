@@ -6,10 +6,6 @@ import { resendTribeInvitation, cancelTribeInvitation } from "@/lib/services/inv
 import { validateApiRequest, tribeIdParamSchema } from "@/lib/validations/tribe";
 import { z } from "zod";
 
-type RouteContext<T extends string> = {
-  params: Promise<Record<string, string>>;
-};
-
 const invitationIdSchema = z.object({
   invitation_id: z.string().uuid("Invalid invitation ID"),
 });

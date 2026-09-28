@@ -8,8 +8,8 @@
 import { db } from "@/lib/database/client";
 import { user, account } from "@/lib/database/schemas/auth";
 import { tribe, tribeMember } from "@/lib/database/schemas/tribe";
-import { like, inArray, count, eq } from "drizzle-orm";
-import { SEED_EMAIL_DOMAIN, logSuccess, logInfo, logError, REAL_USER_ID } from "./utils";
+import { like, inArray, count } from "drizzle-orm";
+import { SEED_EMAIL_DOMAIN, logSuccess, logInfo, logError } from "./utils";
 
 const SEED_EMAIL_PATTERN = `%${SEED_EMAIL_DOMAIN}`;
 

@@ -12,7 +12,7 @@ export interface Activity {
   userId: string;
   tribeId: string;
   postId?: string | null;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   createdAt: Date;
   // Extended fields
   userName: string;

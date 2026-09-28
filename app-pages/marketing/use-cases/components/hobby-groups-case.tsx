@@ -69,7 +69,7 @@ export function HobbyGroupsCase() {
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-xs">{hobbyMembers[1].name}</p>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      "I loved the twist in chapter 12! Didn't see that coming at all."
+                      &quot;I loved the twist in chapter 12! Didn&apos;t see that coming at all.&quot;
                     </p>
                   </div>
                 </div>
@@ -136,7 +136,7 @@ export function HobbyGroupsCase() {
                   <h3 className="font-semibold mb-2">Share Your Creations</h3>
                   <p className="text-muted-foreground text-sm leading-relaxed">
                     Post photos of projects, artworks, and accomplishments. The
-                    Vault keeps your community's creative output beautifully
+                    Vault keeps your community&apos;s creative output beautifully
                     organized.
                   </p>
                 </div>

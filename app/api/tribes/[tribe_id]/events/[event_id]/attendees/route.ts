@@ -96,7 +96,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { tribe_id, event_id } = await params;
+    const { event_id } = await params;
 
     await removeEventAttendee(event_id, user.id);
     return NextResponse.json({ success: true });

@@ -1,7 +1,7 @@
 'use client'
 
 import { Separator } from '@/components/ui/separator'
-import { Calendar, Users, CalendarDays, Image, MapPin } from 'lucide-react'
+import { Calendar, Users, CalendarDays, ImageIcon, MapPin } from 'lucide-react'
 import { format } from 'date-fns'
 import type { DemoTribe } from '../../types'
 
@@ -56,7 +56,7 @@ export function DemoInfoWidget({ tribe }: DemoInfoWidgetProps) {
 
         {/* Media */}
         <div className="flex items-center gap-1 text-xs">
-          <Image className="h-3 w-3 text-muted-foreground" />
+          <ImageIcon className="h-3 w-3 text-muted-foreground" />
           <span className="font-semibold">{tribe.mediaCount}</span>
           <span className="text-muted-foreground">Media</span>
         </div>

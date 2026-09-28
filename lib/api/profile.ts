@@ -26,8 +26,8 @@ export interface CheckUsernameResponse {
 /**
  * Fetch the current user's profile
  */
-export async function fetchProfile(): Promise<any> {
-  return apiFetch<any>(API_BASE);
+export async function fetchProfile(): Promise<User> {
+  return apiFetch<User>(API_BASE);
 }
 
 /**
@@ -48,8 +48,8 @@ export async function checkUsername(username: string): Promise<CheckUsernameResp
  */
 export async function updateProfile(
   params: UpdateProfileParams
-): Promise<any> {
-  return apiFetch<any>(
+): Promise<unknown> {
+  return apiFetch<unknown>(
     API_BASE,
     {
       method: 'PATCH',
@@ -64,9 +64,9 @@ export async function updateProfile(
  */
 export async function completeProfile(
   params: UpdateProfileParams
-): Promise<any> {
+): Promise<unknown> {
   // First update profile
-  const updateResponse = await apiFetch<any>(
+  await apiFetch<unknown>(
     API_BASE,
     {
       method: 'PATCH',
@@ -76,7 +76,7 @@ export async function completeProfile(
   );
 
   // Then mark as complete
-  const completeResponse = await apiFetch<any>(
+  const completeResponse = await apiFetch<unknown>(
     `${API_BASE}/complete`,
     {
       method: 'POST',

@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean, unique, uuid, integer, jsonb } from "drizzle-orm/pg-core";
+import { type AnyPgColumn, pgTable, text, timestamp, boolean, unique, uuid, integer, jsonb } from "drizzle-orm/pg-core";
 import { user } from "./auth";
 import { timeline } from "./timeline";
 import {
@@ -144,7 +144,7 @@ export const tribeMemberPreference = pgTable("tribe_member_preference", {
   notificationsMuted: boolean("notifications_muted").default(false).notNull(),
 
   // The timeline the member last picked on the Timeline tab; null means Global (TRI-313)
-  selectedTimelineId: uuid("selected_timeline_id").references((): any => timeline.id, { onDelete: "set null" }),
+  selectedTimelineId: uuid("selected_timeline_id").references((): AnyPgColumn => timeline.id, { onDelete: "set null" }),
 
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")

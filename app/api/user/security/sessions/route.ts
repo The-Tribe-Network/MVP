@@ -7,7 +7,7 @@ import { revokeSessionSchema, validateApiRequest } from "@/lib/validations/secur
  * GET /api/user/security/sessions
  * List all active sessions for the current user
  */
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // 1. Check authentication
     const user = await getServerUser();

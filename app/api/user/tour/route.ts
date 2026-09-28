@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
 import { isTourCompleted, markTourAsCompleted } from "@/lib/services/user";
 
@@ -6,7 +6,7 @@ import { isTourCompleted, markTourAsCompleted } from "@/lib/services/user";
  * GET /api/user/tour
  * Check if user has completed the tour
  */
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const user = await getServerUser();
     if (!user) {
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
  * POST /api/user/tour
  * Mark tour as completed
  */
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
     const user = await getServerUser();
     if (!user) {

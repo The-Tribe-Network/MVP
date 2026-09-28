@@ -10,7 +10,6 @@ import { ViewInvitesDropdown } from './dropdowns/view-invites'
 import { TooltipButton } from './ui/tooltip-button'
 import { Input } from './ui/input'
 import { NotificationsDrawer } from '@/components/notifications-drawer'
-import { TribeHeaderNav } from '@/components/tribe-header-nav'
 import { TribeMobileDrawer } from '@/components/tribe-mobile-drawer'
 import { tribeDetailOptions } from '@/lib/query-options'
 

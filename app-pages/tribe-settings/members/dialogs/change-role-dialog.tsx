@@ -65,7 +65,7 @@ export function ChangeRoleDialog({
       form.reset({
         memberId: member.id,
         newRole:
-          member.role === 'owner' ? 'admin' : (member.role as any) || 'member',
+          member.role === 'owner' ? 'admin' : (member.role as ChangeMemberRoleInput['newRole']) || 'member',
       });
     }
   }, [member, form]);

@@ -99,7 +99,7 @@ export function useProfileForm() {
           if (!result.available) {
             setUsernameError('Username is already taken')
           }
-        } catch (error) {
+        } catch {
           // Silently fail - we'll validate on submit
         } finally {
           setIsCheckingUsername(false)

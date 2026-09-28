@@ -24,7 +24,6 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { BarChart3, Shield, Eye, Plus } from 'lucide-react'
-import { Separator } from '@/components/ui/separator'
 
 const pollSettingsSchema = z.object({
   enablePolls: z.boolean(),

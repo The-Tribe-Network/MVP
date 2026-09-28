@@ -10,6 +10,14 @@ import { parseUserAgent, getLocationFromIP } from "@/lib/utils/user-agent";
 import { getServerSession } from "./auth";
 import { desc } from "drizzle-orm";
 
+/** The `message` of whatever was thrown, if it has one (better-auth throws APIError objects). */
+function thrownMessage(error: unknown): string | undefined {
+  if (typeof error === "object" && error !== null && "message" in error && typeof error.message === "string") {
+    return error.message;
+  }
+  return undefined;
+}
+
 /**
  * Change user password using Better Auth
  */
@@ -29,11 +37,11 @@ export async function changePassword(data: {
     });
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error changing password:", error);
     return {
       success: false,
-      error: error?.message || "Failed to change password. Please check your current password.",
+      error: thrownMessage(error) || "Failed to change password. Please check your current password.",
     };
   }
 }
@@ -123,11 +131,11 @@ export async function revokeUserSession(sessionToken: string): Promise<{ success
     await db.delete(session).where(eq(session.token, sessionToken));
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error revoking session:", error);
     return {
       success: false,
-      error: error?.message || "Failed to revoke session",
+      error: thrownMessage(error) || "Failed to revoke session",
     };
   }
 }
@@ -142,11 +150,11 @@ export async function revokeOtherSessions(): Promise<{ success: boolean; error?:
     });
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error revoking other sessions:", error);
     return {
       success: false,
-      error: error?.message || "Failed to revoke other sessions",
+      error: thrownMessage(error) || "Failed to revoke other sessions",
     };
   }
 }

@@ -14,7 +14,7 @@ import { excludeBlocked } from "./blocks";
 export const GLOBAL_TIMELINE_NAME = "Global";
 
 // The http `db` or a transaction, as for notify()
-type Executor = Pick<PgDatabase<PgQueryResultHKT, any, any>, "select" | "insert">;
+type Executor = Pick<PgDatabase<PgQueryResultHKT, Record<string, unknown>>, "select" | "insert">;
 
 export type Timeline = typeof timeline.$inferSelect;
 export type TimelineType = Timeline["type"];

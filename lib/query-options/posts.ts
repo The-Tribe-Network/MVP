@@ -1,6 +1,6 @@
 import { queryOptions } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/constants/query-keys';
-import { fetchTribePosts, fetchPost, type FetchTribePostsParams, type PostSortOption, type PostContentType } from '@/lib/api/posts';
+import { fetchTribePosts, fetchPost, type PostSortOption, type PostContentType } from '@/lib/api/posts';
 
 // ============================================================================
 // Types

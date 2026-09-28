@@ -49,7 +49,7 @@ export function ForgotPasswordForm() {
           description: "Check your email for password reset instructions.",
         })
       }
-    } catch (error) {
+    } catch {
       toast.error("Error", {
         description: "Failed to send reset email. Please try again.",
       })

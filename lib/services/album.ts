@@ -277,7 +277,7 @@ async function canUserRemoveFromAlbum(
 
 type AlbumMediaInsertRow = typeof albumMedia.$inferInsert;
 /** `db` or a transaction (`getDbTransaction().transaction(tx => …)`); both are PgDatabases. */
-type AlbumMediaExecutor = Pick<PgDatabase<PgQueryResultHKT, any, any>, "select" | "insert">;
+type AlbumMediaExecutor = Pick<PgDatabase<PgQueryResultHKT, Record<string, unknown>>, "select" | "insert">;
 
 /**
  * Insert album_media rows without ever giving a media item a second general-library row (`album_id` null):
@@ -678,7 +678,7 @@ export async function getAlbumsByTribe(
       },
       photoCount: sql<number>`COALESCE(${mediaCountSubquery.count}, 0)::int`,
       contributorCount: sql<number>`COALESCE(${mediaCountSubquery.contributorCount}, 0)::int`,
-      media: sql<any>`'[]'::json`, // Empty array for list view
+      media: sql<never[]>`'[]'::json`, // Empty array for list view
     })
     .from(album)
     .leftJoin(user, eq(album.createdBy, user.id))

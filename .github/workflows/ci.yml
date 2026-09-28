@@ -28,3 +28,6 @@ jobs:
 
       # Generates Next's route types (RouteContext, LayoutProps) and runs tsc --noEmit
       - run: pnpm run typecheck
+
+      # ESLint (eslint.config.mjs) with --max-warnings 0, so a new warning fails CI too (TRI-364)
+      - run: pnpm run lint

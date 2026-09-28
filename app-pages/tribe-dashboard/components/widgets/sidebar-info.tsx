@@ -6,7 +6,7 @@ import { useDialogStore } from '@/lib/stores/dialog-store'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Separator } from '@/components/ui/separator'
-import { Calendar, Users, Image, CalendarDays, MapPin } from 'lucide-react'
+import { Calendar, Users, ImageIcon, CalendarDays, MapPin } from 'lucide-react'
 import { format } from 'date-fns'
 
 interface SidebarInfoWidgetProps {
@@ -84,7 +84,7 @@ export function SidebarInfoWidget({ tribeId }: SidebarInfoWidgetProps) {
 
         {/* Media */}
         <div className="flex items-center gap-1.5 text-sm px-4">
-          <Image className="h-3.5 w-3.5 text-muted-foreground" />
+          <ImageIcon className="h-3.5 w-3.5 text-muted-foreground" />
           <span className="font-semibold">{tribe.mediaCount.toLocaleString()}</span>
           <span className="text-muted-foreground">Media</span>
         </div>

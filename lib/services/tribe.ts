@@ -6,7 +6,7 @@ import { media } from "@/lib/database/schemas/media";
 import { event } from "@/lib/database/schemas/event";
 import { post } from "@/lib/database/schemas/post";
 import { eq, ne, asc, count, and, inArray, aliasedTable, lte, sql } from "drizzle-orm";
-import type { TribeInsert, TribeWithCreator, TribeWithMembers, Tribe } from "@/lib/database/types";
+import type { TribeWithCreator, TribeWithMembers } from "@/lib/database/types";
 import { getMemberWithPermissions } from "./permissions";
 import { checkPermission } from "./role-permissions";
 import type { UpdateTribeInput } from "@/lib/validations/tribe";
@@ -49,7 +49,7 @@ export async function createTribe(
         privacy: data.privacy || "private",
         category: data.category || "other",
         createdBy: userId,
-      } as any)
+      })
       .returning();
 
     // Add creator as owner
@@ -57,13 +57,13 @@ export async function createTribe(
       tribeId: newTribe.id,
       userId: userId,
       role: "owner",
-    } as any);
+    });
 
     // Create default tribe settings
     await tx.insert(tribeSettings).values({
       tribeId: newTribe.id,
       // All other fields use schema defaults
-    } as any);
+    });
 
     await createGlobalTimeline(tx, newTribe.id, userId);
 
@@ -115,7 +115,7 @@ export async function createTribe(
  * OPTIMIZED: 2 DB calls instead of 3 (tribe+creator join, then member count in parallel)
  * Resolves avatar and banner IDs to URLs if they exist
  */
-export async function getTribeById(id: string, includeAvatar: boolean = false): Promise<TribeWithMembers | null> {
+export async function getTribeById(id: string, _includeAvatar: boolean = false): Promise<TribeWithMembers | null> {
   // Create aliases for media table to join twice (avatar and banner)
   const avatarMedia = aliasedTable(media, "avatar_media");
   const bannerMedia = aliasedTable(media, "banner_media");

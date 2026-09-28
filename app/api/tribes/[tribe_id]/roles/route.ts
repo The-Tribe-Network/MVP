@@ -2,10 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
 import { checkPermission, getAllRolePermissions } from "@/lib/services/role-permissions";
 
-type RouteContext<T extends string> = {
-  params: Promise<Record<string, string>>;
-};
-
 /**
  * GET /api/tribes/[tribe_id]/roles
  *

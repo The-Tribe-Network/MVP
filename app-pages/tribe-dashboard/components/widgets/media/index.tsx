@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Image } from "lucide-react";
+import { ImageIcon } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
@@ -34,7 +34,7 @@ export default function MediaWidget({ tribeId }: MediaWidgetProps) {
           href={`/tribe/${tribeId}/media`}
           className="flex items-center gap-2 hover:opacity-80 transition-opacity"
         >
-          <Image className="h-4 w-4 text-muted-foreground" />
+          <ImageIcon className="h-4 w-4 text-muted-foreground" />
           <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
             Media
           </h3>

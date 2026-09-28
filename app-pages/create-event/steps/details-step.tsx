@@ -357,7 +357,7 @@ export function DetailsStep({ control, tribeId }: DetailsStepProps) {
                   />
                 </div>
               </div>
-              <FormDescription>Leave blank if it's a single point in time</FormDescription>
+              <FormDescription>Leave blank if it&apos;s a single point in time</FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -386,7 +386,7 @@ export function DetailsStep({ control, tribeId }: DetailsStepProps) {
                 />
               </FormControl>
               <FormDescription>
-                Enter a physical address or specify if it's a virtual event
+                Enter a physical address or specify if it&apos;s a virtual event
               </FormDescription>
               <FormMessage />
             </FormItem>
