@@ -1,4 +1,6 @@
-import { appName, appUrl } from '../../client';
+import { appName } from '../../client';
+import { openInAppUrl } from '@/lib/landing/urls';
+import { appLink } from '@/lib/services/notifications';
 
 export function generateTribeInvitationAcceptedEmailHtml({ 
   tribeName, 
@@ -11,7 +13,7 @@ export function generateTribeInvitationAcceptedEmailHtml({
   acceptedUserName: string;
   tribeId: string;
 }) {
-  const tribeUrl = `${appUrl}/tribe/${tribeId}`;
+  const tribeUrl = openInAppUrl(appLink.tribe(tribeId));
   
   return `
     <!DOCTYPE html>
@@ -46,7 +48,7 @@ export function generateTribeInvitationAcceptedEmailHtml({
             </ul>
           </div>
           
-          <a href="${tribeUrl}" class="button">View Tribe</a>
+          <a href="${tribeUrl}" class="button">Open in Tribe</a>
           
           <p>Or copy and paste this link into your browser:</p>
           <p style="word-break: break-all; color: #10b981;">${tribeUrl}</p>

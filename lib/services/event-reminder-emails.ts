@@ -7,6 +7,7 @@ import { appName, sendEmail } from "@/lib/email/client";
 import { renderEmail } from "@/lib/email/layout";
 import { escapeHtml } from "@/lib/email/templates/content-report/escape";
 import { formatWhen, validZone } from "@/lib/email/time";
+import { openInAppUrl } from "@/lib/landing/urls";
 import { emailRecipients } from "@/lib/services/email-preferences";
 import { appLink } from "@/lib/services/notifications";
 
@@ -74,7 +75,7 @@ export async function sendDayBeforeReminderEmails(row: ReminderEvent): Promise<n
         },
         goingLine,
       ],
-      button: { label: `Open in ${appName}`, url: appLink.event(row.tribeId, row.id) },
+      button: { label: `Open in ${appName}`, url: openInAppUrl(appLink.event(row.tribeId, row.id)) },
       reason: `You're getting this because you're going to ${row.title} in ${tribeName}.`,
       unsubscribe,
     });

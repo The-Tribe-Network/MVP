@@ -1,4 +1,6 @@
-import { appName, appUrl } from '../../client';
+import { appName } from '../../client';
+import { openInAppUrl } from '@/lib/landing/urls';
+import { appLink } from '@/lib/services/notifications';
 
 export function generateTribeInvitationRejectedEmailText({ 
   tribeName, 
@@ -11,7 +13,7 @@ export function generateTribeInvitationRejectedEmailText({
   rejectedUserName: string;
   tribeId: string;
 }) {
-  const tribeUrl = `${appUrl}/tribe/${tribeId}`;
+  const tribeUrl = openInAppUrl(appLink.tribe(tribeId));
   
   return `
 Hi ${inviterName},

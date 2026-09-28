@@ -9,6 +9,7 @@ import { appName, sendEmail } from "@/lib/email/client";
 import { renderEmail, type EmailBlock } from "@/lib/email/layout";
 import { escapeHtml } from "@/lib/email/templates/content-report/escape";
 import { formatWhen, validZone } from "@/lib/email/time";
+import { openInAppUrl } from "@/lib/landing/urls";
 import { emailRecipients } from "@/lib/services/email-preferences";
 import { appLink, type NotifyExecutor } from "@/lib/services/notifications";
 
@@ -153,7 +154,7 @@ async function sendRow(queued: Row): Promise<number> {
     : [];
   const tribeName = tribeRow?.name ?? "your tribe";
   const actorName = actor ? actor.displayName || actor.name : "A host";
-  const link = row.deleted ? appLink.tribe(row.tribeId) : appLink.event(row.tribeId, row.eventId);
+  const link = openInAppUrl(row.deleted ? appLink.tribe(row.tribeId) : appLink.event(row.tribeId, row.eventId));
 
   let sent = 0;
   for (const recipient of recipients) {

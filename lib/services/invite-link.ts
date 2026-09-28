@@ -4,7 +4,7 @@ import { db, getDbTransaction } from "@/lib/database/client";
 import { tribe, tribeMember } from "@/lib/database/schemas/tribe";
 import { getTribeById } from "./tribe";
 import type { TribeWithMembers } from "@/lib/database/types";
-import { publicBaseUrl } from "@/lib/constants/urls";
+import { landingBaseUrl } from "@/lib/landing/urls";
 
 /**
  * Shareable invite links (TRI-14 · DATA-MODEL-DELTA §5 · TRIBE-09, TSET-09, TRIBE-02).
@@ -54,13 +54,9 @@ export function isWellFormedInviteCode(code: string): boolean {
   return INVITE_CODE_PATTERN.test(code);
 }
 
-/**
- * Share link for a tribe's invite code. `INVITE_LINK_BASE_URL` names the host that serves `/join/:code` (the
- * landing page, TRI-340); otherwise the public base URL, never a domain we don't own (TRI-339).
- */
+/** Share link for a tribe's invite code: the `/join/:code` landing page (TRI-340; host per TRI-339). */
 export function inviteLinkUrl(code: string): string {
-  const base = (process.env.INVITE_LINK_BASE_URL || publicBaseUrl()).replace(/\/+$/, "");
-  return `${base}/join/${code}`;
+  return `${landingBaseUrl()}/join/${code}`;
 }
 
 function toInviteLink(code: string, expiresAt: Date | null): InviteLink {

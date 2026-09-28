@@ -59,6 +59,14 @@ Code lifetime is `AUTH_CONSTANTS.OTP_EXPIRES_MINUTES` (`lib/constants/auth.ts`):
 | `lib/services/digest-emails.ts` | the daily digest (TRI-347): from the cron, in the 9 am hour of the user's timezone (else US Eastern), once per local day (`email_log` `digest:<date>`), only when unread notifications changed since the last digest (else the last 24 h). Up to 8 rows grouped by tribe, muted tribes and blocked people left out. Category `digest` |
 | `account-emails.ts` (no template folder; `renderEmail()`) | security and account notices, no unsubscribe (TRI-348): password changed (after `/change-password` and `/email-otp/reset-password`, from `hooks.after`), account deleted (to the address the account had before the scrub), account deactivated, and a welcome once per user (`email_log` key `welcome`) after the first email verification or on a social sign-up |
 
+## Links into the app (TRI-340)
+
+Mail clients strip `tribe://` hrefs, so every email button is an https link to a small page on our host
+(`lib/landing/`): `/i/:invitationId` (an invite email), `/join/:code` (a tribe's share link) and `/open/<path>` (any
+other `tribe://<path>`; build it with `openInAppUrl(appLink.x(...))`). Each shows what the link is about, an "Open in
+Tribe" button, tries the app once on a phone, and says how to get the app (`APP_DOWNLOAD_URL`, the TestFlight link
+until the App Store; unset = "private test, ask who invited you").
+
 ## Environment
 
 | Variable | Purpose |
@@ -67,4 +75,5 @@ Code lifetime is `AUTH_CONSTANTS.OTP_EXPIRES_MINUTES` (`lib/constants/auth.ts`):
 | `RESEND_FROM_EMAIL` | sender; must be on a domain verified in Resend (`tribehq.io`). `resend.dev` only reaches the Resend account owner |
 | `SUPPORT_EMAIL` | reply-to and the "contact support" address |
 | `BETTER_AUTH_URL` | public base URL for links |
-| `INVITE_LINK_BASE_URL` | host that serves `/join/:code` |
+| `INVITE_LINK_BASE_URL` | host that serves the landing pages (`/i`, `/join`, `/open`); else `BETTER_AUTH_URL` |
+| `APP_DOWNLOAD_URL` | "Get the app" on the landing pages (TestFlight public link now) |
