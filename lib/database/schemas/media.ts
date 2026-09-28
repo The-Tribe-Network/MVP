@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, integer, bigint, uuid, unique, uniqueIndex, boolean, index } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, integer, bigint, uuid, unique, uniqueIndex, boolean, index, jsonb } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { tribe } from "./tribe";
 import { user } from "./auth";
@@ -90,3 +90,26 @@ export const mediaLike = pgTable("media_like", {
   uniqueMediaUser: unique().on(table.mediaId, table.userId),
 }));
 
+/**
+ * A deleted photo's Cloudinary asset, kept for a while before it is destroyed (TRI-120, owner 2026-09-28: option c).
+ * The `media` row goes at once, so the photo leaves the app; the file stays until `purge_after`, when the cron route
+ * destroys it. `media_row` is the deleted row, so a photo deleted by mistake can be put back by hand inside the window.
+ * No FK on `media_id`: the row it names is gone. Keeping photos longer is a paid-tier feature (Paid Tier project).
+ */
+export const mediaPurge = pgTable(
+  "media_purge",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    mediaId: uuid("media_id").notNull(),
+    publicId: text("public_id"),
+    fileUrl: text("file_url").notNull(),
+    mediaRow: jsonb("media_row"),
+    deletedAt: timestamp("deleted_at").defaultNow().notNull(),
+    purgeAfter: timestamp("purge_after").notNull(),
+    purgedAt: timestamp("purged_at"),
+  },
+  (table) => ({
+    due: index("idx_media_purge_due").on(table.purgeAfter).where(sql`${table.purgedAt} IS NULL`),
+    byMedia: index("idx_media_purge_media").on(table.mediaId),
+  })
+);

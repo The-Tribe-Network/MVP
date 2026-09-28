@@ -1,9 +1,10 @@
-import { db } from '@/lib/database/client';
-import { album, albumMedia, media, mediaLike } from '@/lib/database/schemas';
+import { db, getDbTransaction } from '@/lib/database/client';
+import { album, albumMedia, media, mediaLike, mediaPurge } from '@/lib/database/schemas';
 import { user } from '@/lib/database/schemas/auth';
 import { comment } from '@/lib/database/schemas/post';
 import { cloudinary } from '@/lib/clients/cloudinary';
-import { eq, and, or, asc, desc, exists, gte, inArray, isNotNull, isNull, lt, count, sql, type SQL } from 'drizzle-orm';
+import { eq, and, or, asc, desc, exists, gte, inArray, isNotNull, isNull, lt, lte, count, sql, type SQL } from 'drizzle-orm';
+import type { PgDatabase, PgQueryResultHKT } from 'drizzle-orm/pg-core';
 import type { MediaListSort } from '@/lib/validations/media';
 import type { Media, MediaInsert } from '@/lib/database/types';
 import { canUserUploadMedia, canUserDeleteMedia } from './permissions';
@@ -378,30 +379,84 @@ export async function deleteMedia(id: string): Promise<void> {
     return;
   }
 
-  // Cloudinary first; a failure there is logged and the row is deleted anyway
-  await destroyMediaAsset(mediaRecord);
-
-  // Delete from database
-  await db.delete(media).where(eq(media.id, id));
+  // The row goes now (the photo leaves the app); the file is kept 30 days first (TRI-120). Together, so a failed
+  // delete never leaves a live photo queued for purge.
+  await getDbTransaction().transaction(async (tx) => {
+    await retireMediaAsset(tx, mediaRecord, mediaRecord);
+    await tx.delete(media).where(eq(media.id, id));
+  });
 }
 
 /**
- * Remove a media row's asset from Cloudinary, best effort (logs and returns on failure). The Cloudinary
- * half of `deleteMedia`; also used by account deletion (TRI-16), which deletes the rows in its transaction.
+ * How long a deleted photo's file is kept before it is destroyed (TRI-120, owner 2026-09-28): long enough to undo
+ * "I deleted it by mistake". Keeping photos longer is a paid-tier feature.
  */
-export async function destroyMediaAsset(mediaRecord: Pick<Media, 'id' | 'publicId' | 'fileUrl'>): Promise<void> {
-  // Stored public_id (TRI-160); older rows without one fall back to parsing the delivery URL.
-  const publicId = mediaRecord.publicId ?? publicIdFromCloudinaryUrl(mediaRecord.fileUrl);
-  if (!publicId) {
-    console.warn('Could not determine Cloudinary public_id for media', mediaRecord.id, mediaRecord.fileUrl);
-    return;
-  }
+export const MEDIA_RETENTION_DAYS = 30;
 
-  try {
-    await cloudinary.uploader.destroy(publicId);
-  } catch (error) {
-    console.error('Failed to delete from Cloudinary:', error);
+// `db` or a transaction, like notify()'s executor
+type Executor = Pick<PgDatabase<PgQueryResultHKT, any, any>, 'insert'>;
+
+/**
+ * Queue a deleted media row's Cloudinary asset for destruction after `MEDIA_RETENTION_DAYS` (`media_purge`). Call
+ * it in the transaction that deletes the row. `row` (the whole media row) lets a photo deleted by mistake be put
+ * back by hand; account deletion (TRI-16) passes none, since the account it belonged to is gone.
+ */
+export async function retireMediaAsset(
+  executor: Executor,
+  mediaRecord: Pick<Media, 'id' | 'publicId' | 'fileUrl'>,
+  row?: Media
+): Promise<void> {
+  // Stored public_id (TRI-160); older rows without one fall back to parsing the delivery URL
+  const publicId = mediaRecord.publicId ?? publicIdFromCloudinaryUrl(mediaRecord.fileUrl);
+  await executor.insert(mediaPurge).values({
+    mediaId: mediaRecord.id,
+    publicId,
+    fileUrl: mediaRecord.fileUrl,
+    mediaRow: row ?? null,
+    purgeAfter: new Date(Date.now() + MEDIA_RETENTION_DAYS * 24 * 60 * 60_000),
+  });
+}
+
+/**
+ * Destroy the Cloudinary assets whose retention is over (cron route). Best effort per asset: a Cloudinary failure is
+ * logged and retried on the next run; "not found" counts as done.
+ */
+export async function purgeRetiredMedia(now = new Date(), limit = 100): Promise<{ due: number; purged: number }> {
+  const due = await db
+    .select({ id: mediaPurge.id, mediaId: mediaPurge.mediaId, publicId: mediaPurge.publicId, fileUrl: mediaPurge.fileUrl })
+    .from(mediaPurge)
+    .where(and(isNull(mediaPurge.purgedAt), lte(mediaPurge.purgeAfter, now)))
+    .limit(limit);
+  let purged = 0;
+  for (const item of due) {
+    // Never destroy a file a live photo still uses (seed data or a future copy could share one)
+    const [inUse] = await db
+      .select({ id: media.id })
+      .from(media)
+      .where(item.publicId ? or(eq(media.publicId, item.publicId), eq(media.fileUrl, item.fileUrl)) : eq(media.fileUrl, item.fileUrl))
+      .limit(1);
+    if (inUse) {
+      await db.update(mediaPurge).set({ purgedAt: now }).where(eq(mediaPurge.id, item.id));
+      continue;
+    }
+    if (item.publicId) {
+      try {
+        const result = await cloudinary.uploader.destroy(item.publicId);
+        if (result?.result !== 'ok' && result?.result !== 'not found') {
+          console.error('[media-purge] Cloudinary said', result?.result, 'for', item.publicId);
+          continue;
+        }
+      } catch (error) {
+        console.error('[media-purge] failed for', item.publicId, error instanceof Error ? error.message : error);
+        continue;
+      }
+    } else {
+      console.warn('[media-purge] no public_id for media', item.mediaId, item.fileUrl);
+    }
+    await db.update(mediaPurge).set({ purgedAt: now }).where(eq(mediaPurge.id, item.id));
+    purged += 1;
   }
+  return { due: due.length, purged };
 }
 
 /**

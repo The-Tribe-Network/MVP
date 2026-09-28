@@ -20,7 +20,7 @@ import {
   userSocialLink,
   verification,
 } from "@/lib/database/schemas";
-import { destroyMediaAsset } from "./media";
+import { retireMediaAsset } from "./media";
 import { sendAccountDeactivatedEmail, sendAccountDeletedEmail } from "@/lib/email/account-emails";
 
 /**
@@ -91,7 +91,7 @@ async function mediaToRemove(userId: string) {
  *   codes for their email, social links, privacy row, blocks in either direction (TRI-238), every tribe
  *   membership with its permission overrides
  *   and preferences, RSVPs and co-host slots, drafts, notifications addressed to them, and their media rows
- *   (with each photo's post / album / like links); the Cloudinary assets are destroyed after commit.
+ *   (with each photo's post / album / like links); the Cloudinary assets are queued in media_purge and destroyed after 30 days (TRI-120).
  * scrubbed — name → "Deleted user"; email → deleted+<id>@deleted.invalid; displayName, username, image,
  *   bio, location, phone, timezone, birthday → null; emailVerified / profileCompleted false; deleted_at set.
  * kept — posts, comments, events, polls and albums they created, their likes and poll votes, activity rows,
@@ -142,6 +142,8 @@ export async function deleteAccount(userId: string): Promise<DeleteAccountResult
     await tx.delete(notification).where(eq(notification.userId, userId));
 
     // post_media / album_media / media_like / activity rows cascade; album covers are set null
+    // Their photos leave the app now; the files are destroyed after the retention window (TRI-120)
+    for (const item of removable) await retireMediaAsset(tx, item);
     if (mediaIds.length > 0) await tx.delete(media).where(inArray(media.id, mediaIds));
 
     await tx
@@ -165,8 +167,6 @@ export async function deleteAccount(userId: string): Promise<DeleteAccountResult
       .where(eq(user.id, userId));
   });
 
-  // After commit: a Cloudinary failure only leaves an orphaned asset, never a half-deleted account
-  await Promise.all(removable.map((m) => destroyMediaAsset(m)));
 
   if (current && !current.email.endsWith("@deleted.invalid")) {
     try {

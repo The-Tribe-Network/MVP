@@ -68,6 +68,7 @@ export {
   media,
   albumMedia,
   mediaLike,
+  mediaPurge,
 } from "@/lib/database/schemas/media";
 
 // Event tables
