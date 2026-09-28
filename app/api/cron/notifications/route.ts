@@ -3,10 +3,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { runEventReminders, runPollResults } from "@/lib/services/scheduled-notifications";
 import { sendDueEventChangeEmails } from "@/lib/services/event-change-emails";
 import { runDailyDigests } from "@/lib/services/digest-emails";
+import { purgeRetiredMedia } from "@/lib/services/media";
 
 // GET /api/cron/notifications — Vercel Cron, every 15 min (vercel.json; TRI-184). Inserts event reminders
 // (TRI-190) and poll results (TRI-219) through notify(), sends due event-change emails (TRI-349) and
-// the daily digests (TRI-347); safe to run twice.
+// the daily digests (TRI-347), and destroys deleted photos
+// whose 30 days are up (TRI-120); safe to run twice.
 // Vercel sends `Authorization: Bearer $CRON_SECRET`. In development the secret is optional and `?now=<ISO>` fakes
 // the clock, to check the windows without waiting.
 export async function GET(request: NextRequest) {
@@ -27,7 +29,8 @@ export async function GET(request: NextRequest) {
     const pollResults = await runPollResults(now);
     const eventChangeEmails = await sendDueEventChangeEmails(now);
     const digests = await runDailyDigests(now);
-    return NextResponse.json({ now: now.toISOString(), reminders, pollResults, eventChangeEmails, digests });
+    const mediaPurged = await purgeRetiredMedia(now);
+    return NextResponse.json({ now: now.toISOString(), reminders, pollResults, eventChangeEmails, digests, mediaPurged });
   } catch (error) {
     console.error("Scheduled notifications failed:", error);
     return NextResponse.json({ error: "Scheduled notifications failed" }, { status: 500 });
