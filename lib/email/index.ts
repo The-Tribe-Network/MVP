@@ -9,8 +9,6 @@ export { sendOTPForgetPasswordEmail } from './templates/otp-forget-password/send
 export { sendEmailChangeOTP, sendEmailChangedNotice } from './templates/email-change/send-email-change-emails';
 
 // Template exports for advanced usage
-export { generateWelcomeEmailHtml } from './templates/welcome/template-html';
-export { generateWelcomeEmailText } from './templates/welcome/template-text';
 export { generateOTPEmailVerificationHtml } from './templates/otp-email-verification/template-html';
 export { generateOTPEmailVerificationText } from './templates/otp-email-verification/template-text';
 export { generateOTPForgetPasswordEmailHtml } from './templates/otp-forget-password/template-html';

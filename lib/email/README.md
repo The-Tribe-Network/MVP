@@ -56,7 +56,7 @@ Code lifetime is `AUTH_CONSTANTS.OTP_EXPIRES_MINUTES` (`lib/constants/auth.ts`):
 | `waitlist` | someone joins the web waitlist |
 | `lib/services/event-change-emails.ts` (no template folder; built with `renderEmail()`) | an event someone is going to (or might go to, or hosts) is cancelled, deleted while upcoming, or gets a new time or place (TRI-349). Queued in the edit's transaction (`event_change_email`); a cancellation goes right after the request, a change after a 10-minute window that folds further edits; the cron route sends what is due. Category `eventUpdates` |
 | `lib/services/event-reminder-emails.ts` | the day-before reminder (TRI-350) to people going who RSVP'd before the one-day mark, when the event's reminders are on; sent from the cron's reminder pass, once per event per person ever (`email_log`). Category `eventUpdates` |
-| `welcome` | not sent yet (the alpha emails project wires it up) |
+| `account-emails.ts` (no template folder; `renderEmail()`) | security and account notices, no unsubscribe (TRI-348): password changed (after `/change-password` and `/email-otp/reset-password`, from `hooks.after`), account deleted (to the address the account had before the scrub), account deactivated, and a welcome once per user (`email_log` key `welcome`) after the first email verification or on a social sign-up |
 
 ## Environment
 
