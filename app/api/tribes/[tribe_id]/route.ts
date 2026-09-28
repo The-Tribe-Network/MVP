@@ -4,6 +4,7 @@ import { getTribeDetail, updateTribe, deleteTribe } from "@/lib/services/tribe";
 import { getMemberWithPermissions } from "@/lib/services/permissions";
 import { resolveEffectivePermissions } from "@/lib/services/member-permissions";
 import { getTribeSettings } from "@/lib/services/tribe-settings";
+import { countPendingInvitations } from "@/lib/services/invitation";
 import {
   tribeIdParamSchema,
   updateTribeSchema,
@@ -57,8 +58,14 @@ export async function GET(
       resolveEffectivePermissions(tribeId, member),
     ]);
 
+    // TRI-306: the TSET-01 Invitations count, for those who may see the invitations
+    const pendingInvitationCount = effectivePermissions.canInviteMembers
+      ? await countPendingInvitations(tribeId)
+      : undefined;
+
     return NextResponse.json({
       ...tribeData,
+      ...(pendingInvitationCount !== undefined ? { pendingInvitationCount } : {}),
       settings: {
         eventsEnabled: settings.eventsEnabled,
         albumsEnabled: settings.albumsEnabled,

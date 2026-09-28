@@ -96,7 +96,13 @@ export async function createTribe(
   }
 
   // Both are null on a fresh tribe, but the public shape never carries the invite code
-  const { inviteCode: _inviteCode, inviteCodeExpiresAt: _inviteCodeExpiresAt, ...publicTribe } = createdTribe;
+  const {
+    inviteCode: _inviteCode,
+    inviteCodeExpiresAt: _inviteCodeExpiresAt,
+    inviteCodeMaxUses: _inviteCodeMaxUses,
+    inviteCodeUseCount: _inviteCodeUseCount,
+    ...publicTribe
+  } = createdTribe;
 
   return {
     ...publicTribe,

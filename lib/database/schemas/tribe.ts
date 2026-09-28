@@ -32,6 +32,8 @@ export const tribe = pgTable("tribe", {
   isTrending: boolean("is_trending").notNull().default(false),
   inviteCode: text("invite_code").unique(), // 10-char Crockford base32 (TRI-14); null until first shared
   inviteCodeExpiresAt: timestamp("invite_code_expires_at"), // null → never expires; rotation retires the code
+  inviteCodeMaxUses: integer("invite_code_max_uses"), // null → no limit (TRI-307)
+  inviteCodeUseCount: integer("invite_code_use_count").notNull().default(0), // joins through the current code
   createdBy: uuid("created_by")
     .notNull()
     .references(() => user.id, { onDelete: "restrict" }),

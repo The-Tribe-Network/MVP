@@ -3,7 +3,7 @@ import { tribeInvitation, tribeMember, tribe } from "@/lib/database/schemas/trib
 import { user } from "@/lib/database/schemas/auth";
 import { media } from "@/lib/database/schemas/media";
 import { event } from "@/lib/database/schemas/event";
-import { eq, and, or, gt, isNull, desc, inArray, sql, aliasedTable } from "drizzle-orm";
+import { eq, and, or, gt, isNull, desc, inArray, sql, aliasedTable, count } from "drizzle-orm";
 import type { TribeInvitation } from "@/lib/database/types";
 import { sendTribeInvitationEmail } from "@/lib/email/templates/tribe-invitation/send-tribe-invitation-email";
 import { sendTribeInvitationRejectedEmail } from "@/lib/email/templates/tribe-invitation-rejected/send-tribe-invitation-rejected-email";
@@ -572,3 +572,21 @@ export async function rejectInvitation(
   return { success: true };
 }
 
+
+/**
+ * A tribe's invitations still waiting for an answer: pending and not past their expiry (TRI-306, the TSET-01
+ * Invitations row). The TSET-09 list shows a pending one past its expiry as expired, so this matches it.
+ */
+export async function countPendingInvitations(tribeId: string): Promise<number> {
+  const [row] = await db
+    .select({ n: count() })
+    .from(tribeInvitation)
+    .where(
+      and(
+        eq(tribeInvitation.tribeId, tribeId),
+        eq(tribeInvitation.status, "pending"),
+        or(isNull(tribeInvitation.expiresAt), gt(tribeInvitation.expiresAt, new Date()))
+      )
+    );
+  return Number(row?.n ?? 0);
+}

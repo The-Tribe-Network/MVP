@@ -240,3 +240,22 @@ export function validateApiRequest<T>(
   }
 }
 
+
+/** Most joins one invite link may take (TRI-307). */
+export const INVITE_LINK_MAX_USES = 1000;
+
+/**
+ * Invite link limits (TRI-307) for `POST …/invite-link` (rotate; absent = none) and `PATCH …/invite-link`
+ * (absent = unchanged). `null` removes a limit. An expiry must be in the future and within a year.
+ */
+export const inviteLinkLimitsSchema = z
+  .object({
+    maxUses: z.number().int().min(1).max(INVITE_LINK_MAX_USES).nullable().optional(),
+    expiresAt: z.coerce
+      .date()
+      .refine((date) => date.getTime() > Date.now(), "expiresAt must be in the future")
+      .refine((date) => date.getTime() <= Date.now() + 366 * 24 * 60 * 60 * 1000, "expiresAt must be within a year")
+      .nullable()
+      .optional(),
+  })
+  .strict();
