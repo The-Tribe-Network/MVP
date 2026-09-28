@@ -457,7 +457,8 @@ export type PostWithStats = PostWithAuthor & {
   likeCount: number;
   commentCount: number;
   isLiked: boolean;
-  image: { id: string; url: string; width?: number; height?: number } | null;
+  // The post's photos in order; the legacy single `image` was dropped (TRI-362)
+  media: { id: string; url: string; width?: number; height?: number }[];
   linkedAlbum: LinkedAlbumPreview | null;
 };
 

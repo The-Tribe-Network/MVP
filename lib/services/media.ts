@@ -19,6 +19,7 @@ import {
 } from './album';
 import { blurhashForCloudinaryImage } from '@/lib/utils/blurhash';
 import { excludeBlocked, isBlockedPair } from './blocks';
+import { decodeCursor, encodeCursor } from './keyset-cursor';
 
 /** Cloudinary public_id from a delivery URL (`/upload/v<ver>/<public_id>.<ext>`), or null. */
 export function publicIdFromCloudinaryUrl(url: string): string | null {
@@ -584,7 +585,53 @@ export async function getMediaByTribe(
   tribeId: string,
   filters: MediaFilters = {}
 ) {
-  const { albumId, viewerAccess, sort = "newest", limit = 50, offset = 0 } = filters;
+  const { limit = 50, offset = 0 } = filters;
+  const rows = await tribeMediaQuery(tribeId, filters).limit(limit).offset(offset);
+  return rows.map(({ cursorCreatedAt: _createdAt, ...row }) => row);
+}
+
+/**
+ * One page of `listMedia` (TRI-360): keyset-paged on the sort's key, so photos added while someone scrolls don't
+ * shift later pages. `newest` / `oldest` are (created_at, id); `popular` is (likes, created_at, id), and a like in
+ * between can still move a photo across pages. Without a cursor, `offset` still skips rows. Items are trimmed to what
+ * the grid and viewer use (TRI-362): no `fileSize`, `mimeType`, `duration`, `addedAt` or `postId`; the single-photo
+ * route keeps the full row.
+ */
+export async function getMediaPageByTribe(tribeId: string, filters: MediaFilters = {}, cursor?: string) {
+  const { sort = "newest", limit = 50, offset = 0 } = filters;
+  const after = cursor
+    ? sort === "popular"
+      ? decodeCursor(cursor, sort, ["int", "timestamp", "uuid"] as const)
+      : decodeCursor(cursor, sort, ["timestamp", "uuid"] as const)
+    : undefined;
+  const rows = await tribeMediaQuery(tribeId, filters, after)
+    .limit(limit + 1)
+    .offset(after ? 0 : offset);
+
+  const page = rows.slice(0, limit);
+  const last = page[page.length - 1];
+  const nextCursor =
+    rows.length > limit && last
+      ? encodeCursor(
+          sort,
+          sort === "popular" ? [last.likeCount, last.cursorCreatedAt, last.id] : [last.cursorCreatedAt, last.id]
+        )
+      : null;
+  return {
+    items: page.map(
+      ({ cursorCreatedAt: _c, fileSize: _s, mimeType: _m, duration: _d, addedAt: _a, postId: _p, ...item }) => item
+    ),
+    nextCursor,
+  };
+}
+
+/** The listMedia rows for `filters`, ordered, after the keyset `after` when given; the caller adds limit / offset. */
+function tribeMediaQuery(
+  tribeId: string,
+  filters: MediaFilters,
+  after?: readonly [string, string] | readonly [number, string, string]
+) {
+  const { albumId, viewerAccess, sort = "newest" } = filters;
 
   // The one album_media row reported per photo (earliest by added_at, id). Scalar subqueries in the select
   // list, so Postgres evaluates them only for the returned page (a lateral join ran them for every row
@@ -604,6 +651,15 @@ export async function getMediaByTribe(
       : sort === "popular"
         ? [desc(mediaLikeCount), desc(media.createdAt), desc(media.id)]
         : [desc(media.createdAt), desc(media.id)];
+
+  // Rows after the cursor's, in the same order
+  const afterCursor = !after
+    ? undefined
+    : after.length === 3
+      ? sql`(${mediaLikeCount}, ${media.createdAt}, ${media.id}) < (${after[0]}::bigint, ${after[1]}::timestamp, ${after[2]}::uuid)`
+      : sort === "oldest"
+        ? sql`(${media.createdAt}, ${media.id}) > (${after[0]}::timestamp, ${after[1]}::uuid)`
+        : sql`(${media.createdAt}, ${media.id}) < (${after[0]}::timestamp, ${after[1]}::uuid)`;
 
   return db
     .select({
@@ -634,13 +690,13 @@ export async function getMediaByTribe(
       },
       likeCount: mediaLikeCount,
       commentCount: mediaCommentCount,
+      cursorCreatedAt: sql<string>`${media.createdAt}::text`,
     })
     .from(media)
     .leftJoin(user, eq(media.uploadedBy, user.id))
-    .where(and(...mediaListConditions(tribeId, filters), isListed(albumId, viewerAccess)))
+    .where(and(...mediaListConditions(tribeId, filters), isListed(albumId, viewerAccess), afterCursor))
     .orderBy(...orderBy)
-    .limit(limit)
-    .offset(offset);
+    .$dynamic();
 }
 
 /** Photos `getMediaByTribe` would return for the same filters, ignoring sort, limit and offset (TRI-207 `total`). */

@@ -58,6 +58,8 @@ export const createPostSchema = z
 export const listPostsQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(50).default(20),
   offset: z.coerce.number().int().min(0).default(0),
+  // Keyset cursor from the previous page's `nextCursor` (TRI-360); wins over `offset`
+  cursor: z.string().min(1).optional(),
   sort: z.enum(["new", "hot", "top"]).default("new"),
   contentType: z.enum(["all", "text", "media", "announcements", "events", "polls"]).default("all"),
   // One posts timeline's feed; Global when omitted (TRI-314)

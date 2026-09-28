@@ -48,6 +48,8 @@ export const mediaListQuerySchema = z
     sort: z.enum(MEDIA_LIST_SORTS).default("newest"),
     limit: z.coerce.number().int().min(1).max(200).default(50),
     offset: z.coerce.number().int().min(0).default(0),
+    // Keyset cursor from the previous page's `nextCursor` (TRI-360); wins over `offset`
+    cursor: z.string().min(1).optional(),
   })
   .transform(({ from, to, ...rest }) => ({
     ...rest,
@@ -77,5 +79,6 @@ export function mediaListQueryInput(params: URLSearchParams) {
     sort: get("sort"),
     limit: get("limit"),
     offset: get("offset"),
+    cursor: get("cursor"),
   };
 }

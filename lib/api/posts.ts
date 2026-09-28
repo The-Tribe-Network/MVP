@@ -52,9 +52,11 @@ export async function fetchTribePosts(
   if (queryParams.contentType && queryParams.contentType !== 'all') filteredParams.contentType = queryParams.contentType;
 
   const queryString = buildQueryString(filteredParams);
-  return apiFetch<PostWithStats[]>(
+  // The feed answers `{ items, nextCursor }` (TRI-360); the web still pages by offset
+  const page = await apiFetch<{ items: PostWithStats[] }>(
     `${API_BASE}/${tribeId}/posts${queryString}`
   );
+  return page.items;
 }
 
 /**

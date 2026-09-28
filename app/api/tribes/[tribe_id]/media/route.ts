@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerUser } from '@/lib/services/auth';
-import { uploadTribeMedia, getMediaByTribe, countMediaByTribe } from '@/lib/services/media';
+import { uploadTribeMedia, getMediaPageByTribe, countMediaByTribe } from '@/lib/services/media';
+import { InvalidCursorError } from '@/lib/services/keyset-cursor';
 import { mediaListQuerySchema, mediaListQueryInput } from '@/lib/validations/media';
 import { validateImageFile } from '@/lib/utils/image';
 import { checkTribeMembership } from '@/lib/services/permissions';
@@ -10,7 +11,7 @@ import { AlbumForbiddenError, InvalidAlbumError, getAlbumAccessContext } from '@
 /**
  * GET /api/tribes/[tribe_id]/media
  * Album gallery items of a tribe (`listMedia`): filters albumId, type, uploadedBy, from/to; sort; paging.
- * Returns `{ media, total, hasMore }`.
+ * Returns `{ media, total, hasMore, nextCursor }`; pass `nextCursor` back as `cursor` for the next page (TRI-360).
  */
 export async function GET(
   request: NextRequest,
@@ -47,18 +48,22 @@ export async function GET(
       );
     }
     // Only the general library and albums the caller may see (TRI-273): a hidden album's id lists nothing.
-    const filters = { ...validation.data, viewerAccess: await getAlbumAccessContext(tribe_id, user.id) };
+    const { cursor, ...query } = validation.data;
+    const filters = { ...query, viewerAccess: await getAlbumAccessContext(tribe_id, user.id) };
 
-    const [media, total] = await Promise.all([
-      getMediaByTribe(tribe_id, filters),
+    const [page, total] = await Promise.all([
+      getMediaPageByTribe(tribe_id, filters, cursor),
       countMediaByTribe(tribe_id, filters),
     ]);
 
     return NextResponse.json(
-      { media, total, hasMore: filters.offset + media.length < total },
+      { media: page.items, total, hasMore: page.nextCursor !== null, nextCursor: page.nextCursor },
       { status: 200 }
     );
   } catch (error) {
+    if (error instanceof InvalidCursorError) {
+      return NextResponse.json({ error: error.message, code: 'INVALID_CURSOR' }, { status: 400 });
+    }
     console.error('Error fetching media:', error);
     return NextResponse.json(
       { error: 'Failed to fetch media' },
