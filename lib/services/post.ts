@@ -899,67 +899,69 @@ export async function verifyPostAccessAndMembership(
 }
 
 /**
- * Toggle like on a post
- * Returns true if liked, false if unliked
+ * Like (`liked: true`) or unlike a post. Safe to repeat and to race (TRI-361): a second like is a no-op thanks to
+ * the (post, user) unique constraint, and the author hears only about a like that was really new (TRI-193).
  */
-export async function togglePostLike(postId: string, userId: string): Promise<boolean> {
-  // Get post info for activity creation
+export async function setPostLike(
+  postId: string,
+  userId: string,
+  liked: boolean
+): Promise<{ isLiked: boolean; likeCount: number }> {
   const postData = await getPostById(postId);
   if (!postData) {
     throw new Error("Post not found");
   }
 
-  // Check if like exists
-  const [existingLike] = await db
-    .select()
-    .from(postLike)
-    .where(and(eq(postLike.postId, postId), eq(postLike.userId, userId)))
-    .limit(1);
+  if (!liked) {
+    await db.delete(postLike).where(and(eq(postLike.postId, postId), eq(postLike.userId, userId)));
+    return { isLiked: false, likeCount: await getPostLikeCount(postId) };
+  }
 
-  if (existingLike) {
-    // Unlike
-    await db
-      .delete(postLike)
-      .where(and(eq(postLike.postId, postId), eq(postLike.userId, userId)));
-    return false;
-  } else {
-    // Like, and tell the author in the same transaction (TRI-193). An unlike leaves the row alone.
-    await getDbTransaction().transaction(async (tx) => {
-      await tx.insert(postLike).values({ postId, userId });
-      await notify(tx, {
-        type: "like",
-        actorId: userId,
-        tribeId: postData.tribeId,
-        entityType: "post",
-        entityId: postId,
-        recipients: [postData.authorId],
-        title: "liked your post",
-        message: excerpt(postData.content),
-        link: appLink.post(postData.tribeId, postId),
-        collapse: true,
-      });
+  // Like, and tell the author in the same transaction, only when the row is new
+  const isNew = await getDbTransaction().transaction(async (tx) => {
+    const inserted = await tx
+      .insert(postLike)
+      .values({ postId, userId })
+      .onConflictDoNothing()
+      .returning({ id: postLike.id });
+    if (inserted.length === 0) return false;
+    await notify(tx, {
+      type: "like",
+      actorId: userId,
+      tribeId: postData.tribeId,
+      entityType: "post",
+      entityId: postId,
+      recipients: [postData.authorId],
+      title: "liked your post",
+      message: excerpt(postData.content),
+      link: appLink.post(postData.tribeId, postId),
+      collapse: true,
     });
+    return true;
+  });
 
-    // Get updated like count
-    const newLikeCount = await getPostLikeCount(postId);
-
+  const likeCount = await getPostLikeCount(postId);
+  if (isNew) {
     // Check for milestone and create activity (non-blocking)
     try {
       const { checkAndCreateLikeMilestone } = await import("./activity");
-      await checkAndCreateLikeMilestone(
-        postId,
-        newLikeCount,
-        userId,
-        postData.tribeId,
-        postData.authorId
-      );
+      await checkAndCreateLikeMilestone(postId, likeCount, userId, postData.tribeId, postData.authorId);
     } catch (error) {
       // Log error but don't fail like operation
       console.error("Failed to create like milestone activity (like was still recorded):", error);
     }
-
-    return true;
   }
+  return { isLiked: true, likeCount };
+}
+
+/** The web's toggle (`POST …/like`), on top of `setPostLike`. Returns the new state and count. */
+export async function togglePostLike(postId: string, userId: string): Promise<{ isLiked: boolean; likeCount: number }> {
+  const [existingLike] = await db
+    .select({ id: postLike.id })
+    .from(postLike)
+    .where(and(eq(postLike.postId, postId), eq(postLike.userId, userId)))
+    .limit(1);
+  return setPostLike(postId, userId, !existingLike);
 }
 
 /**
