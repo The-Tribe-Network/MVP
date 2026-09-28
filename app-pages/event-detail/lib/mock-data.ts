@@ -46,6 +46,9 @@ export const mockEvent: EventWithDetails = {
       eventId: '1',
       userId: 'user-2',
       status: 'going',
+      guestCount: 0,
+      note: null,
+      isHost: false,
       createdAt: new Date(),
       updatedAt: new Date(),
       user: {

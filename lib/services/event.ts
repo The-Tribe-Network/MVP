@@ -420,6 +420,7 @@ export async function createEvent(
         startDate: event.startDate,
         endDate: event.endDate,
         location: event.location,
+        coverImageUrl: event.coverImageUrl,
         status: effectiveEventStatus,
         createdBy: event.createdBy,
         createdAt: event.createdAt,
@@ -447,7 +448,7 @@ export async function createEvent(
       .where(eq(event.id, newEvent.id))
       .limit(1);
 
-    return eventWithCreator as EventWithCreator;
+    return eventWithCreator satisfies EventWithCreator;
   });
 
   // Re-read through the detail path so POST answers the contract's full `Event` (counts, the

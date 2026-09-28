@@ -219,6 +219,9 @@ export type UserBasic = Pick<User, 'id' | 'name' | 'email' | 'image' | 'username
 // `canInviteMembers` via the invite-link route, so the public tribe shape leaves both columns out.
 export type PublicTribe = Omit<Tribe, "inviteCode" | "inviteCodeExpiresAt">;
 
+// The tribe as the activity feed, album and event reads embed it: the public columns without banner and colour.
+export type TribeSummary = Omit<PublicTribe, "banner" | "color">;
+
 export type TribeWithCreator = PublicTribe & {
   creator: UserPreview;
 };
@@ -318,7 +321,7 @@ export type CommentWithAuthorAndReplies = CommentWithAuthor & {
 // Event extended types - build up progressively
 export type EventWithCreator = Event & {
   creator: UserPreview;
-  tribe: Tribe;
+  tribe: TribeSummary;
 };
 
 export type EventAttendeeWithUser = EventAttendee & {
@@ -403,13 +406,16 @@ export type MediaWithUploader = Media & {
 // Album extended types - build up progressively
 export type AlbumWithCreator = Album & {
   creator: UserPreview;
-  tribe: Tribe;
+  tribe: TribeSummary;
   coverUrl?: string | null; // Resolved from coverId
   photoCount?: number;
 };
 
-/** Album media item as album GET returns it: the row plus its uploader and the viewer's "new" flag (TRI-201). */
-export type AlbumMediaItem = Media & {
+/**
+ * Album media item as album GET returns it: the row plus its uploader and the viewer's "new" flag (TRI-201).
+ * The Cloudinary `publicId` is upload-internal and not selected.
+ */
+export type AlbumMediaItem = Omit<Media, "publicId"> & {
   likeCount: number;
   displayOrder: number | null;
   uploader: UserPreview;
@@ -435,7 +441,7 @@ export type AlbumWithMedia = AlbumWithCreator & AlbumContributors & {
 // Activity extended types
 export type ActivityWithUser = Activity & {
   user: UserPreview;
-  tribe?: Tribe;
+  tribe?: TribeSummary;
   post?: Post;
   event?: Event;
   media?: Media;

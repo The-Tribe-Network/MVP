@@ -125,10 +125,10 @@ export type UpdateMediaSettingsInput = z.infer<typeof updateMediaSettingsSchema>
 /**
  * Helper function to validate API requests against a schema
  */
-export function validateApiRequest<T>(
-  schema: z.ZodSchema<T>,
+export function validateApiRequest<S extends z.ZodTypeAny>(
+  schema: S,
   data: unknown
-): { success: true; data: T } | { success: false; error: z.ZodError } {
+): { success: true; data: z.infer<S> } | { success: false; error: z.ZodError } {
   const result = schema.safeParse(data);
   if (result.success) {
     return { success: true, data: result.data };
