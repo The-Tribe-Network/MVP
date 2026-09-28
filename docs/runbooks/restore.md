@@ -7,9 +7,9 @@ What protects Tribe's data, and how to get it back. Rehearsed once on 2026-09-28
 | Data | Where | Protection | How far back |
 | --- | --- | --- | --- |
 | Database (users, tribes, posts, events, chat, notifications…) | Neon project `plain-dawn-73831435`, branch **Production** `br-small-wind-ahbxmjc9` (Development `br-sweet-frog-ah0nrlva`) | Neon history window: any second inside it can be branched or restored | **6 hours** (Neon Free plan; the maximum on Free). No snapshot schedule. One manual snapshot slot, taken (Development, 2025-12-31) |
-| Photos (originals + derived sizes) | Cloudinary, one account for Development **and** Production (`CLOUDINARY_CLOUD_NAME` is shared) | **None.** Cloudinary Free, no backup add-on. Deleting a photo (or an account, which destroys its photos) removes the asset for good | — |
+| Photos (originals + derived sizes) | Cloudinary, one account for Development **and** Production (`CLOUDINARY_CLOUD_NAME` is shared) | Cloudinary Free has no backup. Since MVP #86, a deleted photo's file is kept **30 days** (`media_purge`) before the cron destroys it, with a copy of its row; longer is a paid-tier feature (TRI-357) | **30 days** after the delete |
 
-The recovery point for the database is therefore "a mistake noticed within 6 hours"; for photos there is none.
+The recovery point for the database is therefore "a mistake noticed within 6 hours" (7 days once the Neon Launch move below is done); for photos, "a delete noticed within 30 days".
 
 ## Restore the database to a point in time
 
@@ -31,6 +31,33 @@ A restore never touches Production directly: branch from the moment before the m
    - everything → Neon Console **Restore** (instant restore of the root branch to that time; Production's current state is kept as a backup branch).
 5. **Delete the restore branch** when done (Free allows 10 branches per project).
 
+## Restore a deleted photo (within 30 days)
+
+A deleted photo's row is gone, but `media_purge` keeps the file and the whole row until `purge_after`.
+
+1. **Find it**: by tribe and time, or by the uploader.
+   ```sql
+   SELECT id, media_id, deleted_at, purge_after, media_row ->> 'tribeId' AS tribe, media_row ->> 'uploadedBy' AS uploader
+   FROM media_purge WHERE purged_at IS NULL ORDER BY deleted_at DESC LIMIT 20;
+   ```
+2. **Put the row back** from the saved copy (its keys are the app's field names):
+   ```sql
+   INSERT INTO media (id, post_id, uploaded_by, tribe_id, file_url, file_type, file_size, mime_type, width, height,
+                      duration, thumbnail_url, alt_text, created_at, public_id, blurhash)
+   SELECT (r->>'id')::uuid, (r->>'postId')::uuid, (r->>'uploadedBy')::uuid, (r->>'tribeId')::uuid, r->>'fileUrl',
+          (r->>'fileType')::media_type, (r->>'fileSize')::bigint, r->>'mimeType', (r->>'width')::int, (r->>'height')::int,
+          (r->>'duration')::int, r->>'thumbnailUrl', r->>'altText', (r->>'createdAt')::timestamp, r->>'publicId', r->>'blurhash'
+   FROM (SELECT media_row AS r FROM media_purge WHERE media_id = '<media id>' AND purged_at IS NULL) s;
+   ```
+   The purge won't destroy a file a live photo uses, so nothing else is needed; the queued row is simply marked done
+   at its date.
+3. **Album and post links don't come back** (they went with the row): re-add the photo to its album in the app, or
+   insert the `album_media` / `post_media` rows by hand if you know them. Account deletions keep no row (`media_row`
+   is null): those photos can't be put back.
+
+Rehearsed 2026-09-28 on Development (MVP #86): a deleted photo came back with the same id and file, and a cron run
+31 days later left its file alone.
+
 ## Rehearsal, 2026-09-28
 
 Goal: bring back an event deleted about 30 minutes earlier (the TRI-349 test event `03d536a0-…`, on Development, which has the real test data; Production had no users yet).
@@ -44,8 +71,12 @@ Goal: bring back an event deleted about 30 minutes earlier (the TRI-349 test eve
 
 **About 2 minutes from start to verified data**, most of it choosing the moment. Lessons: the restore itself is instant; the hard part is the timestamp, so read it off the rows the mistake wrote (step 1). The snapshot route failed ("snapshots limit exceeded": Free has one slot, already used), so point-in-time branching is the only restore path on Free.
 
-## What should change before real groups (owner decisions)
+## Decisions (owner, 2026-09-28)
 
-1. **Neon: move to Launch and set the history window to 7 days** (Neon's own production recommendation). History storage is $0.20/GB-month; the database is ~100 MB. Then add a daily snapshot schedule on Production.
-2. **Photos: some copy that outlives a delete.** Either Cloudinary's backup (a paid Cloudinary plan), or our own nightly copy of new originals to cheap object storage (R2/S3). Cheaper still for the alpha: stop destroying assets immediately on delete (keep them 30 days, then purge), which covers "I deleted it by mistake".
-3. **Separate Cloudinary accounts (or folders) for Development and Production**, so test clean-up can never touch real photos.
+1. **Neon: move to Launch, history window 7 days** (Neon's production recommendation; history storage $0.20/GB-month,
+   the database is ~100 MB), then a daily snapshot schedule on Production. Agreed; the plan change is done in the Neon
+   Console (billing), then `history_retention_seconds: 604800` and the schedule are set.
+2. **Photos: keep deleted files 30 days** (option c). Built in MVP #86. Keeping photos longer is a paid-tier feature
+   (TRI-357: longer retention, a real backup, a "Recently deleted" album).
+3. **Privacy policy** says deleted photos and account data are gone within 30 days.
+4. Still open: separate Cloudinary for Development and Production, so test clean-up can never touch real photos.
