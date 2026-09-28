@@ -1003,8 +1003,9 @@ export async function uploadTribeMediaBatch(
     await assertCanAddToAlbum(albumId, tribeId, userId);
   }
 
-  // Upload all files in parallel
-  const uploadPromises = files.map(async (file, index) => {
+  // Upload all files in parallel; each slot settles as its result or its error
+  type UploadSlot = { index: number; result: UploadAvatarResult } | { index: number; error: string };
+  const uploadPromises = files.map(async (file, index): Promise<UploadSlot> => {
     try {
       const base64Data = file.buffer.toString('base64');
       const dataUri = `data:${file.mimeType};base64,${base64Data}`;

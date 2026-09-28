@@ -31,7 +31,7 @@ export function EventAttachmentsSection({ eventId }: EventAttachmentsSectionProp
   // Mock state management (for demonstration)
   const isLoading = false
   const isError = false
-  const error = null
+  const error = null as Error | null // useQuery's error type once wired
   const [media] = useState<MediaAttachment[]>(mockMedia)
   const [links] = useState<LinkAttachment[]>(mockLinks)
 
@@ -52,7 +52,7 @@ export function EventAttachmentsSection({ eventId }: EventAttachmentsSectionProp
   if (isError) {
     return (
       <EventAttachmentsError
-        message={error?.message as string}
+        message={error?.message}
         onRetry={() => console.log('Retry loading attachments')}
       />
     )
