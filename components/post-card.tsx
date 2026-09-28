@@ -67,10 +67,11 @@ export default function PostCard({
   // Check if current user is the author (by ID comparison)
   const isAuthor = user && post.author.id && user.id === post.author.id
 
-  // Get image data from PostWithStats
-  const imageUrl = post.image?.url
-  const imageWidth = post.image?.width
-  const imageHeight = post.image?.height
+  // The first photo; the legacy `image` field is gone (TRI-362)
+  const image = post.media?.[0]
+  const imageUrl = image?.url
+  const imageWidth = image?.width
+  const imageHeight = image?.height
 
   const avatarClassName = avatarSize === 'large' ? 'h-12 w-12' : ''
   const contentClassName = contentSize === 'base' ? 'text-base' : 'text-sm'

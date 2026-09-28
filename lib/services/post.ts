@@ -32,6 +32,7 @@ import {
 } from "./album";
 import { getTribeSettings } from "./tribe-settings";
 import { getPollsByIds } from "./poll";
+import { decodeCursor, encodeCursor } from "./keyset-cursor";
 import { getAgendaItems, type AgendaItemPreview } from "./event";
 import { userPreviewColumns, userWithProfileColumns, userWithUsernameColumns } from "@/lib/database/user-columns";
 import { appLink, excerpt, notify, tribeMemberIds, type NotifyExecutor } from "./notifications";
@@ -300,8 +301,6 @@ export type PostWithMetadata = PostWithAuthor & {
   likeCount: number;
   commentCount: number;
   isLiked: boolean;
-  // Legacy single image (first of `media`); the web app reads this
-  image: PostImage | null;
   media: PostImage[];
   linkedAlbum: LinkedAlbumPreview | null;
   event: AgendaItemPreview | null;
@@ -605,7 +604,6 @@ async function attachPostMetadata(
       likeCount: likeCountMap.get(p.id) || 0,
       commentCount: commentCountMap.get(p.id) || 0,
       isLiked: userLikedPostIds.has(p.id),
-      image: postPhotos[0] ?? null,
       media: postPhotos,
       linkedAlbum,
       event: p.eventId ? eventPreviews.get(p.eventId) || null : null,
@@ -639,7 +637,11 @@ export async function getTribeAnnouncement(
 }
 
 /**
- * Get all posts for a tribe with author info, like counts, and comment counts
+ * One page of a tribe's feed with author info, like counts and comment counts, and the cursor for the next page
+ * (TRI-360). Keyset-paged on the sort's key, so posts added while someone scrolls don't shift later pages: `new` is
+ * (pinned, created_at, id), `hot` / `top` are (likes, created_at, id). Without a cursor, `offset` still skips rows
+ * (the web pages that way until it is cut over). Like counts move, so a hot / top page can still repeat or miss a post
+ * whose likes changed in between; new-post arrivals no longer do.
  */
 export async function getTribePosts(
   tribeId: string,
@@ -648,8 +650,9 @@ export async function getTribePosts(
   currentUserId?: string,
   sort: PostSortOption = 'new',
   contentType: PostContentType = 'all',
-  timelineId?: string
-): Promise<PostWithMetadata[]> {
+  timelineId?: string,
+  cursor?: string
+): Promise<{ items: PostWithMetadata[]; nextCursor: string | null }> {
   // One timeline's feed: the one asked for (the route checks it is this tribe's), or Global (TRI-314)
   const feedTimelineId = timelineId ?? (await getGlobalTimelineId(tribeId));
   const conditions = [eq(post.tribeId, tribeId), eq(post.timelineId, feedTimelineId)];
@@ -672,32 +675,57 @@ export async function getTribePosts(
     .from(postLike)
     .groupBy(postLike.postId)
     .as('like_counts');
+  const likes = sql<number>`COALESCE(${likeCountSubquery.likeCount}, 0)`.mapWith(Number);
 
-  let postsQuery = db
-    .select({ ...postColumns, author: authorColumns })
+  // Continue after the cursor's row, in the same order
+  if (cursor) {
+    if (sort === 'new') {
+      const [pinned, createdAt, id] = decodeCursor(cursor, sort, ['bool', 'timestamp', 'uuid'] as const);
+      conditions.push(
+        sql`(${post.isPinned}, ${post.createdAt}, ${post.id}) < (${pinned}::boolean, ${createdAt}::timestamp, ${id}::uuid)`
+      );
+    } else {
+      const [likeCount, createdAt, id] = decodeCursor(cursor, sort, ['int', 'timestamp', 'uuid'] as const);
+      conditions.push(
+        sql`(${likes}, ${post.createdAt}, ${post.id}) < (${likeCount}::bigint, ${createdAt}::timestamp, ${id}::uuid)`
+      );
+    }
+  }
+
+  const rows = await db
+    .select({
+      ...postColumns,
+      author: authorColumns,
+      cursorCreatedAt: sql<string>`${post.createdAt}::text`,
+      cursorLikes: likes,
+    })
     .from(post)
     .innerJoin(user, eq(post.authorId, user.id))
     .leftJoin(likeCountSubquery, eq(post.id, likeCountSubquery.postId))
     .where(and(...conditions))
-    .$dynamic();
+    .orderBy(
+      // new: pinned posts lead the feed (idx_post_tribe_pinned_created); hot and top: likes, then date for ties
+      ...(sort === 'new' ? [desc(post.isPinned)] : [desc(likes)]),
+      desc(post.createdAt),
+      desc(post.id)
+    )
+    .limit(limit + 1)
+    .offset(cursor ? 0 : offset);
 
-  if (sort === 'new') {
-    // Pinned posts lead the feed (idx_post_tribe_pinned_created)
-    postsQuery = postsQuery.orderBy(desc(post.isPinned), desc(post.createdAt));
-  } else {
-    // Hot and top: likes descending, then date for ties
-    postsQuery = postsQuery.orderBy(
-      desc(sql`COALESCE(${likeCountSubquery.likeCount}, 0)`),
-      desc(post.createdAt)
-    );
-  }
+  const page = rows.slice(0, limit);
+  const last = page[page.length - 1];
+  const nextCursor =
+    rows.length > limit && last
+      ? encodeCursor(sort, [sort === 'new' ? last.isPinned : last.cursorLikes, last.cursorCreatedAt, last.id])
+      : null;
 
-  const posts = await postsQuery.limit(limit).offset(offset);
-
-  return attachPostMetadata(
-    posts,
-    currentUserId
-  );
+  return {
+    items: await attachPostMetadata(
+      page.map(({ cursorCreatedAt: _createdAt, cursorLikes: _likes, ...row }) => row),
+      currentUserId
+    ),
+    nextCursor,
+  };
 }
 
 /**

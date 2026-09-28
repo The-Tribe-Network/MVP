@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
 import { createPost, getTribePosts, PostInputError } from "@/lib/services/post";
+import { InvalidCursorError } from "@/lib/services/keyset-cursor";
 import { checkTribeMembership } from "@/lib/services/permissions";
 import { getTimelineInTribe } from "@/lib/services/timeline";
 import { AlbumForbiddenError, InvalidAlbumError } from "@/lib/services/album";
@@ -42,6 +43,7 @@ export async function GET(
     const queryValidation = validateApiRequest(listPostsQuerySchema, {
       limit: searchParams.get("limit") ?? undefined,
       offset: searchParams.get("offset") ?? undefined,
+      cursor: searchParams.get("cursor") || undefined,
       sort: searchParams.get("sort") ?? undefined,
       contentType: searchParams.get("contentType") ?? undefined,
       timelineId: searchParams.get("timelineId") ?? undefined,
@@ -52,7 +54,7 @@ export async function GET(
         { status: 400 }
       );
     }
-    const { limit, offset, sort, contentType, timelineId } = queryValidation.data;
+    const { limit, offset, cursor, sort, contentType, timelineId } = queryValidation.data;
 
     // A posts timeline of this tribe; a chat's history is its messages (TRI-315)
     if (timelineId) {
@@ -65,19 +67,23 @@ export async function GET(
       }
     }
 
-    // Fetch posts
-    const posts = await getTribePosts(
+    // One page and the cursor for the next (TRI-360); `nextCursor` is null on the last page
+    const page = await getTribePosts(
       tribeValidation.data.tribe_id,
       limit,
       offset,
       user.id,
       sort,
       contentType,
-      timelineId
+      timelineId,
+      cursor
     );
 
-    return NextResponse.json(posts);
+    return NextResponse.json(page);
   } catch (error) {
+    if (error instanceof InvalidCursorError) {
+      return NextResponse.json({ error: error.message, code: "INVALID_CURSOR" }, { status: 400 });
+    }
     console.error("Error fetching posts:", error);
     return NextResponse.json(
       { error: "Failed to fetch posts" },
