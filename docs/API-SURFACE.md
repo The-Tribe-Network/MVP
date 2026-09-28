@@ -19,7 +19,8 @@ Last full pass: 2026-09-28 (117 route files, 42 services).
   Handlers call `getServerUser()` and answer 401 without a user. Business rules also live in Better-Auth's hooks
   (`lib/clients/auth.ts`): the 13+ birthday gate and the taken-email 422 on sign-up, change-email checks, the 502
   `EMAIL_NOT_SENT` when a code can't be sent, security / welcome emails, tombstone and deactivation handling on session
-  create. **A port must carry these hooks**, not only the routes.
+  create, and the alpha gate (TRI-370: with `ALPHA_GATE_ENABLED=true`, session create answers 403
+  `ALPHA_ACCESS_PENDING` unless `alpha_access` has the email approved). **A port must carry these hooks**, not only the routes.
 - **Checks**: tribe membership (`checkTribeMembership`), the member's effective permissions
   (`getMemberWithPermissions` → `checkPermission(tribe, user, 'canX')`, three layers: role matrix, per-member
   overrides, section levels; TRI-17), event editability (`eventEditability`), media visibility
@@ -181,7 +182,7 @@ Auth: `session` = `getServerUser()` (cookie or bearer), `Better-Auth` = its catc
 | `/api/reports` | POST | session | — | `auth`, `reports` | yes | Resend |
 | `/api/survey` | POST | public | — | — |  |  |
 | `/api/tribes` | GET POST | session | — | `auth`, `tribe` |  |  |
-| `/api/tribes/:tribe_id` | DELETE GET PATCH | session | `checkTribeMembership` | `auth`, `permissions`, `tribe` |  |  |
+| `/api/tribes/:tribe_id` | DELETE GET PATCH | session | `getMemberWithPermissions` | `auth`, `invitation`, `member-permissions`, `permissions`, `tribe`, `tribe-settings` |  | Resend |
 | `/api/tribes/:tribe_id/activities` | GET | session | `checkTribeMembership` | `activity`, `auth`, `permissions` |  |  |
 | `/api/tribes/:tribe_id/albums` | GET POST | session | `checkTribeMembership` | `album`, `auth`, `permissions` |  |  |
 | `/api/tribes/:tribe_id/albums/:album_id` | DELETE GET PUT | session | `checkTribeMembership` | `album`, `auth`, `permissions` |  |  |
@@ -196,7 +197,7 @@ Auth: `session` = `getServerUser()` (cookie or bearer), `Better-Auth` = its catc
 | `/api/tribes/:tribe_id/events/:event_id/co-hosts/request` | POST | session | `guardEventRoute` | `event-routes`, `event-settings` |  |  |
 | `/api/tribes/:tribe_id/events/:event_id/comments` | GET POST | session | `getMemberWithPermissions` | `auth`, `comment`, `event`, `permissions` |  | Resend |
 | `/api/tribes/:tribe_id/events/:event_id/comments/:comment_id` | DELETE PATCH | session | `checkTribeMembership` | `auth`, `comment`, `event`, `permissions` |  | Resend |
-| `/api/tribes/:tribe_id/events/:event_id/comments/:comment_id/like` | POST | session | `checkTribeMembership` | `auth`, `comment`, `event`, `permissions` |  | Resend |
+| `/api/tribes/:tribe_id/events/:event_id/comments/:comment_id/like` | DELETE POST PUT | session | `checkTribeMembership` | `auth`, `comment`, `event`, `permissions` |  | Resend |
 | `/api/tribes/:tribe_id/events/:event_id/links` | GET POST | session | `guardEventRoute` | `event-routes`, `event-settings` |  |  |
 | `/api/tribes/:tribe_id/events/:event_id/links/:link_id` | DELETE | session | `guardEventRoute` | `event-routes`, `event-settings` |  |  |
 | `/api/tribes/:tribe_id/events/:event_id/polls` | GET POST | session | `canCreateEventPoll`, `getMemberWithPermissions` | `auth`, `event`, `event-settings`, `permissions`, `poll` |  | Resend |
@@ -206,8 +207,8 @@ Auth: `session` = `getServerUser()` (cookie or bearer), `Better-Auth` = its catc
 | `/api/tribes/:tribe_id/featured-media` | DELETE GET PUT | session | `checkTribeMembership` | `auth`, `permissions`, `tribe` |  |  |
 | `/api/tribes/:tribe_id/invitations` | GET POST | session | `checkPermission`, `checkTribeMembership` | `auth`, `invitation`, `permissions`, `role-permissions`, `tribe` |  | Resend |
 | `/api/tribes/:tribe_id/invitations/:invitation_id` | DELETE PATCH | session | `checkPermission`, `checkTribeMembership` | `auth`, `invitation`, `permissions`, `role-permissions` |  | Resend |
-| `/api/tribes/:tribe_id/invite-link` | GET POST | session | `checkPermission` | `auth`, `invite-link`, `role-permissions` |  |  |
-| `/api/tribes/:tribe_id/media` | GET POST | session | `checkTribeMembership` | `album`, `auth`, `media`, `multipart-limits`, `permissions` |  | Cloudinary |
+| `/api/tribes/:tribe_id/invite-link` | GET PATCH POST | session | `checkPermission` | `auth`, `invite-link`, `role-permissions` |  |  |
+| `/api/tribes/:tribe_id/media` | GET POST | session | `checkTribeMembership` | `album`, `auth`, `keyset-cursor`, `media`, `multipart-limits`, `permissions` |  | Cloudinary |
 | `/api/tribes/:tribe_id/media/:media_id` | DELETE PATCH | session | `checkTribeMembership`, `getMediaInTribe` | `album`, `auth`, `media`, `permissions` |  | Cloudinary |
 | `/api/tribes/:tribe_id/media/:media_id/like` | DELETE GET POST | session | `checkTribeMembership`, `getVisibleMediaInTribe` | `auth`, `media`, `permissions` |  | Cloudinary |
 | `/api/tribes/:tribe_id/media/batch` | POST | session | `checkTribeMembership` | `album`, `auth`, `media`, `multipart-limits`, `permissions` |  | Cloudinary |
@@ -225,12 +226,12 @@ Auth: `session` = `getServerUser()` (cookie or bearer), `Better-Auth` = its catc
 | `/api/tribes/:tribe_id/members/permissions` | GET | session | `checkTribeMembership` | `auth`, `member-permissions`, `permissions` |  |  |
 | `/api/tribes/:tribe_id/members/preferences` | GET PATCH | session | — | `auth` |  |  |
 | `/api/tribes/:tribe_id/polls/:poll_id/votes` | DELETE POST | session | — | `poll-votes` |  |  |
-| `/api/tribes/:tribe_id/posts` | GET POST | session | `checkTribeMembership` | `album`, `auth`, `permissions`, `post`, `timeline` |  |  |
+| `/api/tribes/:tribe_id/posts` | GET POST | session | `checkTribeMembership` | `album`, `auth`, `keyset-cursor`, `permissions`, `post`, `timeline` |  |  |
 | `/api/tribes/:tribe_id/posts/:post_id` | DELETE GET PATCH | session | — | `auth`, `post` |  |  |
 | `/api/tribes/:tribe_id/posts/:post_id/comments` | GET POST | session | — | `auth`, `comment`, `post` |  |  |
 | `/api/tribes/:tribe_id/posts/:post_id/comments/:comment_id` | DELETE PATCH | session | `checkTribeMembership` | `auth`, `comment`, `permissions`, `post` |  |  |
-| `/api/tribes/:tribe_id/posts/:post_id/comments/:comment_id/like` | POST | session | `checkTribeMembership` | `auth`, `comment`, `permissions`, `post` |  |  |
-| `/api/tribes/:tribe_id/posts/:post_id/like` | POST | session | — | `auth`, `post` |  |  |
+| `/api/tribes/:tribe_id/posts/:post_id/comments/:comment_id/like` | DELETE POST PUT | session | `checkTribeMembership` | `auth`, `comment`, `permissions`, `post` |  |  |
+| `/api/tribes/:tribe_id/posts/:post_id/like` | DELETE POST PUT | session | — | `auth`, `post` |  |  |
 | `/api/tribes/:tribe_id/posts/:post_id/pin` | POST | session | — | `auth`, `post` |  |  |
 | `/api/tribes/:tribe_id/roles` | GET | session | `checkPermission` | `auth`, `role-permissions` |  |  |
 | `/api/tribes/:tribe_id/roles/:role` | PATCH | session | `checkPermission` | `auth`, `role-permissions` |  |  |
@@ -271,7 +272,7 @@ Auth: `session` = `getServerUser()` (cookie or bearer), `Better-Auth` = its catc
 | `/join/:code` | GET | public | — | `invite-link` |  |  |
 | `/open/*path` | GET | public | — | — |  |  |
 
-### Services (42)
+### Services (44)
 
 | Service | Writes | Transactions | `notify()` | `after()` | External | Uses |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -279,6 +280,7 @@ Auth: `session` = `getServerUser()` (cookie or bearer), `Better-Auth` = its catc
 | `lib/services/activity.ts` | yes |  |  |  |  | `blocks` |
 | `lib/services/agenda.ts` |  |  |  |  |  | `blocks`, `event`, `post`, `tribe` |
 | `lib/services/album.ts` | yes |  |  |  |  | `blocks`, `permissions`, `role-permissions` |
+| `lib/services/alpha-access.ts` | yes |  |  |  |  | — |
 | `lib/services/auth.ts` |  |  |  |  |  | `user` |
 | `lib/services/blocks.ts` | yes |  |  |  |  | — |
 | `lib/services/chat.ts` | yes | 2 | yes |  |  | `blocks`, `link-preview`, `member-permissions`, `notifications`, `permissions`, `timeline` |
@@ -294,9 +296,10 @@ Auth: `session` = `getServerUser()` (cookie or bearer), `Better-Auth` = its catc
 | `lib/services/event.ts` | yes | 4 | yes |  | Resend | `activity`, `blocks`, `event-change-emails`, `notifications` |
 | `lib/services/invitation.ts` | yes | 3 | yes |  | Resend | `notifications` |
 | `lib/services/invite-link.ts` | yes | 1 |  |  |  | `tribe` |
+| `lib/services/keyset-cursor.ts` |  |  |  |  |  | — |
 | `lib/services/link-preview.ts` |  |  |  |  | HTTP fetch | — |
 | `lib/services/media-upload.ts` | yes | 1 |  |  | Cloudinary | `album`, `permissions`, `tribe-settings` |
-| `lib/services/media.ts` | yes | 1 |  |  | Cloudinary | `album`, `blocks`, `permissions` |
+| `lib/services/media.ts` | yes | 1 |  |  | Cloudinary | `album`, `blocks`, `keyset-cursor`, `permissions` |
 | `lib/services/member-permissions.ts` | yes |  |  |  |  | `permissions`, `role-permissions` |
 | `lib/services/members.ts` | yes |  |  |  |  | `blocks`, `draft`, `permissions`, `role-permissions` |
 | `lib/services/multipart-limits.ts` |  |  |  |  |  | `tribe-settings` |
@@ -305,7 +308,7 @@ Auth: `session` = `getServerUser()` (cookie or bearer), `Better-Auth` = its catc
 | `lib/services/permissions.ts` |  |  |  |  |  | — |
 | `lib/services/poll-votes.ts` |  |  |  |  |  | `auth`, `permissions`, `poll` |
 | `lib/services/poll.ts` | yes | 2 |  |  |  | `blocks` |
-| `lib/services/post.ts` | yes | 3 | yes |  |  | `album`, `blocks`, `event`, `notifications`, `permissions`, `poll`, `role-permissions`, `timeline`, `tribe-settings` |
+| `lib/services/post.ts` | yes | 3 | yes |  |  | `album`, `blocks`, `event`, `keyset-cursor`, `notifications`, `permissions`, `poll`, `role-permissions`, `timeline`, `tribe-settings` |
 | `lib/services/profile.ts` | yes | 1 |  |  |  | `album`, `blocks`, `event`, `media`, `post`, `user` |
 | `lib/services/realtime.ts` |  |  |  |  | Ably | — |
 | `lib/services/reports.ts` | yes |  |  |  | Resend | `album`, `blocks`, `notifications`, `permissions` |

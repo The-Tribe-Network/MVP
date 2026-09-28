@@ -115,6 +115,9 @@ export {
 // Chat tables (TRI-315)
 export { chatMessage, chatMessageMedia, chatMessageReaction } from "@/lib/database/schemas/chat";
 
+// Alpha allowlist (TRI-369)
+export { alphaAccess } from "@/lib/database/schemas/alpha-access";
+
 // Waitlist tables and enums
 export {
   waitlist,
