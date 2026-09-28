@@ -100,7 +100,7 @@ export { userSocialLink, userPrivacy } from "@/lib/database/schemas/profile";
 export { report, userBlock } from "@/lib/database/schemas/safety";
 
 // Email opt-outs (TRI-344)
-export { userEmailPreference, eventChangeEmail } from "@/lib/database/schemas/email";
+export { userEmailPreference, eventChangeEmail, emailLog } from "@/lib/database/schemas/email";
 
 // Draft tables
 export { draft } from "@/lib/database/schemas/draft";

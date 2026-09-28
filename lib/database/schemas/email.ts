@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { boolean, index, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { boolean, index, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { user } from "@/lib/database/schemas/auth";
 import { tribe } from "@/lib/database/schemas/tribe";
 
@@ -67,5 +67,23 @@ export const eventChangeEmail = pgTable(
       .on(table.eventId)
       .where(sql`${table.sentAt} IS NULL`),
     due: index("idx_event_change_email_due").on(table.sendAfter).where(sql`${table.sentAt} IS NULL`),
+  })
+);
+
+/**
+ * Emails a user must get at most once, ever (TRI-350): one row per (user, key), e.g. `event-reminder:<eventId>`.
+ * A sender inserts the row first and sends only if the insert went in, so overlapping cron runs send nothing twice.
+ */
+export const emailLog = pgTable(
+  "email_log",
+  {
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    key: text("key").notNull(),
+    sentAt: timestamp("sent_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.userId, table.key] }),
   })
 );
