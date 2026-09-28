@@ -5,6 +5,7 @@ import { event, eventSettings } from "@/lib/database/schemas/event";
 import { poll, pollOption, pollVote } from "@/lib/database/schemas/poll";
 import { tribeSettings } from "@/lib/database/schemas/tribe";
 import { appLink, eventAttendeeIds, eventHostIds, notify } from "./notifications";
+import { DAY_BEFORE_MINUTES, sendDayBeforeReminderEmails } from "./event-reminder-emails";
 
 /**
  * Notifications triggered by time, not by a write (TRI-190 reminders, TRI-219 poll results), run by the cron route
@@ -60,6 +61,9 @@ export async function runEventReminders(now = new Date()) {
       tribeId: event.tribeId,
       title: event.title,
       startDate: event.startDate,
+      endDate: event.endDate,
+      location: event.location,
+      createdBy: event.createdBy,
       eventEnabled: eventSettings.enableReminders,
       eventSchedule: eventSettings.reminderSchedule,
       tribeEnabled: tribeSettings.enableEventReminders,
@@ -71,9 +75,14 @@ export async function runEventReminders(now = new Date()) {
     .where(and(ne(event.status, "cancelled"), gt(event.startDate, now), lte(event.startDate, horizon)));
 
   let sent = 0;
+  let emails = 0;
   for (const row of candidates) {
     const enabled = row.eventEnabled ?? row.tribeEnabled ?? true;
     if (!enabled) continue;
+    // TRI-350: the day-before email follows the one-day mark whatever the in-app schedule says
+    if (dueReminderWindow(row.startDate, [DAY_BEFORE_MINUTES], now) === DAY_BEFORE_MINUTES) {
+      emails += await sendDayBeforeReminderEmails(row);
+    }
     const windows = parseReminderSchedule(row.eventSchedule ?? row.tribeSchedule ?? "1d,1h");
     const window = dueReminderWindow(row.startDate, windows, now);
     if (window === null) continue;
@@ -92,7 +101,7 @@ export async function runEventReminders(now = new Date()) {
       once: true,
     });
   }
-  return { candidates: candidates.length, sent };
+  return { candidates: candidates.length, sent, emails };
 }
 
 /** "A won" / "Tied: A and B" / "No votes", or null when the result must not be named (`hidden`). */

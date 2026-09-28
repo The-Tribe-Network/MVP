@@ -29,6 +29,7 @@ decides what a failed send means:
   `sendEmail()`: the second adds `List-Unsubscribe` + `List-Unsubscribe-Post` (RFC 8058 one-click). The public
   route `/api/email/unsubscribe?token=` shows a confirm page on GET (mail scanners open links) and unsubscribes on
   POST, with a "Subscribe again" undo.
+- **Once-only emails** claim a row in `email_log` (user + key) before sending (`tri350-email-log.sql`).
 - **Opt-outs** live in `user_email_preference` (no row = everything on; `tri344-email-preferences.sql`).
 - **Skip rules.** `emailRecipients(userIds, { category, actorId?, mutedTribeId? })`
   (`lib/services/email-preferences.ts`) keeps only live, verified, opted-in users, drops the actor and anyone
@@ -54,6 +55,7 @@ Code lifetime is `AUTH_CONSTANTS.OTP_EXPIRES_MINUTES` (`lib/constants/auth.ts`):
 | `content-report` | content is reported (tribe owner + `PLATFORM_OWNER_EMAIL`) |
 | `waitlist` | someone joins the web waitlist |
 | `lib/services/event-change-emails.ts` (no template folder; built with `renderEmail()`) | an event someone is going to (or might go to, or hosts) is cancelled, deleted while upcoming, or gets a new time or place (TRI-349). Queued in the edit's transaction (`event_change_email`); a cancellation goes right after the request, a change after a 10-minute window that folds further edits; the cron route sends what is due. Category `eventUpdates` |
+| `lib/services/event-reminder-emails.ts` | the day-before reminder (TRI-350) to people going who RSVP'd before the one-day mark, when the event's reminders are on; sent from the cron's reminder pass, once per event per person ever (`email_log`). Category `eventUpdates` |
 | `welcome` | not sent yet (the alpha emails project wires it up) |
 
 ## Environment
