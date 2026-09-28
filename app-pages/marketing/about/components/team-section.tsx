@@ -12,14 +12,14 @@ export function TeamSection() {
           </div>
           <h2 className="text-4xl md:text-5xl font-bold">Built with Purpose</h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            Tribe is built by a small, dedicated team passionate about giving communities the tools they deserve. We're developers, designers, and community organizers who've felt the pain of existing platforms firsthand.
+            Tribe is built by a small, dedicated team passionate about giving communities the tools they deserve. We&apos;re developers, designers, and community organizers who&apos;ve felt the pain of existing platforms firsthand.
           </p>
         </div>
 
         <div className="p-8 md:p-12 bg-card rounded-2xl border text-center space-y-8">
           <div className="space-y-4">
             <p className="text-lg text-muted-foreground">
-              We're just getting started, and we'd love to have you along for the journey.
+              We&apos;re just getting started, and we&apos;d love to have you along for the journey.
             </p>
             <p className="text-xl font-semibold">
               Join the waitlist and help us build something special.
@@ -33,7 +33,7 @@ export function TeamSection() {
 
         <div className="text-center text-sm text-muted-foreground">
           <p>Want to reach us? Questions, feedback, or just want to chat?</p>
-          <p className="mt-2">We'd love to hear from you.</p>
+          <p className="mt-2">We&apos;d love to hear from you.</p>
         </div>
       </div>
     </SectionContainer>

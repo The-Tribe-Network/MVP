@@ -25,7 +25,6 @@ interface ProfileInfoStepProps {
 export function ProfileInfoStep({
   displayName,
   bio,
-  avatar,
   avatarUrl,
   onDisplayNameChange,
   onBioChange,

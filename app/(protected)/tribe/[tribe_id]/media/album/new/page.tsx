@@ -1,7 +1,3 @@
-import { redirect } from 'next/navigation'
-import { getServerUser } from '@/lib/services/auth'
-import { getTribeById } from '@/lib/services/tribe'
-import { getMemberWithPermissions } from '@/lib/services/permissions'
 import CreateAlbumPage from '@/app-pages/create-album'
 
 export default async function NewAlbumPage({ params }: PageProps<'/tribe/[tribe_id]/media/album/new'>) {

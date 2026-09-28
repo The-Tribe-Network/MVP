@@ -6,7 +6,7 @@ interface PageProps {
 }
 
 export default async function ResetPasswordPage({ searchParams }: PageProps) {
-  const queryParams = await searchParams;
+  await searchParams;
 
   return (
     <Suspense fallback={<div>Loading...</div>}>

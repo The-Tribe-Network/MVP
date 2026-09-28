@@ -237,7 +237,7 @@ export default function TribeMembersDialog({ isOpen, onOpenChange, tribeId }: Tr
 
             {filteredMembers.length === 0 && (
               <div className="text-center py-8 text-muted-foreground">
-                <p>No members found matching "{searchQuery}"</p>
+                <p>No members found matching &quot;{searchQuery}&quot;</p>
               </div>
             )}
           </div>

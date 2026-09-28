@@ -33,7 +33,7 @@ export function MemberFilters({
       <Select
         value={role || 'all'}
         onValueChange={(v) =>
-          onRoleChange(v === 'all' ? undefined : (v as any))
+          onRoleChange(v === 'all' ? undefined : (v as MemberFiltersProps['role']))
         }
       >
         <SelectTrigger className="w-[150px]">

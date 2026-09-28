@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { H1, P, Muted } from "@/components/ui/typography"
+import { H1, Muted } from "@/components/ui/typography"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { AUTH_PAGES } from "@/lib/constants/auth"

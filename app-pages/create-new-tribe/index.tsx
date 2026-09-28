@@ -164,7 +164,7 @@ export default function CreateTribePage() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold">Create a New Tribe</h1>
         <p className="text-muted-foreground mt-1">
-          Tell us about your tribe and we'll help you get started
+          Tell us about your tribe and we&apos;ll help you get started
         </p>
       </div>
 

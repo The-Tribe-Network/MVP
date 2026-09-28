@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerUser } from '@/lib/services/auth';
 import { uploadAvatar } from '@/lib/services/media';
-import { validateImageFile, MAX_FILE_SIZE, ALLOWED_MIME_TYPES } from '@/lib/utils/image';
+import { validateImageFile } from '@/lib/utils/image';
 import { db } from '@/lib/database/client';
 import { user as userSchema } from '@/lib/database/schemas/auth';
 import { eq } from 'drizzle-orm';

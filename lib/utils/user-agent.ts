@@ -191,7 +191,7 @@ export function formatDeviceInfo(parsed: ParsedUserAgent): string {
  * Format location from IP address (placeholder for future geolocation)
  * For MVP, returns null as location service is not implemented
  */
-export function getLocationFromIP(ipAddress: string | null | undefined): string | null {
+export function getLocationFromIP(_ipAddress: string | null | undefined): string | null {
   // TODO: Implement IP geolocation service integration
   // For MVP, return null
   return null;

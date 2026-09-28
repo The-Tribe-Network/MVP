@@ -10,7 +10,7 @@ export function FeaturesHero() {
         </h1>
         <p className="text-lg md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
           Powerful features designed for real communities. From photo archives to
-          event coordination, we've thought of everything.
+          event coordination, we&apos;ve thought of everything.
         </p>
       </div>
     </SectionContainer>

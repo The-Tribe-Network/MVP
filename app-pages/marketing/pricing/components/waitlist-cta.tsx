@@ -23,7 +23,7 @@ export function WaitlistCTA() {
             No credit card required • Free to start • Cancel anytime
           </p>
           <p className="text-xs text-muted-foreground">
-            By joining, you'll get exclusive early access and updates on our launch.
+            By joining, you&apos;ll get exclusive early access and updates on our launch.
           </p>
         </div>
       </div>

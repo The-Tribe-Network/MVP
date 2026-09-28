@@ -69,7 +69,7 @@ export function SettingsHeader({ tribeId }: SettingsHeaderProps) {
 
       <h1 className="text-3xl font-bold">Tribe Settings</h1>
       <p className="text-muted-foreground mt-1">
-        Manage your tribe's configuration and preferences
+        Manage your tribe&apos;s configuration and preferences
       </p>
     </div>
   );

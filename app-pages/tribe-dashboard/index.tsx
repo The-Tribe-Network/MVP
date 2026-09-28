@@ -17,7 +17,6 @@ interface TribeDashboardPageProps {
 }
 
 export function TribeDashboardPage({
-  demo = false,
   tribeId,
 }: TribeDashboardPageProps) {
   return (

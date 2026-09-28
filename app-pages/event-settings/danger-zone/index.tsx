@@ -208,7 +208,7 @@ export function DangerZoneSection({ tribeId, eventId, event }: DangerZoneSection
               <div className="space-y-4">
                 <p>
                   This action cannot be undone. This will permanently delete the event
-                  <span className="font-semibold"> "{event.title}"</span> and remove:
+                  <span className="font-semibold"> &quot;{event.title}&quot;</span> and remove:
                 </p>
                 <ul className="list-disc list-inside text-sm space-y-1">
                   <li>All RSVP data ({event.attendeeCount} attendees)</li>

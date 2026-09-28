@@ -2,7 +2,9 @@ import { db } from "@/lib/database/client";
 import { tribeRolePermission } from "@/lib/database/schemas/permissions";
 import { eq, and } from "drizzle-orm";
 import { getTribeSettings } from "./tribe-settings";
-import type { TribeSettings } from "@/lib/database/types";
+import type { TribeRolePermission, TribeRolePermissionInsert, TribeSettings } from "@/lib/database/types";
+
+type TribeRole = TribeRolePermission["role"];
 
 /**
  * System Role Defaults
@@ -128,7 +130,7 @@ export async function getRolePermissions(
   const [rolePerms] = await db
     .select()
     .from(tribeRolePermission)
-    .where(and(eq(tribeRolePermission.tribeId, tribeId), eq(tribeRolePermission.role, role as any)))
+    .where(and(eq(tribeRolePermission.tribeId, tribeId), eq(tribeRolePermission.role, role as TribeRole)))
     .limit(1);
 
   // Start with system defaults
@@ -137,7 +139,7 @@ export async function getRolePermissions(
   // Apply tribe-specific overrides (only for non-null values)
   if (rolePerms) {
     Object.keys(permissions).forEach((key) => {
-      const tribeValue = (rolePerms as any)[key];
+      const tribeValue = (rolePerms as Record<string, unknown>)[key];
       if (tribeValue !== null && tribeValue !== undefined) {
         permissions[key] = tribeValue === true;
       }
@@ -172,14 +174,14 @@ export async function getAllRolePermissions(
     const [tribeRolePerms] = await db
       .select()
       .from(tribeRolePermission)
-      .where(and(eq(tribeRolePermission.tribeId, tribeId), eq(tribeRolePermission.role, role as any)))
+      .where(and(eq(tribeRolePermission.tribeId, tribeId), eq(tribeRolePermission.role, role as TribeRole)))
       .limit(1);
 
     // Build permissions object showing tribe-specific overrides (null = use system default)
     const permissions: Record<string, boolean | null> = {};
     Object.keys(SYSTEM_ROLE_DEFAULTS[role]).forEach((key) => {
-      const tribeValue = tribeRolePerms ? (tribeRolePerms as any)[key] : null;
-      permissions[key] = tribeValue !== undefined ? tribeValue : null;
+      const tribeValue = tribeRolePerms ? (tribeRolePerms as Record<string, unknown>)[key] : null;
+      permissions[key] = tribeValue !== undefined ? (tribeValue as boolean | null) : null;
     });
 
     results.push({
@@ -218,10 +220,11 @@ export async function updateRolePermissions(
   const [existing] = await db
     .select()
     .from(tribeRolePermission)
-    .where(and(eq(tribeRolePermission.tribeId, tribeId), eq(tribeRolePermission.role, role as any)))
+    .where(and(eq(tribeRolePermission.tribeId, tribeId), eq(tribeRolePermission.role, role as TribeRole)))
     .limit(1);
 
-  const updateData: any = {
+  // `permissions` is keyed by permission column name (null = use system default)
+  const updateData: Partial<TribeRolePermissionInsert> = {
     ...permissions,
     updatedBy,
     updatedAt: new Date(),
@@ -234,10 +237,10 @@ export async function updateRolePermissions(
     // Insert new record
     await db.insert(tribeRolePermission).values({
       tribeId,
-      role: role as any,
+      role: role as TribeRole,
       ...permissions,
       updatedBy,
-    } as any);
+    } as TribeRolePermissionInsert);
   }
 }
 
@@ -372,7 +375,7 @@ export async function checkPermission(
   let allowed: boolean | undefined;
 
   // Layer 1: Check individual override
-  const individualValue = (memberData.permissions as any)?.[permissionKey];
+  const individualValue = (memberData.permissions as Record<string, unknown> | null)?.[permissionKey];
   if (individualValue !== null && individualValue !== undefined) {
     allowed = individualValue === true;
   }

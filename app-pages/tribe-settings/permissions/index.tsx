@@ -88,7 +88,7 @@ export function PermissionsSettings({ tribeId }: PermissionsSettingsProps) {
       <Alert variant="destructive">
         <AlertCircle className="h-4 w-4" />
         <AlertDescription>
-          You don't have permission to manage member permissions. Contact a tribe
+          You don&apos;t have permission to manage member permissions. Contact a tribe
           owner or admin.
         </AlertDescription>
       </Alert>

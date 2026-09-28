@@ -3,7 +3,7 @@ import { poll, pollOption, pollVote } from "@/lib/database/schemas/poll";
 import { eventSettings } from "@/lib/database/schemas/event";
 import { user } from "@/lib/database/schemas/auth";
 import { eq, and, sql, inArray, type SQL } from "drizzle-orm";
-import type { PollWithDetails, PollOptionWithVotes } from "@/lib/database/types";
+import type { PollWithDetails } from "@/lib/database/types";
 import { userPreviewColumns } from "@/lib/database/user-columns";
 import { excludeBlocked } from "./blocks";
 
@@ -130,7 +130,7 @@ async function loadPollsWithDetails(
   const voteCountMap = new Map(
     voteCounts.map((vc) => [vc.optionId, vc.count])
   );
-  const votersMap = new Map<string, any[]>();
+  const votersMap = new Map<string, (typeof voters)[number]["user"][]>();
   voters.forEach((v) => {
     if (!votersMap.has(v.optionId)) {
       votersMap.set(v.optionId, []);

@@ -7,10 +7,6 @@ import { createTribeInvitations, getTribeInvitations } from "@/lib/services/invi
 import { tribeIdParamSchema, validateApiRequest } from "@/lib/validations/tribe";
 import { inviteTribeMembersSchema } from "@/lib/validations/tribe";
 
-type RouteContext<T extends string> = {
-  params: Promise<Record<string, string>>;
-};
-
 export async function GET(
   request: NextRequest,
   ctx: RouteContext<'/api/tribes/[tribe_id]/invitations'>

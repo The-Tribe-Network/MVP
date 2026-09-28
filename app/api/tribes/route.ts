@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
 import { createTribe, getMyTribeSummaries } from "@/lib/services/tribe";
-import type { TribeWithCreator } from "@/lib/database/types";
 import { createTribeSchema, validateApiRequest } from "@/lib/validations/tribe";
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // Check authentication
     const user = await getServerUser();

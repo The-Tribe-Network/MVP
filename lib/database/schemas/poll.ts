@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean, uuid, integer, unique, check } from "drizzle-orm/pg-core";
+import { type AnyPgColumn, pgTable, text, timestamp, boolean, uuid, integer, unique, check } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { event } from "./event";
 import { user } from "./auth";
@@ -10,7 +10,7 @@ export const poll = pgTable("poll", {
   eventId: uuid("event_id")
     .references(() => event.id, { onDelete: "cascade" }),
   postId: uuid("post_id")
-    .references((): any => post.id, { onDelete: "cascade" }),
+    .references((): AnyPgColumn => post.id, { onDelete: "cascade" }),
   createdBy: uuid("created_by")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),

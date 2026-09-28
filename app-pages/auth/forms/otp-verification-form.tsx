@@ -1,13 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   InputOTP,
@@ -15,7 +8,7 @@ import {
   InputOTPSlot,
 } from "@/components/ui/input-otp";
 import { cn } from "@/lib/utils";
-import { CheckCircle, XCircle, Mail, Clock } from "lucide-react";
+import { CheckCircle, XCircle, Clock } from "lucide-react";
 import { P } from "@/components/ui/typography";
 import { OTPVerificationType } from "@/lib/constants/auth";
 
@@ -25,7 +18,7 @@ interface OTPVerificationFormProps {
   type: OTPVerificationType
 };
 
-export function OTPVerificationForm({ type }: OTPVerificationFormProps) {
+export function OTPVerificationForm(_props: OTPVerificationFormProps) {
   const [otp, setOtp] = useState("");
   const [verificationState, setVerificationState] =
     useState<VerificationState>("idle");
@@ -194,7 +187,7 @@ export function OTPVerificationForm({ type }: OTPVerificationFormProps) {
 
       <div className="text-center space-y-3 mt-4">
         <P className="text-sm text-muted-foreground">
-          Didn't receive the code?
+          Didn&apos;t receive the code?
         </P>
         <Button
           variant="outline"

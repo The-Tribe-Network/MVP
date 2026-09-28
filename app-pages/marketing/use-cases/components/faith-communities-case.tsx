@@ -59,7 +59,7 @@ export function FaithCommunitiesCase() {
                   </h3>
                   <p className="text-muted-foreground text-sm leading-relaxed">
                     Plan services, holy day celebrations, and community
-                    gatherings with RSVPs and volunteer sign-ups. Know who's
+                    gatherings with RSVPs and volunteer sign-ups. Know who&apos;s
                     bringing what before the potluck begins.
                   </p>
                 </div>
@@ -73,7 +73,7 @@ export function FaithCommunitiesCase() {
                   <h3 className="font-semibold mb-2">Preserve Your Traditions</h3>
                   <p className="text-muted-foreground text-sm leading-relaxed">
                     Document celebrations, ceremonies, and milestone moments in
-                    The Vault. Build a living archive of your community's
+                    The Vault. Build a living archive of your community&apos;s
                     spiritual journey.
                   </p>
                 </div>
@@ -107,7 +107,7 @@ export function FaithCommunitiesCase() {
                 </div>
                 <p className="text-sm font-medium mb-1">Sunday Service Update</p>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  This week's service will be held outdoors in the garden. Please bring blankets and chairs. Potluck to follow!
+                  This week&apos;s service will be held outdoors in the garden. Please bring blankets and chairs. Potluck to follow!
                 </p>
               </div>
 

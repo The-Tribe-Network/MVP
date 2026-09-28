@@ -282,7 +282,7 @@ export function ManagePermissionsDialog({
                         <FormField
                           key={permission.name}
                           control={form.control}
-                          name={permission.name as any}
+                          name={permission.name as Exclude<keyof UpdateMemberPermissionsInput, 'memberId' | 'restrictionReason'>}
                           render={({ field }) => (
                             <FormItem className="flex items-center justify-between space-y-0">
                               <div className="space-y-0.5">

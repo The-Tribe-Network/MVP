@@ -1,6 +1,6 @@
 "use client";
 
-import { FlameKindlingIcon, Home, Compass, Plus } from "lucide-react";
+import { FlameKindlingIcon, Compass, Plus } from "lucide-react";
 import Link from "next/link";
 import {
   Sidebar,
@@ -20,7 +20,6 @@ import { DEFAULT_USER_IMAGE } from "@/lib/constants/auth";
 import { useAuthUser } from "@/lib/hooks/use-auth";
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Tooltip,
   TooltipContent,
@@ -31,6 +30,21 @@ import { Skeleton } from "@/components/ui/skeleton";
 import TribeList from "./tribe-list";
 import { useUserTribes } from "@/lib/hooks/use-tribes";
 import { cn } from "@/lib/utils";
+
+// Skeleton component for tribe list loading state
+function TribeListSkeleton() {
+  return (
+    <>
+      {Array.from({ length: 3 }).map((_, index) => (
+        <SidebarMenuItem key={`skeleton-${index}`}>
+          <SidebarMenuButton size="lg" className="md:h-8 md:p-0" disabled>
+            <Skeleton className="size-8 rounded-md" />
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      ))}
+    </>
+  );
+}
 
 export default function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { user } = useAuthUser();
@@ -53,21 +67,6 @@ export default function AppSidebar({ ...props }: React.ComponentProps<typeof Sid
   const userName = name || email || "User";
   const userAvatar = image || DEFAULT_USER_IMAGE;
   const userEmail = email || "Not Applicable";
-
-  // Skeleton component for tribe list loading state
-  function TribeListSkeleton() {
-    return (
-      <>
-        {Array.from({ length: 3 }).map((_, index) => (
-          <SidebarMenuItem key={`skeleton-${index}`}>
-            <SidebarMenuButton size="lg" className="md:h-8 md:p-0" disabled>
-              <Skeleton className="size-8 rounded-md" />
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        ))}
-      </>
-    );
-  }
 
   return (
     <Sidebar

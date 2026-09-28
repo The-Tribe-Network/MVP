@@ -1,9 +1,11 @@
 import { db } from "@/lib/database/client";
 import { tribeMember, tribeMemberPermission } from "@/lib/database/schemas/tribe";
 import { user } from "@/lib/database/schemas/auth";
-import { eq, and, or, ilike, isNotNull } from "drizzle-orm";
+import { eq, and, or, ilike } from "drizzle-orm";
 import { applyPermissionLevels, getPermissionLevels, getRolePermissions } from "./role-permissions";
 import type {
+  TribeMember,
+  TribeMemberPermissionInsert,
   TribeMemberWithPermissionsExtended,
   MemberPermissionDetail,
   UserWithUsername,
@@ -57,7 +59,7 @@ export async function getTribeMembersWithPermissions(
 
   // Add role filter
   if (options?.role) {
-    query = query.where(eq(tribeMember.role, options.role as any));
+    query = query.where(eq(tribeMember.role, options.role as TribeMember["role"]));
   }
 
   const results = await query;
@@ -91,7 +93,7 @@ export async function resolveEffectivePermissions(
   const effectivePermissions: Record<string, boolean> = { ...roleDefaults };
   if (memberData.permissions) {
     Object.keys(effectivePermissions).forEach((key) => {
-      const overrideValue = (memberData.permissions as any)![key];
+      const overrideValue = (memberData.permissions as unknown as Record<string, unknown>)[key];
       if (overrideValue !== null && overrideValue !== undefined) {
         effectivePermissions[key] = overrideValue === true;
       }
@@ -183,7 +185,8 @@ export async function updateMemberPermissions(
     throw new Error("Member not found");
   }
 
-  const updateData: any = {
+  // `permissions` is keyed by permission column name (null = use role default)
+  const updateData: Partial<TribeMemberPermissionInsert> = {
     ...permissions,
     restrictionReason,
     updatedAt: new Date(),
@@ -204,7 +207,7 @@ export async function updateMemberPermissions(
       ...permissions,
       restrictionReason,
       setBy,
-    } as any);
+    } as TribeMemberPermissionInsert);
   }
 }
 
@@ -245,7 +248,7 @@ export async function changeMemberRole(
   tribeId: string,
   userId: string,
   newRole: string,
-  changedBy: string
+  _changedBy: string
 ): Promise<void> {
   if (newRole === "owner") {
     throw new Error("Use transfer ownership endpoint to change owner");
@@ -265,5 +268,5 @@ export async function changeMemberRole(
     throw new Error("Cannot change owner role");
   }
 
-  await db.update(tribeMember).set({ role: newRole as any }).where(eq(tribeMember.id, member.id));
+  await db.update(tribeMember).set({ role: newRole as TribeMember["role"] }).where(eq(tribeMember.id, member.id));
 }

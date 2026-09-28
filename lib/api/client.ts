@@ -28,7 +28,7 @@ export class ApiError extends Error {
     message: string,
     public status: number,
     public code?: string,
-    public details?: Record<string, any>
+    public details?: Record<string, unknown>
   ) {
     super(message);
     this.name = 'ApiError';
@@ -102,7 +102,7 @@ export async function apiFetch<TResponse>(
  * @param params - Parameters object
  * @returns Query string (with leading ?) or empty string
  */
-export function buildQueryString(params: Record<string, any>): string {
+export function buildQueryString(params: object): string {
   const searchParams = new URLSearchParams();
 
   Object.entries(params).forEach(([key, value]) => {

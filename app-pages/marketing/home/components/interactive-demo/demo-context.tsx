@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from 'react'
 import { mockTribes, DEFAULT_TRIBE_ID } from './mock-data'
-import type { DemoTribe, DemoPost } from './types'
+import type { DemoTribe } from './types'
 
 interface PostLikeState {
   isLiked: boolean

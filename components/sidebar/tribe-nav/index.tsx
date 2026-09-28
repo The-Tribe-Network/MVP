@@ -1,8 +1,8 @@
-import { SidebarContent, SidebarFooter, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarSeparator } from "@/components/ui/sidebar";
+import { SidebarContent, SidebarFooter, SidebarMenu, SidebarMenuItem, SidebarSeparator } from "@/components/ui/sidebar";
 
 import { Sidebar, SidebarHeader } from "@/components/ui/sidebar";
-import { CalendarIcon, FlameIcon, HomeIcon, ImageIcon } from "lucide-react";
-import { useParams, usePathname } from "next/navigation";
+import { CalendarIcon, HomeIcon, ImageIcon } from "lucide-react";
+import { useParams } from "next/navigation";
 import SidebarTitleDropdown from "./title-dropdown";
 import { NavMain } from "./nav-main";
 import { useIsMobile } from "@/lib/hooks/use-mobile";

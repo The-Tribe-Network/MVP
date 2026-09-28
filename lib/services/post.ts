@@ -1,16 +1,15 @@
 import { db, getDbTransaction } from "@/lib/database/client";
 import { post, postLike, postMedia, comment, commentLike } from "@/lib/database/schemas/post";
-import { event, eventAttendee } from "@/lib/database/schemas/event";
+import { event } from "@/lib/database/schemas/event";
 import { poll } from "@/lib/database/schemas/poll";
 import { postKind } from "@/lib/database/schemas/enums";
-import { tribe, tribeMember, tribeMemberPermission } from "@/lib/database/schemas/tribe";
+import { tribeMember } from "@/lib/database/schemas/tribe";
 import { user } from "@/lib/database/schemas/auth";
 import { album, albumMedia, media } from "@/lib/database/schemas/media";
-import { eq, and, desc, count, inArray, sql, isNotNull, isNull, asc, lte, type SQL } from "drizzle-orm";
+import { eq, and, desc, count, inArray, sql, isNull, asc, lte, type SQL } from "drizzle-orm";
 import { getGlobalTimelineId, resolvePostTimeline } from "./timeline";
 import { getUserTribeRole } from "./permissions";
 import type {
-  Post,
   PostInsert,
   PostWithAuthor,
   LinkedAlbumPreview,

@@ -48,7 +48,7 @@ export function PollsSection({ control }: PollsSectionProps) {
               <div className="space-y-0.5">
                 <FormLabel className="text-base">Enable event polls</FormLabel>
                 <FormDescription>
-                  Allow polls to be created for events (e.g., "What time works?")
+                  Allow polls to be created for events (e.g., &quot;What time works?&quot;)
                 </FormDescription>
               </div>
               <FormControl>

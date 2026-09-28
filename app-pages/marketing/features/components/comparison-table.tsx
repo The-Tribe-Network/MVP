@@ -63,7 +63,7 @@ export function ComparisonTable() {
             How Tribe Compares
           </h2>
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            We're not trying to beat Facebook at their game. We're building
+            We&apos;re not trying to beat Facebook at their game. We&apos;re building
             something different.
           </p>
         </div>

@@ -86,7 +86,7 @@ export default function WelcomePage() {
       <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-8">
         <div className="mb-8 text-center">
           <h1 className="text-4xl font-bold mb-2">Welcome to Tribe!</h1>
-          <p className="text-muted-foreground">Let's set up your profile to get started</p>
+          <p className="text-muted-foreground">Let&apos;s set up your profile to get started</p>
         </div>
 
         <Card className="w-full max-w-2xl bg-card border-zinc-700">

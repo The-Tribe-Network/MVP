@@ -21,7 +21,7 @@ export type { CreateAlbumInput, UpdateAlbumParams, DeleteAlbumParams, AlbumMedia
 /**
  * Fetch albums for a tribe
  */
-export function useTribeAlbums(tribeId: string, options?: { limit?: number; offset?: number }) {
+export function useTribeAlbums(tribeId: string, _options?: { limit?: number; offset?: number }) {
   return useQuery(tribeAlbumsOptions(tribeId));
 }
 

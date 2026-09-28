@@ -92,7 +92,7 @@ export function AlbumDetailsSection({
       <div>
         <h2 className="text-xl font-semibold">Album Details</h2>
         <p className="text-muted-foreground text-sm mt-1">
-          Set up your album's basic information and cover photo
+          Set up your album&apos;s basic information and cover photo
         </p>
       </div>
 

@@ -137,7 +137,7 @@ export function AlbumDetails({ tribeId, albumId }: AlbumDetailsProps) {
       <div>
         <h2 className="text-2xl font-bold">Album Details</h2>
         <p className="text-muted-foreground mt-1">
-          Update your album's name, description, and visibility settings
+          Update your album&apos;s name, description, and visibility settings
         </p>
       </div>
 

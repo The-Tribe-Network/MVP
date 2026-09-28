@@ -2,7 +2,7 @@
 
 import { CheckCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { H3, P, Muted } from "@/components/ui/typography"
+import { H3, Muted } from "@/components/ui/typography"
 import Link from "next/link"
 
 interface SuccessStateProps {

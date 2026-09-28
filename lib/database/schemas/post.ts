@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, unique, uuid, index, boolean, integer } from "drizzle-orm/pg-core";
+import { type AnyPgColumn, pgTable, text, timestamp, unique, uuid, index, boolean, integer } from "drizzle-orm/pg-core";
 import { tribe } from "./tribe";
 import { user } from "./auth";
 import { album, media } from "./media";
@@ -16,7 +16,7 @@ export const post = pgTable("post", {
   // Deleting a timeline deletes its posts (owner, 2026-09-25): a private timeline's posts must never leak into Global.
   timelineId: uuid("timeline_id")
     .notNull()
-    .references((): any => timeline.id, { onDelete: "cascade" }),
+    .references((): AnyPgColumn => timeline.id, { onDelete: "cascade" }),
   authorId: uuid("author_id")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
@@ -26,7 +26,7 @@ export const post = pgTable("post", {
   eventId: uuid("event_id")
     .references(() => event.id, { onDelete: "set null" }),
   pollId: uuid("poll_id")
-    .references((): any => poll.id, { onDelete: "set null" }),
+    .references((): AnyPgColumn => poll.id, { onDelete: "set null" }),
   kind: postKind("kind").notNull().default("text"),
   isPinned: boolean("is_pinned").notNull().default(false),
   pinnedAt: timestamp("pinned_at"),
@@ -90,7 +90,7 @@ export const comment = pgTable("comment", {
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
   content: text("content").notNull(),
-  parentCommentId: uuid("parent_comment_id").references((): any => comment.id, {
+  parentCommentId: uuid("parent_comment_id").references((): AnyPgColumn => comment.id, {
     onDelete: "cascade",
   }),
   createdAt: timestamp("created_at").defaultNow().notNull(),

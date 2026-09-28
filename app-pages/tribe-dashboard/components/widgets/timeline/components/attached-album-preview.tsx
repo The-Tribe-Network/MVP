@@ -2,7 +2,7 @@
 
 import { X, ImageIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card } from '@/components/ui/card'
 import type { SelectedAlbum } from '@/components/dialogs/select-post-album'
 
 interface AttachedAlbumPreviewProps {

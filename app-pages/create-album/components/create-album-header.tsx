@@ -11,7 +11,7 @@ export function CreateAlbumHeader() {
       <div>
         <h1 className="text-2xl font-bold">Create Album</h1>
         <p className="text-muted-foreground mt-1">
-          Organize and share your tribe's photos and memories
+          Organize and share your tribe&apos;s photos and memories
         </p>
       </div>
     </div>

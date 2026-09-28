@@ -8,7 +8,7 @@ export function UseCasesHero() {
           Your Community, <span className="text-primary">Your Way</span>
         </h1>
         <p className="text-lg md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-          Whether you're a club, team, congregation, or any group that gathers in person — Tribe adapts to your community's unique needs.
+          Whether you&apos;re a club, team, congregation, or any group that gathers in person — Tribe adapts to your community&apos;s unique needs.
         </p>
       </div>
     </SectionContainer>

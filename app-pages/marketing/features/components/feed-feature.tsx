@@ -51,7 +51,7 @@ export function FeedFeature() {
           {/* Text */}
           <div className="space-y-8 order-2 md:order-none">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium">
-              Your Community's Heartbeat
+              Your Community&apos;s Heartbeat
             </div>
 
             <div className="flex items-center gap-4">
@@ -195,7 +195,7 @@ export function FeedFeature() {
                       <span className="text-xs text-muted-foreground">· 1d ago</span>
                     </div>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Reminder: Our nutrition workshop is tomorrow at 6 PM. Don't miss it!
+                      Reminder: Our nutrition workshop is tomorrow at 6 PM. Don&apos;t miss it!
                     </p>
                   </div>
                 </div>

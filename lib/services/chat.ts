@@ -7,7 +7,7 @@ import { and, asc, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { userPreviewColumns } from "@/lib/database/user-columns";
 import { getMemberWithPermissions, type MemberWithPermissions } from "./permissions";
 import { resolveEffectivePermissions } from "./member-permissions";
-import { excludeBlocked, isBlockedPair } from "./blocks";
+import { excludeBlocked } from "./blocks";
 import { appLink, excerpt, notify, type NotifyExecutor } from "./notifications";
 import { timelineMute } from "@/lib/database/schemas/timeline";
 import { getTimelineInTribe, roleMeetsTimelinePermission, type Timeline } from "./timeline";
@@ -90,8 +90,11 @@ const messageColumns = {
 };
 
 
+/** A message row as `messageColumns` selects it; a full `returning()` row is one too. */
+type MessageRow = Pick<typeof chatMessage.$inferSelect, keyof typeof messageColumns>;
+
 /** Rows → DTOs with authors, photos, reactions and reply previews, in a constant number of queries. */
-async function hydrate(rows: Array<{ id: string; authorId: string; replyToId: string | null } & Record<string, any>>, viewerId: string): Promise<ChatMessageDto[]> {
+async function hydrate(rows: MessageRow[], viewerId: string): Promise<ChatMessageDto[]> {
   if (rows.length === 0) return [];
   const ids = rows.map((row) => row.id);
   const parentIds = [...new Set(rows.map((row) => row.replyToId).filter((id): id is string => Boolean(id)))];

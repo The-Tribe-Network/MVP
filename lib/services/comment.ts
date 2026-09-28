@@ -1,9 +1,8 @@
 import { db, getDbTransaction } from "@/lib/database/client";
 import { comment, commentLike, post } from "@/lib/database/schemas/post";
 import { event, eventSettings } from "@/lib/database/schemas/event";
-import { tribeMember, tribeMemberPermission } from "@/lib/database/schemas/tribe";
 import { user } from "@/lib/database/schemas/auth";
-import { eq, and, asc, count, inArray, or, isNull, sql } from "drizzle-orm";
+import { eq, and, asc, count, inArray, sql } from "drizzle-orm";
 import type { Comment, CommentInsert, CommentWithAuthor } from "@/lib/database/types";
 import { checkPermission } from "./role-permissions";
 import { getPostById } from "./post";

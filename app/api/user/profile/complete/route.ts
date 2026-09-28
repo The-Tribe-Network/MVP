@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
 import { markProfileAsComplete, isProfileComplete } from "@/lib/services/user";
 import type { User } from "@/lib/database/types";
@@ -37,7 +37,7 @@ export async function GET() {
  * POST /api/user/profile/complete
  * Mark user profile as complete
  */
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
     const user: User | null = await getServerUser();
     if (!user) {

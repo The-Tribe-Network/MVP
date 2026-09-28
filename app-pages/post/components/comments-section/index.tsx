@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Separator } from '@/components/ui/separator'
 import { useAuthUser } from '@/lib/hooks/use-auth'
-import { usePostComments, useCreateComment } from '@/lib/hooks/use-comments'
+import { useCreateComment } from '@/lib/hooks/use-comments'
 import { CommentForm } from './comment-form'
 import { CommentItem } from './comment-item'
 import { CommentsSkeleton } from './loading'

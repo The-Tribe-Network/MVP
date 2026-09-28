@@ -18,34 +18,34 @@ import { user } from "@/lib/database/schemas/auth";
  */
 
 /** `db` or a transaction (`getDbTransaction().transaction(tx => …)`); both are PgDatabases. */
-export type NotifyExecutor = Pick<PgDatabase<PgQueryResultHKT, any, any>, "select" | "insert">;
+export type NotifyExecutor = Pick<PgDatabase<PgQueryResultHKT, Record<string, unknown>>, "select" | "insert">;
 
 /**
  * What each type may point at. The mobile contract's `Notification.type` plus types the contract doesn't list yet
  * (`event_cohost_request`, `new_post`, `new_event`, `poll_closed`; TRI-7 / TRI-223 add them to the app).
  */
-const ENTITY_TYPES = {
-  like: ["post", "comment", "media"],
-  comment: ["post", "event"],
+type EntityTypes = {
+  like: "post" | "comment" | "media";
+  comment: "post" | "event";
   // Chat (TRI-317): one collapsing row per chat timeline, so a busy chat is one row, not one per message
-  reply: ["comment", "timeline"],
-  mention: ["post", "comment", "timeline"],
-  event_reminder: ["event"],
-  event_update: ["event"],
-  event_cohost_request: ["event"],
-  rsvp: ["event"],
-  invite: ["invitation"],
-  media_added: ["album"],
-  announcement: ["post", "event"],
-  member_joined: ["tribe"],
+  reply: "comment" | "timeline";
+  mention: "post" | "comment" | "timeline";
+  event_reminder: "event";
+  event_update: "event";
+  event_cohost_request: "event";
+  rsvp: "event";
+  invite: "invitation";
+  media_added: "album";
+  announcement: "post" | "event";
+  member_joined: "tribe";
   // TRI-192: one collapsing row per tribe, so the entity is the tribe; the link opens the newest post / event
-  new_post: ["tribe"],
-  new_event: ["tribe"],
+  new_post: "tribe";
+  new_event: "tribe";
   // TRI-219
-  poll_closed: ["poll"],
-} as const;
+  poll_closed: "poll";
+};
 
-export type NotificationType = keyof typeof ENTITY_TYPES;
+export type NotificationType = keyof EntityTypes;
 
 export type NotificationEvent = {
   [T in NotificationType]: {
@@ -54,7 +54,7 @@ export type NotificationEvent = {
     actorId: string | null;
     /** Null for account-level notifications (no tribe). */
     tribeId: string | null;
-    entityType: (typeof ENTITY_TYPES)[T][number];
+    entityType: EntityTypes[T];
     entityId: string;
     recipients: readonly string[];
     /**

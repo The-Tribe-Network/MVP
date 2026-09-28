@@ -79,7 +79,7 @@ export function EventLocationMap({ location }: EventLocationMapProps) {
         {/* Additional Info */}
         <div className="pt-3 border-t">
           <p className="text-xs text-muted-foreground">
-            Click "Open in Maps" to get directions and see the exact location
+            Click &quot;Open in Maps&quot; to get directions and see the exact location
           </p>
         </div>
       </CardContent>

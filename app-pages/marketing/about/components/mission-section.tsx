@@ -21,7 +21,7 @@ export function MissionSection() {
 
           <p className="text-lg text-muted-foreground leading-relaxed">
             Platforms we use today are built for broadcasting, not belonging. They optimize for strangers and engagement metrics to capture attention, not nurture real connections.
-            And we're drowning in noise because of it. Endless feeds of irrelevant content buries what actually matters.{" "}
+            And we&apos;re drowning in noise because of it. Endless feeds of irrelevant content buries what actually matters.{" "}
             <a
               href="https://www.youtube.com/watch?v=DRCYS21MBoM&list=PLw1seYwCUpVQSgVZwSiXVWBuwh7EvuOIx&index=1"
               target="_blank"
@@ -33,7 +33,7 @@ export function MissionSection() {
           </p>
 
           <p className="text-lg text-muted-foreground leading-relaxed">
-            That's why we're building Tribe — <strong className="text-foreground">digital third place infrastructure</strong> to provide the tools needed to strengthen the bonds in communities. One home for members, memories, and the real-world moments that truly matter.
+            That&apos;s why we&apos;re building Tribe — <strong className="text-foreground">digital third place infrastructure</strong> to provide the tools needed to strengthen the bonds in communities. One home for members, memories, and the real-world moments that truly matter.
           </p>
         </div>
       </div>

@@ -8,7 +8,6 @@ import { AttendeeList } from './attendee-list'
 import { ViewAllButton } from './view-all-button'
 import { EventAttendeesSkeleton } from './loading'
 import { useEventAttendees, useEventDetail } from '@/lib/hooks/use-events'
-import type { EventAttendee, User } from '@/lib/database/types'
 
 interface EventAttendeesSectionProps {
   tribeId: string

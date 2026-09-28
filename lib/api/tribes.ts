@@ -161,7 +161,7 @@ export async function createTribe(
  */
 export async function sendTribeInvitations(
   params: SendInvitationsParams
-): Promise<{ success: boolean; message: string; invitations: any[] }> {
+): Promise<{ success: boolean; message: string; invitations: unknown[] }> {
   const { tribeId, invitations } = params;
   return apiFetch(
     `${API_BASE}/${tribeId}/invitations`,

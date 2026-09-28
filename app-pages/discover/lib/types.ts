@@ -1,4 +1,3 @@
-import type { DiscoverTribe, DiscoverTribesParams } from '@/lib/api/discover';
 
 // Re-export API types for convenience
 export type { DiscoverTribe, DiscoverTribesParams, DiscoverTribesResponse } from '@/lib/api/discover';

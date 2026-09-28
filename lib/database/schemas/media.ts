@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, integer, bigint, uuid, unique, uniqueIndex, boolean, index, jsonb } from "drizzle-orm/pg-core";
+import { type AnyPgColumn, pgTable, text, timestamp, integer, bigint, uuid, unique, uniqueIndex, index, jsonb } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { tribe } from "./tribe";
 import { user } from "./auth";
@@ -15,7 +15,7 @@ export const album = pgTable("album", {
     .references(() => user.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   description: text("description"),
-  coverId: uuid("cover_id").references((): any => media.id, { onDelete: "set null" }),
+  coverId: uuid("cover_id").references((): AnyPgColumn => media.id, { onDelete: "set null" }),
   privacy: albumPrivacy("privacy").default("public").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")

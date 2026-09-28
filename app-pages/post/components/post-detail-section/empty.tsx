@@ -19,7 +19,7 @@ export function PostDetailEmpty() {
             </EmptyMedia>
             <EmptyTitle>Post not found</EmptyTitle>
             <EmptyDescription>
-              This post may have been deleted or you don't have permission to view it.
+              This post may have been deleted or you don&apos;t have permission to view it.
             </EmptyDescription>
           </EmptyHeader>
         </Empty>

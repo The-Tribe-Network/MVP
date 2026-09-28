@@ -3,10 +3,6 @@ import { getServerUser } from "@/lib/services/auth";
 import { checkPermission, updateRolePermissions } from "@/lib/services/role-permissions";
 import { updateRolePermissionsSchema, validateApiRequest } from "@/lib/validations/permissions";
 
-type RouteContext<T extends string> = {
-  params: Promise<Record<string, string>>;
-};
-
 /**
  * PATCH /api/tribes/[tribe_id]/roles/[role]
  *

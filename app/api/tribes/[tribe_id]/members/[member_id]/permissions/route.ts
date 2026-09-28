@@ -8,10 +8,6 @@ import {
 } from "@/lib/services/member-permissions";
 import { updateMemberPermissionsSchema, validateApiRequest } from "@/lib/validations/permissions";
 
-type RouteContext<T extends string> = {
-  params: Promise<Record<string, string>>;
-};
-
 /**
  * GET /api/tribes/[tribe_id]/members/[member_id]/permissions
  *

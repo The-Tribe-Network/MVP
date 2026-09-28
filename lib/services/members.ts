@@ -1,11 +1,17 @@
-import { db, getDbTransaction } from "@/lib/database/client";
+import { db } from "@/lib/database/client";
 import { deleteDraftsForMember } from "@/lib/services/draft";
 import { tribeMember, tribeMemberPermission } from "@/lib/database/schemas/tribe";
 import { user } from "@/lib/database/schemas/auth";
 import { eq, and, like, or, count, gte, lte, sql, isNull } from "drizzle-orm";
 import { getMemberWithPermissions } from "./permissions";
 import { checkPermission } from "./role-permissions";
-import type { PaginatedMembers, MemberListItem } from "@/lib/database/types";
+import type {
+  PaginatedMembers,
+  MemberListItem,
+  TribeMember,
+  TribeMemberPermission,
+  TribeMemberPermissionInsert,
+} from "@/lib/database/types";
 import type { MemberListQuery, UpdateMemberPermissionsInput } from "@/lib/validations/members";
 import { userBasicColumns } from "@/lib/database/user-columns";
 import { excludeBlocked } from "./blocks";
@@ -21,6 +27,8 @@ const roleHierarchy = {
   member: 1,
 } as const;
 
+type MemberWithPermissionRow = { member: TribeMember; permissions: TribeMemberPermission | null };
+
 /**
  * Helper function to check if requesting user can manage target member
  * Enforces role hierarchy and self-management rules
@@ -29,7 +37,7 @@ async function canManageMember(
   tribeId: string,
   requestingUserId: string,
   targetMemberId: string
-): Promise<{ canManage: boolean; reason?: string; requester?: any; target?: any }> {
+): Promise<{ canManage: boolean; reason?: string; requester?: MemberWithPermissionRow; target?: MemberWithPermissionRow }> {
   // Get both members with permissions in parallel
   const [requesterData, targetData] = await Promise.all([
     db
@@ -119,7 +127,7 @@ export async function getAllTribeMembers(
   }
 
   // Base query to get members with user data and permission status
-  let query = db
+  const query = db
     .select({
       id: tribeMember.id,
       role: tribeMember.role,
@@ -287,7 +295,8 @@ export async function updateMemberPermissions(
 
   // Prepare permission data (filter out undefined values)
   const { restrictionReason, ...permissionFields } = permissions;
-  const permissionData: any = {
+  // The permission keys are copied in by name below, hence the open record
+  const permissionData: TribeMemberPermissionInsert & Record<string, unknown> = {
     tribeMemberId: targetMemberId,
     tribeId,
     userId: targetMember.userId,

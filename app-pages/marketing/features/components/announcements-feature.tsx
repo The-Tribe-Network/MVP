@@ -122,7 +122,7 @@ export function AnnouncementsFeature() {
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium text-muted-foreground">Regular post</p>
                     <p className="text-xs text-muted-foreground/70 mt-0.5">
-                      Just sharing some thoughts about today's session...
+                      Just sharing some thoughts about today&apos;s session...
                     </p>
                   </div>
                 </div>
@@ -146,7 +146,7 @@ export function AnnouncementsFeature() {
             </div>
 
             <p className="text-lg md:text-xl text-muted-foreground leading-relaxed">
-              Important updates shouldn't get buried. Pin critical posts,
+              Important updates shouldn&apos;t get buried. Pin critical posts,
               mark announcements, and make sure your community never misses
               what matters most.
             </p>

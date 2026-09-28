@@ -8,7 +8,6 @@ import type { TribeInvitation } from "@/lib/database/types";
 import { sendTribeInvitationEmail } from "@/lib/email/templates/tribe-invitation/send-tribe-invitation-email";
 import { sendTribeInvitationRejectedEmail } from "@/lib/email/templates/tribe-invitation-rejected/send-tribe-invitation-rejected-email";
 import { sendTribeInvitationAcceptedEmail } from "@/lib/email/templates/tribe-invitation-accepted/send-tribe-invitation-accepted-email";
-import { userPreviewColumns } from "@/lib/database/user-columns";
 import { appLink, notify, type NotifyExecutor } from "./notifications";
 
 /**
@@ -256,7 +255,7 @@ export async function resendTribeInvitation(
 export async function cancelTribeInvitation(
   invitationId: string,
   tribeId: string,
-  userId: string
+  _userId: string
 ): Promise<{ success: boolean; error?: string }> {
   const invitation = await getInvitationById(invitationId);
 
@@ -357,7 +356,7 @@ export async function acceptInvitation(
       tribeId: invitation.tribeId,
       userId: userId,
       role: invitation.role,
-    } as any);
+    });
 
     await tx.update(tribeInvitation)
       .set({ status: "accepted" })

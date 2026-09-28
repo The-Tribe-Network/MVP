@@ -30,7 +30,7 @@ interface UIState {
 
 export const useUIStore = create<UIState>()(
   devtools(
-    (set, get) => ({
+    (set) => ({
       theme: "system",
       sidebarOpen: false,
       globalLoading: false,

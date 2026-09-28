@@ -51,7 +51,7 @@ export function ProfessionalNetworksCase() {
                   <h3 className="font-semibold mb-2">Event Coordination</h3>
                   <p className="text-muted-foreground text-sm leading-relaxed">
                     Plan networking events, reunions, and industry meetups with
-                    RSVPs and attendance tracking. See who's attending before
+                    RSVPs and attendance tracking. See who&apos;s attending before
                     you book the venue.
                   </p>
                 </div>
@@ -103,7 +103,7 @@ export function ProfessionalNetworksCase() {
                         <p className="font-semibold text-xs truncate">{p.name}</p>
                         <p className="text-[10px] text-muted-foreground truncate">{p.title} at {p.company}</p>
                       </div>
-                      <span className="text-[10px] text-muted-foreground flex-shrink-0">'{p.class.slice(2)}</span>
+                      <span className="text-[10px] text-muted-foreground flex-shrink-0">&apos;{p.class.slice(2)}</span>
                     </div>
                   ))}
                 </div>

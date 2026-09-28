@@ -58,7 +58,7 @@ export async function PATCH(request: NextRequest) {
  * GET /api/user/profile
  * Get current user profile, plus `socialLinks` for the PROF-03 editor (TRI-15)
  */
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const user = await getServerUser();
     if (!user) {

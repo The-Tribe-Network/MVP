@@ -16,7 +16,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   AlertCircle,
-  Image,
+  ImageIcon,
   ImagePlus,
   Trash2,
   Plus,
@@ -150,7 +150,7 @@ export function AlbumPhotos({ tribeId, albumId }: AlbumPhotosProps) {
       <Tabs defaultValue="current" className="w-full">
         <TabsList className="grid w-full grid-cols-2 max-w-md">
           <TabsTrigger value="current" className="flex items-center gap-2">
-            <Image className="h-4 w-4" />
+            <ImageIcon className="h-4 w-4" />
             Current Photos ({album.media?.length || 0})
           </TabsTrigger>
           <TabsTrigger value="add" className="flex items-center gap-2">
@@ -165,7 +165,7 @@ export function AlbumPhotos({ tribeId, albumId }: AlbumPhotosProps) {
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle className="flex items-center gap-2">
-                    <Image className="h-5 w-5" />
+                    <ImageIcon className="h-5 w-5" />
                     Album Photos
                   </CardTitle>
                   <CardDescription>
@@ -188,10 +188,10 @@ export function AlbumPhotos({ tribeId, albumId }: AlbumPhotosProps) {
             <CardContent>
               {!album.media || album.media.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
-                  <Image className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <ImageIcon className="h-12 w-12 mx-auto mb-4 opacity-50" />
                   <p>No photos in this album yet</p>
                   <p className="text-sm mt-1">
-                    Add photos from the "Add Photos" tab
+                    Add photos from the &quot;Add Photos&quot; tab
                   </p>
                 </div>
               ) : (

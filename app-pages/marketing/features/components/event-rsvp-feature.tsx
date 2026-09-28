@@ -73,8 +73,8 @@ export function EventRSVPFeature() {
             </div>
 
             <p className="text-lg md:text-xl text-muted-foreground leading-relaxed">
-              Stop using Google Forms and hoping people respond. Tribe's RSVP
-              system is built for communities that actually need to know who's
+              Stop using Google Forms and hoping people respond. Tribe&apos;s RSVP
+              system is built for communities that actually need to know who&apos;s
               showing up.
             </p>
 
@@ -134,7 +134,7 @@ export function EventRSVPFeature() {
                   <div className="flex-1 py-2 rounded-lg bg-muted/50 border flex items-center justify-center gap-1.5">
                     <X className="w-3.5 h-3.5 text-muted-foreground" />
                     <span className="text-xs font-medium text-muted-foreground">
-                      Can't Go
+                      Can&apos;t Go
                     </span>
                   </div>
                 </div>

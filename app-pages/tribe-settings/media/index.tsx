@@ -83,7 +83,7 @@ export function MediaSettings({ tribeId }: MediaSettingsProps) {
         <CardHeader>
           <CardTitle>Access Denied</CardTitle>
           <CardDescription>
-            You don't have permission to edit tribe settings. Only tribe owners
+            You don&apos;t have permission to edit tribe settings. Only tribe owners
             and admins with the <code className="text-sm">canEditTribeSettings</code>{' '}
             permission can access this page.
           </CardDescription>

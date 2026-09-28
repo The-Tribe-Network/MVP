@@ -7,7 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ArrowLeft, Flame, Clock, TrendingUp, FileText, Image, ChevronDown, SlidersHorizontal, Plus } from "lucide-react";
+import { ArrowLeft, Flame, Clock, TrendingUp, FileText, ImageIcon, ChevronDown, SlidersHorizontal, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { PostSortOption, PostContentType } from "@/lib/hooks/use-posts";
 
@@ -30,11 +30,10 @@ const sortOptions: { value: PostSortOption; label: string; icon: React.ReactNode
 const contentTypeOptions: { value: PostContentType; label: string; icon: React.ReactNode }[] = [
   { value: 'all', label: 'All', icon: null },
   { value: 'text', label: 'Text', icon: <FileText className="h-3.5 w-3.5" /> },
-  { value: 'media', label: 'Media', icon: <Image className="h-3.5 w-3.5" /> },
+  { value: 'media', label: 'Media', icon: <ImageIcon className="h-3.5 w-3.5" /> },
 ];
 
 export default function TimelineHeader({
-  tribeId,
   view,
   onViewChange,
   sort,

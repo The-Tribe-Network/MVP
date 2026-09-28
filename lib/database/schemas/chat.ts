@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, uuid, integer, jsonb, index, unique } from "drizzle-orm/pg-core";
+import { type AnyPgColumn, pgTable, text, timestamp, uuid, integer, jsonb, index, unique } from "drizzle-orm/pg-core";
 import { tribe } from "./tribe";
 import { user } from "./auth";
 import { media } from "./media";
@@ -31,7 +31,7 @@ export const chatMessage = pgTable("chat_message", {
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
   body: text("body").notNull().default(""),
-  replyToId: uuid("reply_to_id").references((): any => chatMessage.id, { onDelete: "set null" }),
+  replyToId: uuid("reply_to_id").references((): AnyPgColumn => chatMessage.id, { onDelete: "set null" }),
   // Mentioned members, next to the plain "@Name" text so a rename never breaks one (TRI-317 notifies them)
   mentionUserIds: uuid("mention_user_ids").array().notNull().default([]),
   linkPreview: jsonb("link_preview").$type<LinkPreview>(),

@@ -11,7 +11,7 @@ import {
   Shield,
   FileText,
   Calendar,
-  Image,
+  ImageIcon,
   Bell,
   Share2,
   Crown,
@@ -82,7 +82,7 @@ export default function SidebarTitleDropdown({ title, ...props }: SidebarTitleDr
           <span className="text-base font-semibold">Manage Events</span>
         </DropdownMenuItem>
         <DropdownMenuItem>
-          <Image className="!size-5" />
+          <ImageIcon className="!size-5" />
           <span className="text-base font-semibold">Manage Media</span>
         </DropdownMenuItem>
 

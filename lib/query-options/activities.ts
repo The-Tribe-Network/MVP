@@ -3,7 +3,6 @@ import { queryKeys } from '@/lib/constants/query-keys';
 import {
   fetchTribeActivities,
   fetchRecentActivities,
-  type FetchTribeActivitiesParams,
   type FetchRecentActivitiesParams,
 } from '@/lib/api/activities';
 

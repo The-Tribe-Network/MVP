@@ -29,7 +29,7 @@ export function AppShowcase() {
 
         {/* Optional caption */}
         <p className="text-center text-sm text-muted-foreground mt-6">
-          Your tribe's central hub — events, photos, and coordination in one place
+          Your tribe&apos;s central hub — events, photos, and coordination in one place
         </p>
       </div>
     </SectionContainer>

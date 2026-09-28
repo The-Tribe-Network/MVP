@@ -16,8 +16,7 @@ import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Bell, Clock, MessageSquare, Send } from 'lucide-react'
-import { Separator } from '@/components/ui/separator'
+import { Bell, Clock, Send } from 'lucide-react'
 import { Textarea } from '@/components/ui/textarea'
 
 const notificationSettingsSchema = z.object({

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerUser } from '@/lib/services/auth';
-import { uploadPostImage, addMediaToAlbumJunction } from '@/lib/services/media';
+import { uploadPostImage } from '@/lib/services/media';
 import { validateImageFile } from '@/lib/utils/image';
 import { canUserUploadMedia } from '@/lib/services/permissions';
 
@@ -17,7 +17,6 @@ export async function POST(request: NextRequest) {
     const file = formData.get('file') as File | null;
     const postId = formData.get('postId') as string | null;
     const tribeId = formData.get('tribeId') as string | null;
-    const albumId = formData.get('albumId') as string | null;
 
     if (!file) {
       return NextResponse.json(

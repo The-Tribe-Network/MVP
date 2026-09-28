@@ -6,7 +6,6 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Smartphone, Loader2 } from 'lucide-react'
@@ -15,6 +14,9 @@ import { changePasswordSchema, type ChangePasswordInput } from '@/lib/validation
 import { useChangePassword, useSessions, useRevokeSession, useRevokeOtherSessions } from '@/lib/hooks/use-security'
 import { formatRelativeTime } from '@/lib/utils'
 import { PasswordRequirementsIndicator } from '@/app-pages/auth/forms/password-requirements-indicator'
+
+// listAccounts rows name the provider `providerId`; older rows used `provider`
+type LinkedAccount = { id: string; providerId?: string; provider?: string }
 
 export function SecurityTab() {
   const [connectedAccounts, setConnectedAccounts] = useState<Set<string>>(new Set())
@@ -81,14 +83,14 @@ export function SecurityTab() {
     try {
       // better-auth 1.7 unlinks by account row id, not provider name
       const linked = await authClient.listAccounts()
-      const account = linked.data?.find((a: any) => (a.providerId || a.provider) === provider)
+      const account = linked.data?.find((a: LinkedAccount) => (a.providerId || a.provider) === provider)
       if (!account) throw new Error(`No linked ${provider} account`)
       await authClient.unlinkAccount({ accountId: account.id })
       // Refresh the accounts list to ensure accurate state
       const accounts = await authClient.listAccounts()
       if (accounts.data && accounts.data.length > 0) {
         const providerSet = new Set<string>()
-        accounts.data.forEach((account: any) => {
+        accounts.data.forEach((account: LinkedAccount) => {
           const provider = account.providerId || account.provider
           if (provider === 'google' || provider === 'discord') {
             providerSet.add(provider)
@@ -112,7 +114,7 @@ export function SecurityTab() {
         const accounts = await authClient.listAccounts()
         if (accounts.data && accounts.data.length > 0) {
           const providerSet = new Set<string>()
-          accounts.data.forEach((account: any) => {
+          accounts.data.forEach((account: LinkedAccount) => {
             const provider = account.providerId || account.provider
             if (provider === 'google' || provider === 'discord') {
               providerSet.add(provider)

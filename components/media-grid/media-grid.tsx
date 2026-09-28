@@ -24,7 +24,6 @@ export function MediaGrid({
   isLoading,
   selectedIds,
   onToggle,
-  selectionMode,
   emptyTitle,
   emptyDescription,
   height = 'h-[500px]',

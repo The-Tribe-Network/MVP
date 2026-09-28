@@ -1,6 +1,6 @@
 "use client"
 
-import { Badge, Check, Mail, X } from "lucide-react";
+import { Check, Mail, X } from "lucide-react";
 import { Button } from "../ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";

@@ -184,7 +184,6 @@ export function DetailsSection({ tribeId, eventId, event }: DetailsSectionProps)
                 <div className="space-y-3">
                   <div className="relative rounded-lg overflow-hidden border border-border">
                     <div className="aspect-video">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={currentCoverUrl}
                         alt="Cover preview"

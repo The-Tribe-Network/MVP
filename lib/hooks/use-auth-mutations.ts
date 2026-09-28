@@ -132,7 +132,7 @@ export function useSignOutMutation() {
       })
       router.push("/")
     },
-    onError: (error: Error) => {
+    onError: () => {
       toast.error("Error", {
         description: "Failed to sign out. Please try again.",
       })
