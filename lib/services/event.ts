@@ -29,6 +29,7 @@ import type {
   Event,
   EventAttendeeWithUser,
 } from "@/lib/database/types";
+import { queueEventChangeEmail, sendDueEventChangeEmailsSoon } from "./event-change-emails";
 
 export type RsvpStatus = "going" | "maybe" | "not_going";
 
@@ -748,6 +749,7 @@ export async function updateEvent(
   }>
 ): Promise<EventWithCreator | null> {
   // The edit and its notification commit together (TRI-183)
+  let cancelled = false;
   const updated = await getDbTransaction().transaction(async (tx) => {
     const [before] = await tx.select().from(event).where(eq(event.id, eventId)).for("update");
     if (!before) return null;
@@ -759,24 +761,35 @@ export async function updateEvent(
 
     const notice = eventChangeNotice(before, after);
     if (notice) {
+      const audience = await eventAudience(tx, after.id);
       await notify(tx, {
         type: "event_update",
         actorId: userId,
         tribeId: after.tribeId,
         entityType: "event",
         entityId: after.id,
-        recipients: await eventAudience(tx, after.id),
+        recipients: audience,
         title: notice.title,
         message: "",
         link: appLink.event(after.tribeId, after.id),
         // Repeat edits of one kind collapse; cancel, reschedule and change never merge with each other
         collapse: notice.kind,
       });
+      // TRI-349: and by email, sent after this commits
+      await queueEventChangeEmail(tx, {
+        before,
+        after,
+        kind: notice.kind === "cancelled" ? "cancelled" : "changed",
+        actorId: userId,
+        recipients: audience,
+      });
+      if (notice.kind === "cancelled") cancelled = true;
     }
     return after;
   });
 
   if (!updated) return null;
+  if (cancelled) sendDueEventChangeEmailsSoon();
 
   // Create activity
   await createActivity({
@@ -799,26 +812,41 @@ export async function updateEvent(
  * row links to the tribe, since the event is gone.
  */
 export async function deleteEvent(eventId: string, userId: string): Promise<boolean> {
-  return getDbTransaction().transaction(async (tx) => {
+  let cancelled = false;
+  const deleted = await getDbTransaction().transaction(async (tx) => {
     const [row] = await tx.select().from(event).where(eq(event.id, eventId)).for("update");
     if (!row) return false;
     if (eventChangeNotice(row, { ...row, status: "cancelled" })) {
+      // Read before the delete: the attendee rows go with the event
+      const audience = await eventAudience(tx, row.id);
       await notify(tx, {
         type: "event_update",
         actorId: userId,
         tribeId: row.tribeId,
         entityType: "event",
         entityId: row.id,
-        recipients: await eventAudience(tx, row.id),
+        recipients: audience,
         title: `cancelled ${row.title}`,
         message: "",
         link: appLink.tribe(row.tribeId),
         collapse: "cancelled",
       });
+      // TRI-349
+      await queueEventChangeEmail(tx, {
+        before: row,
+        after: row,
+        kind: "cancelled",
+        deleted: true,
+        actorId: userId,
+        recipients: audience,
+      });
+      cancelled = true;
     }
     const result = await tx.delete(event).where(eq(event.id, eventId));
     return (result.rowCount ?? 0) > 0;
   });
+  if (deleted && cancelled) sendDueEventChangeEmailsSoon();
+  return deleted;
 }
 
 /**

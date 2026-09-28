@@ -53,6 +53,7 @@ Code lifetime is `AUTH_CONSTANTS.OTP_EXPIRES_MINUTES` (`lib/constants/auth.ts`):
 | `tribe-invitation`, `-accepted`, `-rejected` | an invite is sent, accepted or declined |
 | `content-report` | content is reported (tribe owner + `PLATFORM_OWNER_EMAIL`) |
 | `waitlist` | someone joins the web waitlist |
+| `lib/services/event-change-emails.ts` (no template folder; built with `renderEmail()`) | an event someone is going to (or might go to, or hosts) is cancelled, deleted while upcoming, or gets a new time or place (TRI-349). Queued in the edit's transaction (`event_change_email`); a cancellation goes right after the request, a change after a 10-minute window that folds further edits; the cron route sends what is due. Category `eventUpdates` |
 | `welcome` | not sent yet (the alpha emails project wires it up) |
 
 ## Environment
