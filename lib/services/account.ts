@@ -21,6 +21,7 @@ import {
   verification,
 } from "@/lib/database/schemas";
 import { destroyMediaAsset } from "./media";
+import { sendAccountDeactivatedEmail, sendAccountDeletedEmail } from "@/lib/email/account-emails";
 
 /**
  * Account deletion (TRI-16, USET-03 danger zone; owner decision 2026-09-25: delete anonymizes).
@@ -102,7 +103,12 @@ export async function deleteAccount(userId: string): Promise<DeleteAccountResult
   const owned = await getOwnedTribes(userId);
   if (owned.length > 0) return { ok: false, code: "OWNS_TRIBES", tribes: owned };
 
-  const [current] = await db.select({ email: user.email }).from(user).where(eq(user.id, userId)).limit(1);
+  // Read before the scrub: the "account deleted" email goes to the address the account had (TRI-348)
+  const [current] = await db
+    .select({ email: user.email, name: user.name, displayName: user.displayName })
+    .from(user)
+    .where(eq(user.id, userId))
+    .limit(1);
   const removable = await mediaToRemove(userId);
   const mediaIds = removable.map((m) => m.id);
 
@@ -162,6 +168,14 @@ export async function deleteAccount(userId: string): Promise<DeleteAccountResult
   // After commit: a Cloudinary failure only leaves an orphaned asset, never a half-deleted account
   await Promise.all(removable.map((m) => destroyMediaAsset(m)));
 
+  if (current && !current.email.endsWith("@deleted.invalid")) {
+    try {
+      await sendAccountDeletedEmail(current);
+    } catch (error) {
+      console.error("Failed to send account-deleted email:", error instanceof Error ? error.message : error);
+    }
+  }
+
   return { ok: true, removedMedia: removable.length };
 }
 
@@ -185,5 +199,17 @@ export async function deactivateAccount(userId: string): Promise<DeactivateAccou
       .where(eq(user.id, userId));
     await tx.delete(session).where(eq(session.userId, userId));
   });
+  // TRI-348: one line on how to come back
+  const [row] = await db
+    .select({ email: user.email, name: user.name, displayName: user.displayName })
+    .from(user)
+    .where(eq(user.id, userId));
+  if (row) {
+    try {
+      await sendAccountDeactivatedEmail(row);
+    } catch (error) {
+      console.error("Failed to send account-deactivated email:", error instanceof Error ? error.message : error);
+    }
+  }
   return { ok: true };
 }

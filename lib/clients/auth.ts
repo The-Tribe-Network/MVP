@@ -11,6 +11,7 @@ import { account, session, user, verification } from "@/lib/database/schemas";
 import { sendEmailChangedNotice, sendEmailChangeOTP, sendOTPEmailVerification, sendOTPForgetPasswordEmail } from "../email";
 import { BIRTHDAY_MESSAGES, birthdayProblem, birthdaySchema } from "@/lib/validations/account";
 import { AUTH_CONSTANTS } from "@/lib/constants/auth";
+import { sendPasswordChangedEmail, sendWelcomeEmailOnce } from "@/lib/email/account-emails";
 import { isProduction } from "@/lib/utils";
 
 const { LOCAL_ORIGIN, NODE_ENV } = process.env;
@@ -112,6 +113,10 @@ export const auth = betterAuth({
           message: "We couldn't send the code. Try again in a moment.",
         });
       }
+      if (ctx.path === "/change-password" || ctx.path === "/email-otp/reset-password" || ctx.path === "/email-otp/verify-email") {
+        await accountEmailAfter(ctx.path, ctx.context.returned, ctx.body);
+        return;
+      }
       // Change email: tell the OLD address once the change is done (a hijacked session can't move the account quietly)
       if (ctx.path !== "/email-otp/change-email") return;
       const returned = ctx.context.returned as { success?: boolean } | undefined;
@@ -126,6 +131,19 @@ export const auth = betterAuth({
     }),
   },
   databaseHooks: {
+    user: {
+      create: {
+        // TRI-348: a social sign-up arrives verified, so it gets its welcome now; email sign-ups get it after the code
+        after: async (created) => {
+          if (!created.emailVerified) return;
+          try {
+            await sendWelcomeEmailOnce(created.id);
+          } catch (error) {
+            console.error("Failed to send welcome email:", error instanceof Error ? error.message : error);
+          }
+        },
+      },
+    },
     session: {
       create: {
         // A deleted account's tombstone (TRI-16) never gets a session, whatever path tries to create one.
@@ -284,5 +302,32 @@ async function checkEmailChange(ctx: Parameters<Parameters<typeof createAuthMidd
     ));
   if (counts && (counts.lastMinute >= EMAIL_CHANGE_SENDS_PER_MINUTE || counts.lastHour >= EMAIL_CHANGE_SENDS_PER_HOUR)) {
     throw new APIError("TOO_MANY_REQUESTS", { code: "RATE_LIMITED", message: "Too many codes requested. Try again later." });
+  }
+}
+
+/**
+ * TRI-348, from hooks.after: "your password was changed" after a change (USET-04) or a code reset (AUTH-05), and the
+ * one-time welcome after the first email verification. Only on success; a failed send is logged, never the
+ * request's error.
+ */
+async function accountEmailAfter(path: string, returned: unknown, body: unknown) {
+  if (!returned || returned instanceof APIError) return;
+  const result = returned as { success?: boolean; status?: boolean; user?: { id: string; email: string; name: string } };
+  try {
+    if (path === "/change-password" && result.user) {
+      await sendPasswordChangedEmail(result.user);
+    } else if (path === "/email-otp/reset-password" && result.success) {
+      const email = (body as { email?: string } | undefined)?.email?.trim().toLowerCase();
+      if (!email) return;
+      const [row] = await db
+        .select({ email: user.email, name: user.name, displayName: user.displayName })
+        .from(user)
+        .where(sql`lower(${user.email}) = ${email}`);
+      if (row) await sendPasswordChangedEmail(row);
+    } else if (path === "/email-otp/verify-email" && result.status && result.user) {
+      await sendWelcomeEmailOnce(result.user.id);
+    }
+  } catch (error) {
+    console.error(`Failed to send the ${path} account email:`, error instanceof Error ? error.message : error);
   }
 }
