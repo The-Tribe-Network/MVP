@@ -374,57 +374,72 @@ export async function deleteComment(commentId: string, userId: string): Promise<
 }
 
 /**
- * Toggle like on a comment
- * Returns true if liked, false if unliked
+ * Like (`liked: true`) or unlike a comment. Safe to repeat and to race (TRI-361); the comment's author hears only
+ * about a like that was really new (TRI-193).
  */
-export async function toggleCommentLike(commentId: string, userId: string): Promise<boolean> {
-  // Check if like exists
-  const [existingLike] = await db
-    .select()
-    .from(commentLike)
-    .where(and(eq(commentLike.commentId, commentId), eq(commentLike.userId, userId)))
-    .limit(1);
-
-  if (existingLike) {
-    // Unlike
+export async function setCommentLike(
+  commentId: string,
+  userId: string,
+  liked: boolean
+): Promise<{ isLiked: boolean; likeCount: number }> {
+  if (!liked) {
     await db
       .delete(commentLike)
       .where(and(eq(commentLike.commentId, commentId), eq(commentLike.userId, userId)));
-    return false;
-  } else {
-    // Like, and tell the comment's author in the same transaction (TRI-193). An unlike leaves the row alone.
-    await getDbTransaction().transaction(async (tx) => {
-      await tx.insert(commentLike).values({ commentId, userId });
-      const [target] = await tx
-        .select({
-          authorId: comment.authorId,
-          content: comment.content,
-          postId: comment.postId,
-          eventId: comment.eventId,
-          tribeId: sql<string>`coalesce(${post.tribeId}, ${event.tribeId})`,
-        })
-        .from(comment)
-        .leftJoin(post, eq(post.id, comment.postId))
-        .leftJoin(event, eq(event.id, comment.eventId))
-        .where(eq(comment.id, commentId));
-      if (!target) return;
-      await notify(tx, {
-        type: "like",
-        actorId: userId,
-        tribeId: target.tribeId,
-        entityType: "comment",
-        entityId: commentId,
-        recipients: [target.authorId],
-        title: "liked your comment",
-        message: excerpt(target.content),
-        link: target.postId
-          ? `${appLink.post(target.tribeId, target.postId)}?commentId=${commentId}`
-          : appLink.event(target.tribeId, target.eventId!),
-        collapse: true,
-      });
-    });
-    return true;
+    return { isLiked: false, likeCount: await getCommentLikeCount(commentId) };
   }
+
+  await getDbTransaction().transaction(async (tx) => {
+    const inserted = await tx
+      .insert(commentLike)
+      .values({ commentId, userId })
+      .onConflictDoNothing()
+      .returning({ id: commentLike.id });
+    if (inserted.length === 0) return;
+    const [target] = await tx
+      .select({
+        authorId: comment.authorId,
+        content: comment.content,
+        postId: comment.postId,
+        eventId: comment.eventId,
+        tribeId: sql<string>`coalesce(${post.tribeId}, ${event.tribeId})`,
+      })
+      .from(comment)
+      .leftJoin(post, eq(post.id, comment.postId))
+      .leftJoin(event, eq(event.id, comment.eventId))
+      .where(eq(comment.id, commentId));
+    if (!target) return;
+    await notify(tx, {
+      type: "like",
+      actorId: userId,
+      tribeId: target.tribeId,
+      entityType: "comment",
+      entityId: commentId,
+      recipients: [target.authorId],
+      title: "liked your comment",
+      message: excerpt(target.content),
+      link: target.postId
+        ? `${appLink.post(target.tribeId, target.postId)}?commentId=${commentId}`
+        : appLink.event(target.tribeId, target.eventId!),
+      collapse: true,
+    });
+  });
+  return { isLiked: true, likeCount: await getCommentLikeCount(commentId) };
+}
+
+/** The web's toggle (`POST …/like`), on top of `setCommentLike`. Returns the new state and count. */
+export async function toggleCommentLike(commentId: string, userId: string): Promise<{ isLiked: boolean; likeCount: number }> {
+  const [existingLike] = await db
+    .select({ id: commentLike.id })
+    .from(commentLike)
+    .where(and(eq(commentLike.commentId, commentId), eq(commentLike.userId, userId)))
+    .limit(1);
+  return setCommentLike(commentId, userId, !existingLike);
+}
+
+async function getCommentLikeCount(commentId: string): Promise<number> {
+  const [result] = await db.select({ count: count() }).from(commentLike).where(eq(commentLike.commentId, commentId));
+  return result?.count ?? 0;
 }
 
 /**

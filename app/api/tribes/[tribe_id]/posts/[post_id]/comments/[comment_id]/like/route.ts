@@ -1,14 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
-import { toggleCommentLike, getCommentById } from "@/lib/services/comment";
+import { getCommentById, setCommentLike, toggleCommentLike } from "@/lib/services/comment";
 import { getPostById } from "@/lib/services/post";
 import { checkTribeMembership } from "@/lib/services/permissions";
 import { tribePostCommentIdParamSchema, validateApiRequest } from "@/lib/validations/comment";
 
-export async function POST(
-  request: NextRequest,
-  ctx: RouteContext<'/api/tribes/[tribe_id]/posts/[post_id]/comments/[comment_id]/like'>
-) {
+type Ctx = RouteContext<'/api/tribes/[tribe_id]/posts/[post_id]/comments/[comment_id]/like'>;
+
+/**
+ * Post-comment likes (TRI-361): `PUT` likes and `DELETE` unlikes, both safe to repeat (the app uses
+ * these); `POST` toggles and stays for the web until it is cut over. All answer `{ isLiked, likeCount }`.
+ */
+export async function PUT(_request: NextRequest, ctx: Ctx) {
+  return handle(ctx, true);
+}
+
+export async function DELETE(_request: NextRequest, ctx: Ctx) {
+  return handle(ctx, false);
+}
+
+export async function POST(_request: NextRequest, ctx: Ctx) {
+  return handle(ctx, "toggle");
+}
+
+async function handle(ctx: Ctx, liked: boolean | "toggle") {
   try {
     // Check authentication
     const user = await getServerUser();
@@ -69,20 +84,17 @@ export async function POST(
       );
     }
 
-    // Toggle like
-    const isLiked = await toggleCommentLike(
-      paramValidation.data.comment_id,
-      user.id
-    );
-
-    return NextResponse.json({ isLiked }, { status: 200 });
+    const commentId = paramValidation.data.comment_id;
+    const result =
+      liked === "toggle" ? await toggleCommentLike(commentId, user.id) : await setCommentLike(commentId, user.id, liked);
+    return NextResponse.json(result, { status: 200 });
   } catch (error) {
-    console.error("Error toggling comment like:", error);
+    console.error("Error changing comment like:", error);
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
     return NextResponse.json(
-      { error: "Failed to toggle comment like" },
+      { error: "Failed to change comment like" },
       { status: 500 }
     );
   }
