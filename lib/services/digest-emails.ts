@@ -7,6 +7,7 @@ import { appName, sendEmail } from "@/lib/email/client";
 import { renderEmail, type EmailBlock } from "@/lib/email/layout";
 import { escapeHtml } from "@/lib/email/templates/content-report/escape";
 import { validZone } from "@/lib/email/time";
+import { openInAppUrl } from "@/lib/landing/urls";
 import { excludeBlocked } from "@/lib/services/blocks";
 import { emailRecipients } from "@/lib/services/email-preferences";
 import { excerpt } from "@/lib/services/notifications";
@@ -26,7 +27,7 @@ export const DIGEST_HOUR = 9;
 const FALLBACK_ZONE = "America/New_York";
 const MAX_ROWS = 8;
 const DAY_MS = 24 * 60 * 60_000;
-const NOTIFICATIONS_LINK = "tribe://notifications";
+const NOTIFICATIONS_LINK = openInAppUrl("tribe://notifications");
 
 export async function runDailyDigests(now = new Date()): Promise<{ candidates: number; sent: number }> {
   // Anyone with an unread row that changed in the last two days (a digest looks back one day at most)

@@ -5,6 +5,7 @@ import { user } from "@/lib/database/schemas";
 import { emailLog } from "@/lib/database/schemas/email";
 import { appName, sendEmail, supportEmail } from "./client";
 import { renderEmail } from "./layout";
+import { openInAppUrl } from "@/lib/landing/urls";
 import { escapeHtml } from "./templates/content-report/escape";
 
 /**
@@ -13,7 +14,8 @@ import { escapeHtml } from "./templates/content-report/escape";
  * the change they report has already happened.
  */
 
-const APP_LINK = "tribe://";
+// Any path the app doesn't know lands on Home
+const APP_LINK = openInAppUrl("tribe://home");
 const support = supportEmail ? ` or write to ${supportEmail}` : "";
 
 type Recipient = { email: string; name: string | null; displayName?: string | null };
