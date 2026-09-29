@@ -1,7 +1,8 @@
-import { and, isNull, sql } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { db } from "@/lib/database/client";
 import { alphaAccess } from "@/lib/database/schemas";
 import type { AlphaAccessSource } from "@/lib/database/schemas/alpha-access";
+import type { AccessRequestNotice } from "@/lib/email/alpha-access-emails";
 
 /**
  * The alpha gate (TRI-370). Sign-up stays open, but with `ALPHA_GATE_ENABLED=true` a session is only created for an
@@ -27,18 +28,46 @@ function isPlatformOwner(email: string): boolean {
   return !!owner && normalize(owner) === normalize(email);
 }
 
+type Requester = { id: string; email: string; name: string | null };
+
 /**
  * Adds a `requested` row for this email unless it already has one (any status), and links the account to a row
  * the owner pre-approved before it existed. Safe to call on every sign-up and blocked sign-in.
+ *
+ * A new row also emails the owner (TRI-373), once: `owner_notified_at` records it. A failed send is logged and
+ * never fails the sign-up or sign-in that got here.
  */
-export async function recordAccessRequest(userId: string, email: string, source: AlphaAccessSource): Promise<void> {
-  const normalized = normalize(email);
+export async function recordAccessRequest(requester: Requester, source: AlphaAccessSource): Promise<void> {
+  const normalized = normalize(requester.email);
   // The only other unique index is lower(email), so this skips an email that already has a row
-  await db.insert(alphaAccess).values({ email: normalized, status: "requested", userId, source }).onConflictDoNothing();
+  const [created] = await db
+    .insert(alphaAccess)
+    .values({ email: normalized, status: "requested", userId: requester.id, source })
+    .onConflictDoNothing()
+    .returning({ id: alphaAccess.id });
   await db
     .update(alphaAccess)
-    .set({ userId })
+    .set({ userId: requester.id })
     .where(and(sql`lower(${alphaAccess.email}) = ${normalized}`, isNull(alphaAccess.userId)));
+  if (created && !isPlatformOwner(normalized)) {
+    await notifyOwner(created.id, { email: normalized, name: requester.name, source });
+  }
+}
+
+async function notifyOwner(rowId: string, request: AccessRequestNotice): Promise<void> {
+  const owner = process.env.PLATFORM_OWNER_EMAIL?.trim();
+  if (!owner) {
+    console.warn("[alpha-access] PLATFORM_OWNER_EMAIL is not set; owner not emailed about a new request");
+    return;
+  }
+  try {
+    // Imported here so a missing RESEND_API_KEY (the client throws at import) cannot break sign-up
+    const { sendAccessRequestEmail } = await import("@/lib/email/alpha-access-emails");
+    await sendAccessRequestEmail(owner, request);
+    await db.update(alphaAccess).set({ ownerNotifiedAt: sql`now()` }).where(eq(alphaAccess.id, rowId));
+  } catch (error) {
+    console.error("[alpha-access] owner email failed:", error instanceof Error ? error.message : error);
+  }
 }
 
 /**
