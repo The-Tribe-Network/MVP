@@ -13,6 +13,7 @@ import { BIRTHDAY_MESSAGES, birthdayProblem, birthdaySchema } from "@/lib/valida
 import { AUTH_CONSTANTS } from "@/lib/constants/auth";
 import { sendPasswordChangedEmail, sendWelcomeEmailOnce } from "@/lib/email/account-emails";
 import { isProduction } from "@/lib/utils";
+import { ALPHA_ACCESS_PENDING, alphaGateEnabled, gateSource, hasAlphaAccess, recordAccessRequest } from "@/lib/services/alpha-access";
 
 const { LOCAL_ORIGIN, NODE_ENV } = process.env;
 
@@ -135,6 +136,12 @@ export const auth = betterAuth({
       create: {
         // TRI-348: a social sign-up arrives verified, so it gets its welcome now; email sign-ups get it after the code
         after: async (created) => {
+          // TRI-369: every sign-up lands in the owner's alpha access list, gate on or off
+          try {
+            await recordAccessRequest(created.id, created.email, "sign_up");
+          } catch (error) {
+            console.error("Failed to record alpha access request:", error instanceof Error ? error.message : error);
+          }
           if (!created.emailVerified) return;
           try {
             await sendWelcomeEmailOnce(created.id);
@@ -147,14 +154,20 @@ export const auth = betterAuth({
     session: {
       create: {
         // A deleted account's tombstone (TRI-16) never gets a session, whatever path tries to create one.
+        // An account the owner hasn't let into the alpha (TRI-370) gets 403 ALPHA_ACCESS_PENDING instead.
         // A deactivated account (TRI-293) signing in is reactivated: every session comes from a sign-in.
         before: async (newSession) => {
           const [row] = await db
-            .select({ deletedAt: user.deletedAt, deactivatedAt: user.deactivatedAt })
+            .select({ email: user.email, createdAt: user.createdAt, deletedAt: user.deletedAt, deactivatedAt: user.deactivatedAt })
             .from(user)
             .where(eq(user.id, newSession.userId))
             .limit(1);
           if (!row || row.deletedAt) return false;
+          if (alphaGateEnabled() && !(await hasAlphaAccess(row.email))) {
+            // Accounts from before the table get their row on their first blocked sign-in
+            await recordAccessRequest(newSession.userId, row.email, gateSource(row.createdAt));
+            throw new APIError("FORBIDDEN", ALPHA_ACCESS_PENDING);
+          }
           if (row.deactivatedAt) {
             await db.update(user).set({ deactivatedAt: null }).where(eq(user.id, newSession.userId));
           }
