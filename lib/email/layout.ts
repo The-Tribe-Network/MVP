@@ -106,3 +106,25 @@ ${footerLines.map((line) => `<p style="margin:0 0 8px">${line}</p>`).join("\n")}
 
   return { html, text };
 }
+
+/** A one-time code, large and spaced so it reads (and copies) at a glance (TRI-375). */
+export function codeBlock(code: string): { html: string; text: string } {
+  return {
+    html: `<p style="margin:4px 0 20px;padding:16px;background:${COLOR.page};border:1px solid ${COLOR.border};border-radius:8px;text-align:center;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:32px;line-height:40px;font-weight:700;letter-spacing:8px;color:${COLOR.text}">${escapeHtml(code)}</p>`,
+    text: code,
+  };
+}
+
+/** Label / value lines, for emails that report facts (a content report). Empty values are left out. */
+export function detailList(rows: [label: string, value: string | null][]): { html: string; text: string } {
+  const kept = rows.filter((row): row is [string, string] => !!row[1]);
+  return {
+    html: `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 16px;font-size:15px;line-height:22px;color:${COLOR.text}">${kept
+      .map(
+        ([label, value]) =>
+          `<tr><td style="padding:2px 12px 2px 0;color:${COLOR.muted};vertical-align:top;white-space:nowrap">${escapeHtml(label)}</td><td style="padding:2px 0;word-break:break-word">${escapeHtml(value)}</td></tr>`
+      )
+      .join("")}</table>`,
+    text: kept.map(([label, value]) => `${label}: ${value}`).join("\n"),
+  };
+}

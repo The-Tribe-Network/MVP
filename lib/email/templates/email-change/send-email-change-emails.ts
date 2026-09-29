@@ -1,49 +1,36 @@
 import { AUTH_CONSTANTS } from '@/lib/constants/auth';
 import { sendEmail, appName, supportEmail } from '../../client';
-import { generateOTPEmailVerificationHtml } from '../otp-email-verification/template-html';
+import { codeBlock, renderEmail } from '../../layout';
 
 /**
  * Change email (USET-03). The 6-digit code goes to the NEW address (Better-Auth emailOTP `change-email`);
  * the old address gets a notice once the change is done, so a hijacked session can't move the account silently.
  */
 export async function sendEmailChangeOTP({ to, otp, expirationMinutes = AUTH_CONSTANTS.OTP_EXPIRES_MINUTES }: { to: string; otp: string; expirationMinutes?: number }) {
-  // Same look as the verification code email; only the wording differs
-  const html = generateOTPEmailVerificationHtml({ otp, to, expirationMinutes })
-    .replace('To complete your email verification, please use the verification code below:',
-      `To make this your new ${appName} email address, enter the code below in the app:`)
-    .replace('Enter this code in the verification form to confirm your email address and complete your account setup.',
-      'Your email address will not change until you enter this code.');
-  return await sendEmail({
-    to,
-    subject: `Confirm your new email - ${appName}`,
-    html,
-    text: `Confirm your new email - ${appName}
-
-To make this your new ${appName} email address, enter this code in the app:
-
-${otp}
-
-This code expires in ${expirationMinutes} minutes. Your email address will not change until you enter it.
-If you didn't ask to change your email, you can ignore this message.`,
+  const { html, text } = renderEmail({
+    heading: 'Confirm your new email',
+    preheader: `Your ${appName} code is ${otp}.`,
+    blocks: [
+      `To make this your new ${appName} email address, enter this code in the app:`,
+      codeBlock(otp),
+      `It expires in ${expirationMinutes} minutes. Your email address won't change until you enter it.`,
+    ],
+    reason: `You're getting this because someone asked to move a ${appName} account to ${to}. If it wasn't you, ignore this email.`,
   });
+  return await sendEmail({ to, subject: `Confirm your new email - ${appName}`, html, text });
 }
 
 export async function sendEmailChangedNotice({ to, newEmail }: { to: string; newEmail: string }) {
-  const masked = maskEmail(newEmail);
-  const text = `Your ${appName} email address was changed to ${masked}. You will no longer be able to sign in with ${to}.
-
-If you made this change, no action is needed. If you didn't, reset your password right away and contact support${supportEmail ? ` at ${supportEmail}` : ''}.`;
-  return await sendEmail({
-    to,
-    subject: `Your ${appName} email address was changed`,
-    html: `<!DOCTYPE html><html><body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;line-height:1.6;color:#333;max-width:600px;margin:0 auto;padding:20px">
-<h2>Your email address was changed</h2>
-<p>Your ${appName} email address was changed to <strong>${masked}</strong>. You will no longer be able to sign in with ${to}.</p>
-<p>If you made this change, no action is needed. If you didn't, reset your password right away and contact support${supportEmail ? ` at ${supportEmail}` : ''}.</p>
-<p style="font-size:14px;color:#666">© ${new Date().getFullYear()} ${appName}</p>
-</body></html>`,
-    text,
+  const { html, text } = renderEmail({
+    heading: 'Your email address was changed',
+    preheader: `Your ${appName} account now uses ${maskEmail(newEmail)}.`,
+    blocks: [
+      `Your ${appName} email address was changed to ${maskEmail(newEmail)}. You can't sign in with ${to} anymore.`,
+      `If you made this change, there's nothing to do. If you didn't, reset your password right away${supportEmail ? ` and write to ${supportEmail}` : ''}.`,
+    ],
+    reason: `This is a security notice about your ${appName} account, sent to the address it used before.`,
   });
+  return await sendEmail({ to, subject: `Your ${appName} email address was changed`, html, text });
 }
 
 /** `jane.doe@example.com` → `ja•••@example.com` (the old inbox may no longer be the owner's) */
