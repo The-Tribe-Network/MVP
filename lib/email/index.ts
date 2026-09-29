@@ -8,12 +8,6 @@ export { sendOTPEmailVerification } from './templates/otp-email-verification/sen
 export { sendOTPForgetPasswordEmail } from './templates/otp-forget-password/send-otp-forget-password-email';
 export { sendEmailChangeOTP, sendEmailChangedNotice } from './templates/email-change/send-email-change-emails';
 
-// Template exports for advanced usage
-export { generateOTPEmailVerificationHtml } from './templates/otp-email-verification/template-html';
-export { generateOTPEmailVerificationText } from './templates/otp-email-verification/template-text';
-export { generateOTPForgetPasswordEmailHtml } from './templates/otp-forget-password/template-html';
-export { generateOTPForgetPasswordEmailText } from './templates/otp-forget-password/template-text';
-
 // OTP type exports
 export type { OTPEmailVerificationData } from './templates/otp-email-verification/types';
 export type { OTPForgetPasswordData } from './templates/otp-forget-password/types';
