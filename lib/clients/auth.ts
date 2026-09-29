@@ -138,7 +138,7 @@ export const auth = betterAuth({
         after: async (created) => {
           // TRI-369: every sign-up lands in the owner's alpha access list, gate on or off
           try {
-            await recordAccessRequest(created.id, created.email, "sign_up");
+            await recordAccessRequest({ id: created.id, email: created.email, name: created.name }, "sign_up");
           } catch (error) {
             console.error("Failed to record alpha access request:", error instanceof Error ? error.message : error);
           }
@@ -158,14 +158,20 @@ export const auth = betterAuth({
         // A deactivated account (TRI-293) signing in is reactivated: every session comes from a sign-in.
         before: async (newSession) => {
           const [row] = await db
-            .select({ email: user.email, createdAt: user.createdAt, deletedAt: user.deletedAt, deactivatedAt: user.deactivatedAt })
+            .select({
+              email: user.email,
+              name: user.name,
+              createdAt: user.createdAt,
+              deletedAt: user.deletedAt,
+              deactivatedAt: user.deactivatedAt,
+            })
             .from(user)
             .where(eq(user.id, newSession.userId))
             .limit(1);
           if (!row || row.deletedAt) return false;
           if (alphaGateEnabled() && !(await hasAlphaAccess(row.email))) {
             // Accounts from before the table get their row on their first blocked sign-in
-            await recordAccessRequest(newSession.userId, row.email, gateSource(row.createdAt));
+            await recordAccessRequest({ id: newSession.userId, email: row.email, name: row.name }, gateSource(row.createdAt));
             throw new APIError("FORBIDDEN", ALPHA_ACCESS_PENDING);
           }
           if (row.deactivatedAt) {
