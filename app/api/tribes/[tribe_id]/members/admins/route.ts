@@ -6,7 +6,7 @@ import { tribeIdParamSchema, validateApiRequest } from '@/lib/validations/tribe'
 
 /**
  * GET /api/tribes/[tribe_id]/members/admins
- * Get admin members of a tribe (for transfer ownership)
+ * The owner and admins of a tribe, owner first, each with `role` (TRI-408)
  */
 export async function GET(
   request: NextRequest,
