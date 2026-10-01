@@ -11,6 +11,17 @@ import { sendTribeInvitationAcceptedEmail } from "@/lib/email/templates/tribe-in
 import { appLink, notify, type NotifyExecutor } from "./notifications";
 
 /**
+ * Invites are tied to accounts by email alone (TRI-405). Better-Auth lowercases the address at sign-up, so invites are
+ * stored lowercased too and every match compares lowercased values; `lower(...)` on the columns also covers older
+ * rows and accounts.
+ */
+export function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase();
+}
+const lowerUserEmail = sql<string>`lower(${user.email})`;
+const lowerInvitationEmail = sql<string>`lower(${tribeInvitation.email})`;
+
+/**
  * Create invitations for a tribe
  * OPTIMIZED: Batch queries instead of N+1 loops
  * Reduces from 4N database calls to ~5 database calls total
@@ -48,6 +59,11 @@ export async function createTribeInvitations(
   invitedBy: string,
   inviterName: string
 ): Promise<TribeInvitation[]> {
+  // Lowercase, and send one invite per address even if the list repeats it with different capitals
+  const seen = new Set<string>();
+  invitations = invitations
+    .map((inv) => ({ ...inv, email: normalizeEmail(inv.email) }))
+    .filter((inv) => !seen.has(inv.email) && seen.add(inv.email));
   if (invitations.length === 0) return [];
 
   const emails = invitations.map(inv => inv.email);
@@ -55,19 +71,19 @@ export async function createTribeInvitations(
   // Batch fetch all data in parallel (3 queries instead of 3N queries)
   const [existingUsers, existingMembers, existingInvitations] = await Promise.all([
     // Get all users by email
-    db.select().from(user).where(inArray(user.email, emails)),
+    db.select().from(user).where(inArray(lowerUserEmail, emails)),
 
     // Get all existing members for this tribe whose emails match
     db.select({
       userId: tribeMember.userId,
-      userEmail: user.email,
+      userEmail: lowerUserEmail,
     })
     .from(tribeMember)
     .innerJoin(user, eq(tribeMember.userId, user.id))
     .where(
       and(
         eq(tribeMember.tribeId, tribeId),
-        inArray(user.email, emails)
+        inArray(lowerUserEmail, emails)
       )
     ),
 
@@ -77,7 +93,7 @@ export async function createTribeInvitations(
     .where(
       and(
         eq(tribeInvitation.tribeId, tribeId),
-        inArray(tribeInvitation.email, emails),
+        inArray(lowerInvitationEmail, emails),
         eq(tribeInvitation.status, "pending")
       )
     ),
@@ -85,9 +101,9 @@ export async function createTribeInvitations(
 
   // Create lookup sets for fast checking
   const existingMemberEmails = new Set(existingMembers.map(m => m.userEmail));
-  const existingInvitationEmails = new Set(existingInvitations.map(inv => inv.email));
+  const existingInvitationEmails = new Set(existingInvitations.map(inv => normalizeEmail(inv.email)));
   // TRI-293: nobody can invite a deactivated account (skipped like an existing member)
-  const deactivatedEmails = new Set(existingUsers.filter(u => u.deactivatedAt).map(u => u.email));
+  const deactivatedEmails = new Set(existingUsers.filter(u => u.deactivatedAt).map(u => normalizeEmail(u.email)));
 
   // Filter invitations to only valid ones
   const validInvitations = invitations.filter(invitation => {
@@ -110,7 +126,7 @@ export async function createTribeInvitations(
   expiresAt.setDate(expiresAt.getDate() + 7);
 
   // TRI-187: invitees who already have an account also get an in-app row, in the same transaction
-  const userIdByEmail = new Map(existingUsers.map((u) => [u.email, u.id]));
+  const userIdByEmail = new Map(existingUsers.map((u) => [normalizeEmail(u.email), u.id]));
   const createdInvitations = await getDbTransaction().transaction(async (tx) => {
     const rows = await tx
       .insert(tribeInvitation)
@@ -220,7 +236,7 @@ export async function resendTribeInvitation(
   const [tribeData, inviter, invitee] = await Promise.all([
     db.select().from(tribe).where(eq(tribe.id, tribeId)).limit(1),
     db.select().from(user).where(eq(user.id, userId)).limit(1),
-    db.select({ id: user.id }).from(user).where(eq(user.email, invitation.email)).limit(1),
+    db.select({ id: user.id }).from(user).where(eq(lowerUserEmail, normalizeEmail(invitation.email))).limit(1),
   ]);
 
   // A resend collapses into the invitee's unread row (TRI-187); once read, it is a fresh nudge
@@ -285,7 +301,7 @@ export async function cancelTribeInvitation(
  * Emails compare case-insensitively: the inviter typed the address, the user signed up with it.
  */
 function isInvitee(userEmail: string | null | undefined, invitation: TribeInvitation): boolean {
-  return !!userEmail && userEmail.trim().toLowerCase() === invitation.email.trim().toLowerCase();
+  return !!userEmail && normalizeEmail(userEmail) === normalizeEmail(invitation.email);
 }
 
 /**
@@ -455,7 +471,7 @@ export async function getUserPendingInvitations(userEmail: string) {
     .innerJoin(inviter, eq(tribeInvitation.invitedBy, inviter.id))
     .where(
       and(
-        eq(tribeInvitation.email, userEmail),
+        eq(lowerInvitationEmail, normalizeEmail(userEmail)),
         eq(tribeInvitation.status, "pending"),
         or(
           isNull(tribeInvitation.expiresAt),

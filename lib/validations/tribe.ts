@@ -195,7 +195,8 @@ export const inviteTribeMembersSchema = z.object({
   invitations: z
     .array(
       z.object({
-        email: z.string().email("Invalid email address"),
+        // Lowercased like Better-Auth sign-up, so the invite matches the account (TRI-405)
+        email: z.string().trim().toLowerCase().email("Invalid email address"),
         role: tribeRoleSchema.optional().default("member"),
       })
     )
