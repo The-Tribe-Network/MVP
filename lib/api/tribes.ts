@@ -83,10 +83,12 @@ export interface AdminMember {
   name: string;
   username: string | null;
   image: string | null;
+  // The owner is listed first (TRI-408); a transfer picker leaves them out.
+  role: "owner" | "admin";
 }
 
 /**
- * Fetch admin members of a tribe (for transfer ownership)
+ * Fetch the owner and admins of a tribe, owner first
  */
 export async function fetchTribeAdminMembers(tribeId: string): Promise<{ members: AdminMember[] }> {
   return apiFetch<{ members: AdminMember[] }>(`${API_BASE}/${tribeId}/members/admins`);

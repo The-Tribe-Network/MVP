@@ -624,9 +624,11 @@ export async function transferOwnership(
 }
 
 /**
- * Get admin members of a tribe (for transfer ownership selection)
+ * The people who run a tribe: the owner first, then its admins, each with their `role` (TRI-408).
+ * Mobile shows them as TRIBE-08 "Run by" and TSET-01-access-denied "Admins"; transfer ownership filters
+ * out the owner itself.
  */
-export async function getTribeAdminMembers(tribeId: string): Promise<Array<{ id: string; name: string; displayName: string | null; username: string | null; image: string | null }>> {
+export async function getTribeAdminMembers(tribeId: string): Promise<Array<{ id: string; name: string; displayName: string | null; username: string | null; image: string | null; role: "owner" | "admin" }>> {
   const adminMembers = await db
     .select({
       id: user.id,
@@ -634,13 +636,15 @@ export async function getTribeAdminMembers(tribeId: string): Promise<Array<{ id:
       displayName: user.displayName,
       username: user.username,
       image: user.image,
+      role: tribeMember.role,
     })
     .from(tribeMember)
     .innerJoin(user, eq(tribeMember.userId, user.id))
-    .where(and(eq(tribeMember.tribeId, tribeId), eq(tribeMember.role, "admin")))
+    .where(and(eq(tribeMember.tribeId, tribeId), inArray(tribeMember.role, ["owner", "admin"])))
+    .orderBy(sql`${tribeMember.role} = 'owner' DESC`, asc(tribeMember.joinedAt))
     .limit(50);
 
-  return adminMembers;
+  return adminMembers.map((member) => ({ ...member, role: member.role === "owner" ? "owner" : "admin" }));
 }
 
 /**
