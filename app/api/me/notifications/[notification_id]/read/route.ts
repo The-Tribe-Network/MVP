@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
 import { markNotificationRead } from "@/lib/services/notification-feed";
+import { reportServerError } from "@/lib/clients/sentry";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -23,6 +24,7 @@ export async function POST(
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error marking notification read:", error);
+    reportServerError(error, { route: "/api/me/notifications/[notification_id]/read", method: "POST" });
     return NextResponse.json({ error: "Failed to mark notification read" }, { status: 500 });
   }
 }

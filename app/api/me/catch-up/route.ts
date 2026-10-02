@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
 import { getCatchUp } from "@/lib/services/agenda";
 import { catchUpQuerySchema, validateApiRequest } from "@/lib/validations/agenda";
+import { reportServerError } from "@/lib/clients/sentry";
 
 /**
  * GET /api/me/catch-up?since&tribeId&cursor&limit
@@ -33,6 +34,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(page);
   } catch (error) {
     console.error("Error fetching catch-up:", error);
+    reportServerError(error, { route: "/api/me/catch-up", method: "GET" });
     return NextResponse.json({ error: "Failed to fetch catch-up" }, { status: 500 });
   }
 }

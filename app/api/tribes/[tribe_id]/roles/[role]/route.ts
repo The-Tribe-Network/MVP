@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
 import { checkPermission, updateRolePermissions } from "@/lib/services/role-permissions";
 import { updateRolePermissionsSchema, validateApiRequest } from "@/lib/validations/permissions";
+import { reportServerError } from "@/lib/clients/sentry";
 
 /**
  * PATCH /api/tribes/[tribe_id]/roles/[role]
@@ -64,6 +65,7 @@ export async function PATCH(
       return NextResponse.json({ error: error.message }, { status: 403 });
     }
 
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/roles/[role]", method: "PATCH" });
     return NextResponse.json({ error: "Failed to update role permissions" }, { status: 500 });
   }
 }

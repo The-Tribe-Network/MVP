@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
 import { getMemberMedia } from "@/lib/services/profile";
 import { memberContentQuerySchema, validateApiRequest } from "@/lib/validations/profile";
+import { reportServerError } from "@/lib/clients/sentry";
 
 /**
  * GET /api/users/[user_id]/media?tribeId&limit&offset
@@ -33,6 +34,7 @@ export async function GET(request: NextRequest, ctx: RouteContext<"/api/users/[u
     return NextResponse.json(result);
   } catch (error) {
     console.error("Error fetching member media:", error);
+    reportServerError(error, { route: "/api/users/[user_id]/media", method: "GET" });
     return NextResponse.json({ error: "Failed to fetch member media" }, { status: 500 });
   }
 }

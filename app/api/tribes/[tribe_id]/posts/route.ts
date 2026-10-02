@@ -6,6 +6,7 @@ import { checkTribeMembership } from "@/lib/services/permissions";
 import { getTimelineInTribe } from "@/lib/services/timeline";
 import { AlbumForbiddenError, InvalidAlbumError } from "@/lib/services/album";
 import { createPostSchema, listPostsQuerySchema, tribeIdParamSchema, validateApiRequest } from "@/lib/validations/post";
+import { reportServerError } from "@/lib/clients/sentry";
 
 export async function GET(
   request: NextRequest,
@@ -85,6 +86,7 @@ export async function GET(
       return NextResponse.json({ error: error.message, code: "INVALID_CURSOR" }, { status: 400 });
     }
     console.error("Error fetching posts:", error);
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/posts", method: "GET" });
     return NextResponse.json(
       { error: "Failed to fetch posts" },
       { status: 500 }
@@ -140,8 +142,10 @@ export async function POST(
       if (error.message.includes("permission")) {
         return NextResponse.json({ error: error.message }, { status: 403 });
       }
+      reportServerError(error, { route: "/api/tribes/[tribe_id]/posts", method: "POST" });
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/posts", method: "POST" });
     return NextResponse.json(
       { error: "Failed to create post" },
       { status: 500 }

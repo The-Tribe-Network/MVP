@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
 import { checkUsernameAvailability } from "@/lib/services/user";
+import { reportServerError } from "@/lib/clients/sentry";
 
 /**
  * GET /api/user/username/check?username=...
@@ -35,6 +36,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ available: isAvailable });
   } catch (error) {
     console.error("Error checking username:", error);
+    reportServerError(error, { route: "/api/user/username/check", method: "GET" });
     return NextResponse.json(
       { error: "Failed to check username availability" },
       { status: 500 }

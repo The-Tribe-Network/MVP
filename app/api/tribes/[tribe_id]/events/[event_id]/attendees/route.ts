@@ -8,6 +8,7 @@ import {
 } from "@/lib/services/event";
 import { rsvpSchema } from "@/lib/validations/event";
 import { getMemberWithPermissions } from "@/lib/services/permissions";
+import { reportServerError } from "@/lib/clients/sentry";
 
 // GET /api/tribes/[tribe_id]/events/[event_id]/attendees
 export async function GET(
@@ -31,6 +32,7 @@ export async function GET(
     return NextResponse.json(attendees);
   } catch (error) {
     console.error("Error fetching attendees:", error);
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/events/[event_id]/attendees", method: "GET" });
     return NextResponse.json(
       { error: "Failed to fetch attendees" },
       { status: 500 }
@@ -78,6 +80,7 @@ export async function POST(
       );
     }
     console.error("Error adding attendee:", error);
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/events/[event_id]/attendees", method: "POST" });
     return NextResponse.json(
       { error: "Failed to RSVP" },
       { status: 500 }
@@ -102,6 +105,7 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error removing attendee:", error);
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/events/[event_id]/attendees", method: "DELETE" });
     return NextResponse.json(
       { error: "Failed to remove RSVP" },
       { status: 500 }

@@ -3,6 +3,7 @@ import { db } from "@/lib/database/client";
 import { waitlist, waitlistSurvey } from "@/lib/database/schemas/waitlist";
 import { waitlistSurveySchema } from "@/lib/validations/waitlist";
 import { eq } from "drizzle-orm";
+import { reportServerError } from "@/lib/clients/sentry";
 
 export async function POST(request: NextRequest) {
   try {
@@ -71,6 +72,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Survey submission error:", error);
+    reportServerError(error, { route: "/api/survey", method: "POST" });
     return NextResponse.json(
       { error: "Something went wrong. Please try again." },
       { status: 500 }

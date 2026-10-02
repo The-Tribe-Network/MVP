@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
 import { checkTribeMembership } from "@/lib/services/permissions";
 import { getTribeMembersWithPermissions } from "@/lib/services/member-permissions";
+import { reportServerError } from "@/lib/clients/sentry";
 
 /**
  * GET /api/tribes/[tribe_id]/members/permissions
@@ -42,6 +43,7 @@ export async function GET(
     return NextResponse.json(members);
   } catch (error) {
     console.error("Error fetching members with permissions:", error);
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/members/permissions", method: "GET" });
     return NextResponse.json({ error: "Failed to fetch members" }, { status: 500 });
   }
 }

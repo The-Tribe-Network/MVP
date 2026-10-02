@@ -6,6 +6,7 @@ import { checkPermission } from "@/lib/services/role-permissions";
 import { createTribeInvitations, getTribeInvitations } from "@/lib/services/invitation";
 import { tribeIdParamSchema, validateApiRequest } from "@/lib/validations/tribe";
 import { inviteTribeMembersSchema } from "@/lib/validations/tribe";
+import { reportServerError } from "@/lib/clients/sentry";
 
 export async function GET(
   request: NextRequest,
@@ -50,6 +51,7 @@ export async function GET(
     return NextResponse.json(invitations, { status: 200 });
   } catch (error) {
     console.error("Error fetching tribe invitations:", error);
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/invitations", method: "GET" });
     return NextResponse.json(
       { error: "Failed to fetch invitations" },
       { status: 500 }
@@ -135,6 +137,7 @@ export async function POST(
     );
   } catch (error) {
     console.error("Error sending tribe invitations:", error);
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/invitations", method: "POST" });
     return NextResponse.json(
       { error: "Failed to send invitations" },
       { status: 500 }

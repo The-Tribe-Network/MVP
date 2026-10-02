@@ -11,6 +11,7 @@ import {
   deleteTribeConfirmationSchema,
   validateApiRequest,
 } from "@/lib/validations/tribe";
+import { reportServerError } from "@/lib/clients/sentry";
 
 export async function GET(
   request: NextRequest,
@@ -75,6 +76,7 @@ export async function GET(
     });
   } catch (error) {
     console.error("Error fetching tribe:", error);
+    reportServerError(error, { route: "/api/tribes/[tribe_id]", method: "GET" });
     return NextResponse.json(
       { error: "Failed to fetch tribe" },
       { status: 500 }
@@ -133,6 +135,7 @@ export async function PATCH(
       }
     }
 
+    reportServerError(error, { route: "/api/tribes/[tribe_id]", method: "PATCH" });
     return NextResponse.json(
       { error: "Failed to update tribe" },
       { status: 500 }
@@ -191,6 +194,7 @@ export async function DELETE(
       }
     }
 
+    reportServerError(error, { route: "/api/tribes/[tribe_id]", method: "DELETE" });
     return NextResponse.json(
       { error: "Failed to delete tribe" },
       { status: 500 }

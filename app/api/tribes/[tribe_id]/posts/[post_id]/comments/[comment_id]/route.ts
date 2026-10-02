@@ -8,6 +8,7 @@ import {
   tribePostCommentIdParamSchema,
   validateApiRequest,
 } from "@/lib/validations/comment";
+import { reportServerError } from "@/lib/clients/sentry";
 
 export async function PATCH(
   request: NextRequest,
@@ -98,8 +99,10 @@ export async function PATCH(
         const status = error.message.includes("not found") ? 404 : 403;
         return NextResponse.json({ error: error.message }, { status });
       }
+      reportServerError(error, { route: "/api/tribes/[tribe_id]/posts/[post_id]/comments/[comment_id]", method: "PATCH" });
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/posts/[post_id]/comments/[comment_id]", method: "PATCH" });
     return NextResponse.json(
       { error: "Failed to update comment" },
       { status: 500 }
@@ -182,8 +185,10 @@ export async function DELETE(
         const status = error.message.includes("not found") ? 404 : 403;
         return NextResponse.json({ error: error.message }, { status });
       }
+      reportServerError(error, { route: "/api/tribes/[tribe_id]/posts/[post_id]/comments/[comment_id]", method: "DELETE" });
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/posts/[post_id]/comments/[comment_id]", method: "DELETE" });
     return NextResponse.json(
       { error: "Failed to delete comment" },
       { status: 500 }

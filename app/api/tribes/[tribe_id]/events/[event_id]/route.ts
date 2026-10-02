@@ -5,6 +5,7 @@ import { eventEditability } from "@/lib/services/event-settings";
 import { getMemberWithPermissions } from "@/lib/services/permissions";
 import { checkPermission } from "@/lib/services/role-permissions";
 import { updateEventDetailsSchema } from "@/lib/validations/event";
+import { reportServerError } from "@/lib/clients/sentry";
 
 type Context = RouteContext<'/api/tribes/[tribe_id]/events/[event_id]'>;
 
@@ -36,6 +37,7 @@ export async function GET(
     return NextResponse.json({ ...event, isUserCoHost, canUserEdit });
   } catch (error) {
     console.error("Error fetching event:", error);
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/events/[event_id]", method: "GET" });
     return NextResponse.json(
       { error: "Failed to fetch event" },
       { status: 500 }
@@ -90,6 +92,7 @@ export async function PUT(
     return NextResponse.json(updated);
   } catch (error) {
     console.error("Error updating event:", error);
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/events/[event_id]", method: "PUT" });
     return NextResponse.json(
       { error: "Failed to update event" },
       { status: 500 }
@@ -135,6 +138,7 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error deleting event:", error);
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/events/[event_id]", method: "DELETE" });
     return NextResponse.json(
       { error: "Failed to delete event" },
       { status: 500 }

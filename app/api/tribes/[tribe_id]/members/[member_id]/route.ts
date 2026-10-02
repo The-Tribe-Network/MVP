@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerUser } from '@/lib/services/auth';
 import { removeMember } from '@/lib/services/members';
+import { reportServerError } from '@/lib/clients/sentry';
 
 /**
  * DELETE /api/tribes/[tribe_id]/members/[member_id]
@@ -40,6 +41,7 @@ export async function DELETE(
       }
     }
 
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/members/[member_id]", method: "DELETE" });
     return NextResponse.json(
       { error: 'Failed to remove member' },
       { status: 500 }

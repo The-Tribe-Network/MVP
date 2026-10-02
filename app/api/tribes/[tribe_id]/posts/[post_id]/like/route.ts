@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
 import { setPostLike, togglePostLike, verifyPostAccessAndMembership } from "@/lib/services/post";
 import { tribePostIdParamSchema, validateApiRequest } from "@/lib/validations/post";
+import { reportServerError } from "@/lib/clients/sentry";
 
 type Ctx = RouteContext<"/api/tribes/[tribe_id]/posts/[post_id]/like">;
 
@@ -57,8 +58,10 @@ async function handle(ctx: Ctx, liked: boolean | "toggle") {
   } catch (error) {
     console.error("Error changing post like:", error);
     if (error instanceof Error) {
+      reportServerError(error, { route: "/api/tribes/[tribe_id]/posts/[post_id]/like", method: liked === "toggle" ? "POST" : liked ? "PUT" : "DELETE" });
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/posts/[post_id]/like", method: liked === "toggle" ? "POST" : liked ? "PUT" : "DELETE" });
     return NextResponse.json({ error: "Failed to change post like" }, { status: 500 });
   }
 }

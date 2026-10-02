@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
 import { markProfileAsComplete, isProfileComplete } from "@/lib/services/user";
 import type { User } from "@/lib/database/types";
+import { reportServerError } from "@/lib/clients/sentry";
 
 /**
  * GET /api/user/profile/complete
@@ -26,6 +27,7 @@ export async function GET() {
     });
   } catch (error) {
     console.error("Error checking profile completion:", error);
+    reportServerError(error, { route: "/api/user/profile/complete", method: "GET" });
     return NextResponse.json(
       { error: "Failed to check profile completion" },
       { status: 500 }
@@ -67,6 +69,7 @@ export async function POST() {
     });
   } catch (error) {
     console.error("Error marking profile complete:", error);
+    reportServerError(error, { route: "/api/user/profile/complete", method: "POST" });
     return NextResponse.json(
       { error: "Failed to complete profile" },
       { status: 500 }

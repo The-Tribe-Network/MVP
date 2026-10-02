@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { guardEventRoute } from "@/lib/services/event-routes";
 import { requestCoHostAccess } from "@/lib/services/event-settings";
+import { reportServerError } from "@/lib/clients/sentry";
 
 type Params = { params: Promise<{ tribe_id: string; event_id: string }> };
 
@@ -23,6 +24,7 @@ export async function POST(_request: NextRequest, { params }: Params) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error requesting co-host access:", error);
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/events/[event_id]/co-hosts/request", method: "POST" });
     return NextResponse.json({ error: "Failed to send the request" }, { status: 500 });
   }
 }

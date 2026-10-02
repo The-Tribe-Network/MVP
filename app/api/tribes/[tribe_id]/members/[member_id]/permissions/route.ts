@@ -7,6 +7,7 @@ import {
   resetMemberPermissions,
 } from "@/lib/services/member-permissions";
 import { updateMemberPermissionsSchema, validateApiRequest } from "@/lib/validations/permissions";
+import { reportServerError } from "@/lib/clients/sentry";
 
 /**
  * GET /api/tribes/[tribe_id]/members/[member_id]/permissions
@@ -43,6 +44,7 @@ export async function GET(
     return NextResponse.json(memberDetail);
   } catch (error) {
     console.error("Error fetching member permissions:", error);
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/members/[member_id]/permissions", method: "GET" });
     return NextResponse.json({ error: "Failed to fetch member permissions" }, { status: 500 });
   }
 }
@@ -102,6 +104,7 @@ export async function PUT(
       return NextResponse.json({ error: error.message }, { status: 404 });
     }
 
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/members/[member_id]/permissions", method: "PUT" });
     return NextResponse.json({ error: "Failed to update member permissions" }, { status: 500 });
   }
 }
@@ -138,6 +141,7 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error resetting member permissions:", error);
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/members/[member_id]/permissions", method: "DELETE" });
     return NextResponse.json({ error: "Failed to reset member permissions" }, { status: 500 });
   }
 }

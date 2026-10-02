@@ -3,6 +3,7 @@ import { getServerUser } from "@/lib/services/auth";
 import { checkUsernameAvailability } from "@/lib/services/user";
 import { getSocialLinks, updateProfileWithSocialLinks } from "@/lib/services/profile";
 import { updateProfileSchema, validateApiRequest } from "@/lib/validations/profile";
+import { reportServerError } from "@/lib/clients/sentry";
 
 /**
  * PATCH /api/user/profile
@@ -47,6 +48,7 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json(updatedUser);
   } catch (error) {
     console.error("Error updating profile:", error);
+    reportServerError(error, { route: "/api/user/profile", method: "PATCH" });
     return NextResponse.json(
       { error: "Failed to update profile" },
       { status: 500 }
@@ -68,6 +70,7 @@ export async function GET() {
     return NextResponse.json({ ...user, socialLinks: await getSocialLinks(user.id) });
   } catch (error) {
     console.error("Error fetching profile:", error);
+    reportServerError(error, { route: "/api/user/profile", method: "GET" });
     return NextResponse.json(
       { error: "Failed to fetch profile" },
       { status: 500 }

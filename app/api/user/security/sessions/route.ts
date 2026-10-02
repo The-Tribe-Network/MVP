@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
 import { getUserSessions, revokeUserSession, revokeOtherSessions } from "@/lib/services/security";
 import { revokeSessionSchema, validateApiRequest } from "@/lib/validations/security";
+import { reportServerError } from "@/lib/clients/sentry";
 
 /**
  * GET /api/user/security/sessions
@@ -21,6 +22,7 @@ export async function GET() {
     return NextResponse.json(sessions);
   } catch (error) {
     console.error("Error fetching sessions:", error);
+    reportServerError(error, { route: "/api/user/security/sessions", method: "GET" });
     return NextResponse.json(
       { error: "Failed to fetch sessions" },
       { status: 500 }
@@ -81,6 +83,7 @@ export async function DELETE(request: NextRequest) {
     });
   } catch (error) {
     console.error("Error revoking sessions:", error);
+    reportServerError(error, { route: "/api/user/security/sessions", method: "DELETE" });
     return NextResponse.json(
       { error: "Failed to revoke sessions" },
       { status: 500 }

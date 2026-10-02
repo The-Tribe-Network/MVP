@@ -10,6 +10,7 @@ import {
   updateEventsSettingsSchema,
   validateApiRequest,
 } from "@/lib/validations/tribe-settings";
+import { reportServerError } from "@/lib/clients/sentry";
 
 /**
  * GET /api/tribes/[tribe_id]/settings/events
@@ -43,6 +44,7 @@ export async function GET(
     return NextResponse.json(settings);
   } catch (error) {
     console.error("Error fetching events settings:", error);
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/settings/events", method: "GET" });
     return NextResponse.json(
       { error: "Failed to fetch events settings" },
       { status: 500 }
@@ -110,6 +112,7 @@ export async function PATCH(
     return NextResponse.json(updatedSettings);
   } catch (error) {
     console.error("Error updating events settings:", error);
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/settings/events", method: "PATCH" });
     return NextResponse.json(
       { error: "Failed to update events settings" },
       { status: 500 }

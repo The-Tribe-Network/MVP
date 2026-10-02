@@ -3,6 +3,7 @@ import { getServerUser } from "@/lib/services/auth";
 import { checkPermission } from "@/lib/services/role-permissions";
 import { getInviteLink, rotateInviteLink, updateInviteLinkLimits, type InviteLinkLimits } from "@/lib/services/invite-link";
 import { inviteLinkLimitsSchema, tribeIdParamSchema, validateApiRequest } from "@/lib/validations/tribe";
+import { reportServerError } from "@/lib/clients/sentry";
 
 /**
  * GET   /api/tribes/[tribe_id]/invite-link  — current shareable link (generated on first call)
@@ -48,6 +49,7 @@ export async function GET(
     return NextResponse.json(link);
   } catch (error) {
     console.error("Error fetching invite link:", error);
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/invite-link", method: "GET" });
     return NextResponse.json({ error: "Failed to fetch invite link" }, { status: 500 });
   }
 }
@@ -87,6 +89,7 @@ export async function POST(
     return NextResponse.json(link);
   } catch (error) {
     console.error("Error rotating invite link:", error);
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/invite-link", method: "POST" });
     return NextResponse.json({ error: "Failed to rotate invite link" }, { status: 500 });
   }
 }
@@ -109,6 +112,7 @@ export async function PATCH(
     return NextResponse.json(link);
   } catch (error) {
     console.error("Error updating invite link limits:", error);
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/invite-link", method: "PATCH" });
     return NextResponse.json({ error: "Failed to update invite link" }, { status: 500 });
   }
 }

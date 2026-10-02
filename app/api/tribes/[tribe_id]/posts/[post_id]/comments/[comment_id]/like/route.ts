@@ -4,6 +4,7 @@ import { getCommentById, setCommentLike, toggleCommentLike } from "@/lib/service
 import { getPostById } from "@/lib/services/post";
 import { checkTribeMembership } from "@/lib/services/permissions";
 import { tribePostCommentIdParamSchema, validateApiRequest } from "@/lib/validations/comment";
+import { reportServerError } from "@/lib/clients/sentry";
 
 type Ctx = RouteContext<'/api/tribes/[tribe_id]/posts/[post_id]/comments/[comment_id]/like'>;
 
@@ -91,8 +92,10 @@ async function handle(ctx: Ctx, liked: boolean | "toggle") {
   } catch (error) {
     console.error("Error changing comment like:", error);
     if (error instanceof Error) {
+      reportServerError(error, { route: "/api/tribes/[tribe_id]/posts/[post_id]/comments/[comment_id]/like", method: liked === "toggle" ? "POST" : liked ? "PUT" : "DELETE" });
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/posts/[post_id]/comments/[comment_id]/like", method: liked === "toggle" ? "POST" : liked ? "PUT" : "DELETE" });
     return NextResponse.json(
       { error: "Failed to change comment like" },
       { status: 500 }

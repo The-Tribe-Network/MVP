@@ -5,6 +5,7 @@ import { checkPermission } from "@/lib/services/role-permissions";
 import { resendTribeInvitation, cancelTribeInvitation } from "@/lib/services/invitation";
 import { validateApiRequest, tribeIdParamSchema } from "@/lib/validations/tribe";
 import { z } from "zod";
+import { reportServerError } from "@/lib/clients/sentry";
 
 const invitationIdSchema = z.object({
   invitation_id: z.string().uuid("Invalid invitation ID"),
@@ -58,6 +59,7 @@ export async function PATCH(
     );
   } catch (error) {
     console.error("Error resending invitation:", error);
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/invitations/[invitation_id]", method: "PATCH" });
     return NextResponse.json(
       { error: "Failed to resend invitation" },
       { status: 500 }
@@ -113,6 +115,7 @@ export async function DELETE(
     );
   } catch (error) {
     console.error("Error cancelling invitation:", error);
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/invitations/[invitation_id]", method: "DELETE" });
     return NextResponse.json(
       { error: "Failed to cancel invitation" },
       { status: 500 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
 import { markCatchUpDone } from "@/lib/services/tribe";
 import { catchUpDoneSchema, validateApiRequest } from "@/lib/validations/agenda";
+import { reportServerError } from "@/lib/clients/sentry";
 
 /**
  * POST /api/me/catch-up/done  { tribeId? }
@@ -32,6 +33,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, lastCatchUpAt: markedAt });
   } catch (error) {
     console.error("Error marking catch-up done:", error);
+    reportServerError(error, { route: "/api/me/catch-up/done", method: "POST" });
     return NextResponse.json({ error: "Failed to mark catch-up done" }, { status: 500 });
   }
 }

@@ -5,6 +5,7 @@ import { MediaUploadError, confirmMediaUploads } from "@/lib/services/media-uplo
 import { InvalidAlbumError } from "@/lib/services/album";
 import { confirmMediaUploadSchema } from "@/lib/validations/media-upload";
 import { validateApiRequest } from "@/lib/validations/tribe";
+import { reportServerError } from "@/lib/clients/sentry";
 
 /**
  * POST /api/tribes/[tribe_id]/media/confirm
@@ -48,6 +49,7 @@ export async function POST(request: NextRequest, ctx: RouteContext<"/api/tribes/
       );
     }
     console.error("Error confirming media upload:", error);
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/media/confirm", method: "POST" });
     return NextResponse.json({ error: "Failed to confirm media upload" }, { status: 500 });
   }
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
 import { createRealtimeTokenRequest } from "@/lib/services/realtime";
+import { reportServerError } from "@/lib/clients/sentry";
 
 /**
  * GET /api/realtime/token: an Ably token request for the signed-in member (TRI-316). The app's Ably client calls
@@ -20,6 +21,7 @@ export async function GET() {
     return NextResponse.json(tokenRequest);
   } catch (error) {
     console.error("Error creating a realtime token:", error);
+    reportServerError(error, { route: "/api/realtime/token", method: "GET" });
     return NextResponse.json({ error: "Failed to create a realtime token" }, { status: 500 });
   }
 }

@@ -530,6 +530,19 @@ Required variables (see `.env`):
   signs `notification_url` + an upload `context` into every slot and Cloudinary's upload notification
   confirms the upload server-side (TRI-275). Unset: no webhook, the app's confirm is the only path.
 
+### Error reporting (Sentry, API only)
+Off unless `SENTRY_DSN` is set; nothing to set locally. Set on Vercel (Production, and Preview if wanted).
+- `SENTRY_DSN` - The Sentry project's DSN (org `tribe-sv`). Server runtime only, so not `NEXT_PUBLIC_`
+- `SENTRY_AUTH_TOKEN` - Optional, build time. With it, `next build` uploads server source maps (readable stack
+  traces); without it the upload is skipped and the build doesn't fail
+- `SENTRY_ORG` - `tribe-sv` (build time, for the source map upload)
+- `SENTRY_PROJECT` - The Sentry project slug (build time, for the source map upload)
+- `environment` comes from `VERCEL_ENV` (fallback `NODE_ENV`) and `release` from `VERCEL_GIT_COMMIT_SHA`, both set by Vercel
+
+Uncaught route errors reach Sentry through `onRequestError` (`instrumentation.ts`). A handler that catches an error
+and answers 5xx itself must call `reportServerError(error, { route, method })` (`lib/clients/sentry.ts`) next to its
+`console.error`, on the 5xx path only (never for an expected 4xx). `timelineRoute()` does this for its routes.
+
 ### Other
 - `NODE_ENV` - Environment (development/production)
 

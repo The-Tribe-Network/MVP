@@ -3,6 +3,7 @@ import { getServerUser } from '@/lib/services/auth';
 import { uploadPostImage } from '@/lib/services/media';
 import { validateImageFile } from '@/lib/utils/image';
 import { canUserUploadMedia } from '@/lib/services/permissions';
+import { reportServerError } from '@/lib/clients/sentry';
 
 /**
  * POST /api/upload/album-cover
@@ -71,6 +72,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 403 });
     }
 
+    reportServerError(error, { route: "/api/upload/album-cover", method: "POST" });
     return NextResponse.json(
       { error: 'Failed to upload album cover' },
       { status: 500 }

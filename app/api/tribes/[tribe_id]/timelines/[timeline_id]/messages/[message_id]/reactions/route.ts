@@ -8,7 +8,7 @@ type Ctx = RouteContext<"/api/tribes/[tribe_id]/timelines/[timeline_id]/messages
 
 // POST …/reactions { emoji }: react (idempotent); returns the message's reactions (TRI-315)
 export async function POST(request: NextRequest, ctx: Ctx) {
-  return timelineRoute("reacting to a message", async (userId) => {
+  return timelineRoute("reacting to a message", { route: "/api/tribes/[tribe_id]/timelines/[timeline_id]/messages/[message_id]/reactions", method: "POST" }, async (userId) => {
     const params = parse(chatMessageParamsSchema, await ctx.params);
     if (!params.ok) return params.response;
     const body = parse(reactionSchema, await jsonBody(request));
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest, ctx: Ctx) {
 
 // DELETE …/reactions?emoji=: take your reaction back (idempotent)
 export async function DELETE(request: NextRequest, ctx: Ctx) {
-  return timelineRoute("removing a reaction", async (userId) => {
+  return timelineRoute("removing a reaction", { route: "/api/tribes/[tribe_id]/timelines/[timeline_id]/messages/[message_id]/reactions", method: "DELETE" }, async (userId) => {
     const params = parse(chatMessageParamsSchema, await ctx.params);
     if (!params.ok) return params.response;
     const query = parse(reactionSchema, { emoji: request.nextUrl.searchParams.get("emoji") ?? undefined });

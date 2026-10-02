@@ -2,6 +2,7 @@ import { after, NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
 import { createReport, sendReportEmails } from "@/lib/services/reports";
 import { createReportSchema } from "@/lib/validations/reports";
+import { reportServerError } from "@/lib/clients/sentry";
 
 /**
  * POST /api/reports (TRI-237)
@@ -55,6 +56,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ report: result.report, created: result.created }, { status: result.created ? 201 : 200 });
   } catch (error) {
     console.error("Error creating report:", error);
+    reportServerError(error, { route: "/api/reports", method: "POST" });
     return NextResponse.json({ error: "Failed to create report" }, { status: 500 });
   }
 }

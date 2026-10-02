@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
 import { getUserPendingInvitations } from "@/lib/services/invitation";
+import { reportServerError } from "@/lib/clients/sentry";
 
 export async function GET() {
   try {
@@ -16,6 +17,7 @@ export async function GET() {
     return NextResponse.json(invitations);
   } catch (error) {
     console.error("Error fetching user invitations:", error);
+    reportServerError(error, { route: "/api/invitations", method: "GET" });
     return NextResponse.json(
       { error: "Failed to fetch invitations" },
       { status: 500 }

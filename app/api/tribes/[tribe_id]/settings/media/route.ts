@@ -10,6 +10,7 @@ import {
   updateMediaSettingsSchema,
   validateApiRequest,
 } from "@/lib/validations/tribe-settings";
+import { reportServerError } from "@/lib/clients/sentry";
 
 /**
  * GET /api/tribes/[tribe_id]/settings/media
@@ -43,6 +44,7 @@ export async function GET(
     return NextResponse.json(settings);
   } catch (error) {
     console.error("Error fetching media settings:", error);
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/settings/media", method: "GET" });
     return NextResponse.json(
       { error: "Failed to fetch media settings" },
       { status: 500 }
@@ -106,6 +108,7 @@ export async function PATCH(
     return NextResponse.json(updated);
   } catch (error) {
     console.error("Error updating media settings:", error);
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/settings/media", method: "PATCH" });
     return NextResponse.json(
       { error: "Failed to update media settings" },
       { status: 500 }

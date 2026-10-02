@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerUser } from '@/lib/services/auth';
 import { likeMedia, unlikeMedia, hasUserLikedMedia, getVisibleMediaInTribe } from '@/lib/services/media';
 import { checkTribeMembership } from '@/lib/services/permissions';
+import { reportServerError } from '@/lib/clients/sentry';
 
 // Every method: 401 signed out, 403 not a member of tribe_id, 404 when media_id is not a media of
 // tribe_id (TRI-208), so a member of one tribe cannot like/unlike/probe another tribe's media by id.
@@ -42,6 +43,7 @@ export async function POST(
     return NextResponse.json({ like, liked, likeCount }, { status: 201 });
   } catch (error) {
     console.error('Error liking media:', error);
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/media/[media_id]/like", method: "POST" });
     return NextResponse.json(
       { error: 'Failed to like media' },
       { status: 500 }
@@ -85,6 +87,7 @@ export async function DELETE(
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error) {
     console.error('Error unliking media:', error);
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/media/[media_id]/like", method: "DELETE" });
     return NextResponse.json(
       { error: 'Failed to unlike media' },
       { status: 500 }
@@ -127,6 +130,7 @@ export async function GET(
     return NextResponse.json({ liked }, { status: 200 });
   } catch (error) {
     console.error('Error checking media like:', error);
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/media/[media_id]/like", method: "GET" });
     return NextResponse.json(
       { error: 'Failed to check media like' },
       { status: 500 }

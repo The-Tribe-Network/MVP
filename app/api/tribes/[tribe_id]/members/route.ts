@@ -3,6 +3,7 @@ import { getServerUser } from "@/lib/services/auth";
 import { leaveTribe } from "@/lib/services/tribe";
 import { checkTribeMembership } from "@/lib/services/permissions";
 import { tribeIdParamSchema, validateApiRequest } from "@/lib/validations/tribe";
+import { reportServerError } from "@/lib/clients/sentry";
 
 export async function DELETE(
   request: NextRequest,
@@ -48,6 +49,7 @@ export async function DELETE(
     return NextResponse.json({ success: true, message: "Successfully left tribe" });
   } catch (error) {
     console.error("Error leaving tribe:", error);
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/members", method: "DELETE" });
     return NextResponse.json(
       { error: "Failed to leave tribe" },
       { status: 500 }

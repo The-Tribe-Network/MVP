@@ -6,7 +6,7 @@ import { tribeIdParamSchema } from "@/lib/validations/post";
 
 // PUT /api/tribes/:tribe_id/timelines/order: every timeline id, in the new switcher order (TRI-314)
 export async function PUT(request: NextRequest, ctx: RouteContext<"/api/tribes/[tribe_id]/timelines/order">) {
-  return timelineRoute("reordering timelines", async (userId) => {
+  return timelineRoute("reordering timelines", { route: "/api/tribes/[tribe_id]/timelines/order", method: "PUT" }, async (userId) => {
     const params = parse(tribeIdParamSchema, await ctx.params);
     if (!params.ok) return params.response;
     const body = parse(reorderTimelinesSchema, await jsonBody(request));

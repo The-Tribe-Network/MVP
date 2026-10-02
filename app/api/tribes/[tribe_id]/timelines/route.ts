@@ -6,7 +6,7 @@ import { tribeIdParamSchema } from "@/lib/validations/post";
 
 // GET /api/tribes/:tribe_id/timelines: the switcher list, unread counts and the member's selection (TRI-314)
 export async function GET(_request: NextRequest, ctx: RouteContext<"/api/tribes/[tribe_id]/timelines">) {
-  return timelineRoute("fetching timelines", async (userId) => {
+  return timelineRoute("fetching timelines", { route: "/api/tribes/[tribe_id]/timelines", method: "GET" }, async (userId) => {
     const params = parse(tribeIdParamSchema, await ctx.params);
     if (!params.ok) return params.response;
     return NextResponse.json(await listTimelines(params.data.tribe_id, userId));
@@ -15,7 +15,7 @@ export async function GET(_request: NextRequest, ctx: RouteContext<"/api/tribes/
 
 // POST /api/tribes/:tribe_id/timelines: create a posts or chat timeline (canCreateTimelines)
 export async function POST(request: NextRequest, ctx: RouteContext<"/api/tribes/[tribe_id]/timelines">) {
-  return timelineRoute("creating a timeline", async (userId) => {
+  return timelineRoute("creating a timeline", { route: "/api/tribes/[tribe_id]/timelines", method: "POST" }, async (userId) => {
     const params = parse(tribeIdParamSchema, await ctx.params);
     if (!params.ok) return params.response;
     const body = parse(createTimelineSchema, await jsonBody(request));

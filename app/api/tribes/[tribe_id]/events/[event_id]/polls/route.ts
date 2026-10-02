@@ -5,6 +5,7 @@ import { getMemberWithPermissions } from "@/lib/services/permissions";
 import { getEventById } from "@/lib/services/event";
 import { canCreateEventPoll } from "@/lib/services/event-settings";
 import { createPollSchema } from "@/lib/validations/poll";
+import { reportServerError } from "@/lib/clients/sentry";
 
 // GET /api/tribes/[tribe_id]/events/[event_id]/polls
 export async function GET(
@@ -28,6 +29,7 @@ export async function GET(
     return NextResponse.json(polls);
   } catch (error) {
     console.error("Error fetching polls:", error);
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/events/[event_id]/polls", method: "GET" });
     return NextResponse.json(
       { error: "Failed to fetch polls" },
       { status: 500 }
@@ -88,6 +90,7 @@ export async function POST(
     return NextResponse.json(newPoll, { status: 201 });
   } catch (error) {
     console.error("Error creating poll:", error);
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/events/[event_id]/polls", method: "POST" });
     return NextResponse.json(
       { error: "Failed to create poll" },
       { status: 500 }

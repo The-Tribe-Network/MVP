@@ -95,6 +95,7 @@ These are the ones to watch, with the indexes added for them:
 | Google, Discord | OAuth sign-in (Google paused for the alpha, TRI-236) | Better-Auth |
 | Link previews | outbound fetch of pasted URLs (private hosts refused) | `link-preview.ts` |
 | Vercel Cron | the 15-min scheduler | `vercel.json` |
+| Sentry | error reporting, server only (off without `SENTRY_DSN`): uncaught errors via `onRequestError`, caught 5xx via `reportServerError()` | `instrumentation.ts`, `lib/clients/sentry.ts` |
 | Expo push | not yet (M6, TRI-12) | — |
 
 ## Web server code that bypasses HTTP

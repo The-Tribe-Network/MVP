@@ -4,6 +4,7 @@ import { MediaUploadError } from "@/lib/services/media-upload";
 import { confirmUserUpload } from "@/lib/services/user-media-upload";
 import { confirmUserUploadSchema } from "@/lib/validations/media-upload";
 import { validateApiRequest } from "@/lib/validations/tribe";
+import { reportServerError } from "@/lib/clients/sentry";
 
 /**
  * POST /api/upload/confirm
@@ -37,6 +38,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message, code: error.code }, { status });
     }
     console.error("Error confirming user upload:", error);
+    reportServerError(error, { route: "/api/upload/confirm", method: "POST" });
     return NextResponse.json({ error: "Failed to confirm upload" }, { status: 500 });
   }
 }

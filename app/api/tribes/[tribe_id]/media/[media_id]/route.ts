@@ -9,6 +9,7 @@ import {
 } from '@/lib/services/media';
 import { checkTribeMembership } from '@/lib/services/permissions';
 import { AlbumForbiddenError, InvalidAlbumError } from '@/lib/services/album';
+import { reportServerError } from '@/lib/clients/sentry';
 
 /**
  * PATCH /api/tribes/[tribe_id]/media/[media_id]
@@ -86,6 +87,7 @@ export async function PATCH(
       }
     }
 
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/media/[media_id]", method: "PATCH" });
     return NextResponse.json(
       { error: 'Failed to update media' },
       { status: 500 }
@@ -139,6 +141,7 @@ export async function DELETE(
       }
     }
 
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/media/[media_id]", method: "DELETE" });
     return NextResponse.json(
       { error: 'Failed to delete media' },
       { status: 500 }

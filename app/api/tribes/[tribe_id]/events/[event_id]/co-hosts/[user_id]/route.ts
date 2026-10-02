@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { guardEventRoute } from "@/lib/services/event-routes";
 import { removeCoHost } from "@/lib/services/event-settings";
+import { reportServerError } from "@/lib/clients/sentry";
 
 type Params = { params: Promise<{ tribe_id: string; event_id: string; user_id: string }> };
 
@@ -22,6 +23,7 @@ export async function DELETE(_request: NextRequest, { params }: Params) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error removing co-host:", error);
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/events/[event_id]/co-hosts/[user_id]", method: "DELETE" });
     return NextResponse.json({ error: "Failed to remove co-host" }, { status: 500 });
   }
 }

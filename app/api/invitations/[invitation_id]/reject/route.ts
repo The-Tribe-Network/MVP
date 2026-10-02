@@ -3,6 +3,7 @@ import { getServerUser } from "@/lib/services/auth";
 import { rejectInvitation } from "@/lib/services/invitation";
 import { validateApiRequest } from "@/lib/validations/tribe";
 import { z } from "zod";
+import { reportServerError } from "@/lib/clients/sentry";
 
 const invitationIdSchema = z.object({
   id: z.string().uuid("Invalid invitation ID format"),
@@ -43,6 +44,7 @@ export async function POST(
     return NextResponse.json({ success: true, message: "Invitation rejected successfully" });
   } catch (error) {
     console.error("Error rejecting invitation:", error);
+    reportServerError(error, { route: "/api/invitations/[invitation_id]/reject", method: "POST" });
     return NextResponse.json(
       { error: "Failed to reject invitation" },
       { status: 500 }

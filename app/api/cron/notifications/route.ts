@@ -4,6 +4,7 @@ import { runEventReminders, runPollResults } from "@/lib/services/scheduled-noti
 import { sendDueEventChangeEmails } from "@/lib/services/event-change-emails";
 import { runDailyDigests } from "@/lib/services/digest-emails";
 import { purgeRetiredMedia } from "@/lib/services/media";
+import { reportServerError } from "@/lib/clients/sentry";
 
 // GET /api/cron/notifications — Vercel Cron, every 15 min (vercel.json; TRI-184). Inserts event reminders
 // (TRI-190) and poll results (TRI-219) through notify(), sends due event-change emails (TRI-349) and
@@ -33,6 +34,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ now: now.toISOString(), reminders, pollResults, eventChangeEmails, digests, mediaPurged });
   } catch (error) {
     console.error("Scheduled notifications failed:", error);
+    reportServerError(error, { route: "/api/cron/notifications", method: "GET" });
     return NextResponse.json({ error: "Scheduled notifications failed" }, { status: 500 });
   }
 }

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { reportServerError } from "@/lib/clients/sentry";
 
 interface NominatimResult {
   place_id: number;
@@ -87,6 +88,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ suggestions });
   } catch (error) {
     console.error("Error searching locations:", error);
+    reportServerError(error, { route: "/api/locations/search", method: "GET" });
     return NextResponse.json(
       { error: "Failed to search locations", suggestions: [] },
       { status: 500 }

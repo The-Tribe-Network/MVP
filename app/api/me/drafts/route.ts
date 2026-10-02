@@ -6,6 +6,7 @@ import {
   listDraftsQuerySchema,
   validateApiRequest,
 } from "@/lib/validations/draft";
+import { reportServerError } from "@/lib/clients/sentry";
 
 /**
  * GET /api/me/drafts?tribeId&kind
@@ -34,6 +35,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(drafts);
   } catch (error) {
     console.error("Error listing drafts:", error);
+    reportServerError(error, { route: "/api/me/drafts", method: "GET" });
     return NextResponse.json({ error: "Failed to list drafts" }, { status: 500 });
   }
 }
@@ -65,6 +67,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 403 });
     }
     console.error("Error creating draft:", error);
+    reportServerError(error, { route: "/api/me/drafts", method: "POST" });
     return NextResponse.json({ error: "Failed to create draft" }, { status: 500 });
   }
 }

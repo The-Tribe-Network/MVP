@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerUser } from '@/lib/services/auth';
 import { changeMemberRole } from '@/lib/services/members';
 import { changeMemberRoleSchema, validateApiRequest } from '@/lib/validations/members';
+import { reportServerError } from '@/lib/clients/sentry';
 
 /**
  * PATCH /api/tribes/[tribe_id]/members/[member_id]/role
@@ -55,6 +56,7 @@ export async function PATCH(
       }
     }
 
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/members/[member_id]/role", method: "PATCH" });
     return NextResponse.json(
       { error: 'Failed to change member role' },
       { status: 500 }

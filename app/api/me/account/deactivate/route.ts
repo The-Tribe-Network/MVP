@@ -3,6 +3,7 @@ import { getServerUser } from "@/lib/services/auth";
 import { deactivateAccount } from "@/lib/services/account";
 import { deactivateAccountSchema } from "@/lib/validations/account";
 import { validateApiRequest } from "@/lib/validations/profile";
+import { reportServerError } from "@/lib/clients/sentry";
 
 /**
  * POST /api/me/account/deactivate
@@ -44,6 +45,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error deactivating account:", error);
+    reportServerError(error, { route: "/api/me/account/deactivate", method: "POST" });
     return NextResponse.json({ error: "Failed to deactivate account" }, { status: 500 });
   }
 }

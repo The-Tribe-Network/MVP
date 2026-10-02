@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerUser } from '@/lib/services/auth';
 import { uploadTribeAvatar } from '@/lib/services/media';
 import { validateImageFile } from '@/lib/utils/image';
+import { reportServerError } from '@/lib/clients/sentry';
 
 /**
  * POST /api/upload/tribe-avatar
@@ -52,6 +53,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error uploading tribe avatar:', error);
 
+    reportServerError(error, { route: "/api/upload/tribe-avatar", method: "POST" });
     return NextResponse.json(
       { error: 'Failed to upload tribe avatar' },
       { status: 500 }

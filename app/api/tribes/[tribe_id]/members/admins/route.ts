@@ -3,6 +3,7 @@ import { getServerUser } from '@/lib/services/auth';
 import { getTribeAdminMembers } from '@/lib/services/tribe';
 import { checkTribeMembership } from '@/lib/services/permissions';
 import { tribeIdParamSchema, validateApiRequest } from '@/lib/validations/tribe';
+import { reportServerError } from '@/lib/clients/sentry';
 
 /**
  * GET /api/tribes/[tribe_id]/members/admins
@@ -44,6 +45,7 @@ export async function GET(
     return NextResponse.json({ members: adminMembers });
   } catch (error) {
     console.error('Error fetching admin members:', error);
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/members/admins", method: "GET" });
     return NextResponse.json(
       { error: 'Failed to fetch admin members' },
       { status: 500 }

@@ -3,6 +3,7 @@ import { getServerUser } from "@/lib/services/auth";
 import { getTribeActivities } from "@/lib/services/activity";
 import { checkTribeMembership } from "@/lib/services/permissions";
 import { tribeIdParamSchema, validateApiRequest } from "@/lib/validations/post";
+import { reportServerError } from "@/lib/clients/sentry";
 
 export async function GET(
   request: NextRequest,
@@ -51,6 +52,7 @@ export async function GET(
     return NextResponse.json(activities);
   } catch (error) {
     console.error("Error fetching activities:", error);
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/activities", method: "GET" });
     return NextResponse.json(
       { error: "Failed to fetch activities" },
       { status: 500 }

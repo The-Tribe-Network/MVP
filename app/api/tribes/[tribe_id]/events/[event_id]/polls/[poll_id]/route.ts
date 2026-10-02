@@ -5,6 +5,7 @@ import { getMemberWithPermissions } from "@/lib/services/permissions";
 import { db } from "@/lib/database/client";
 import { poll } from "@/lib/database/schemas/poll";
 import { eq } from "drizzle-orm";
+import { reportServerError } from "@/lib/clients/sentry";
 
 // DELETE /api/tribes/[tribe_id]/events/[event_id]/polls/[poll_id]
 export async function DELETE(
@@ -55,6 +56,7 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error deleting poll:", error);
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/events/[event_id]/polls/[poll_id]", method: "DELETE" });
     return NextResponse.json(
       { error: "Failed to delete poll" },
       { status: 500 }

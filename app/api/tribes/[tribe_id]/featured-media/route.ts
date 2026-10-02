@@ -8,6 +8,7 @@ import {
 } from "@/lib/services/tribe";
 import { tribeIdParamSchema, validateApiRequest } from "@/lib/validations/tribe";
 import { z } from "zod";
+import { reportServerError } from "@/lib/clients/sentry";
 
 const setFeaturedMediaSchema = z.object({
   mediaId: z.string().uuid("Invalid media ID"),
@@ -57,6 +58,7 @@ export async function GET(
     return NextResponse.json(featuredMedia);
   } catch (error) {
     console.error("Error fetching featured media:", error);
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/featured-media", method: "GET" });
     return NextResponse.json(
       { error: "Failed to fetch featured media" },
       { status: 500 }
@@ -122,6 +124,7 @@ export async function PUT(
       }
     }
 
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/featured-media", method: "PUT" });
     return NextResponse.json(
       { error: "Failed to set featured media" },
       { status: 500 }
@@ -170,6 +173,7 @@ export async function DELETE(
       }
     }
 
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/featured-media", method: "DELETE" });
     return NextResponse.json(
       { error: "Failed to clear featured media" },
       { status: 500 }

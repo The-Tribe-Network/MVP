@@ -6,6 +6,7 @@ import {
   updateDraftSchema,
   validateApiRequest,
 } from "@/lib/validations/draft";
+import { reportServerError } from "@/lib/clients/sentry";
 
 // Only the caller's own drafts resolve, so an unknown id and someone else's id both read as 404.
 const notFound = () => NextResponse.json({ error: "Draft not found" }, { status: 404 });
@@ -41,6 +42,7 @@ export async function PATCH(
     return NextResponse.json(updated);
   } catch (error) {
     console.error("Error updating draft:", error);
+    reportServerError(error, { route: "/api/me/drafts/[draft_id]", method: "PATCH" });
     return NextResponse.json({ error: "Failed to update draft" }, { status: 500 });
   }
 }
@@ -67,6 +69,7 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error deleting draft:", error);
+    reportServerError(error, { route: "/api/me/drafts/[draft_id]", method: "DELETE" });
     return NextResponse.json({ error: "Failed to delete draft" }, { status: 500 });
   }
 }

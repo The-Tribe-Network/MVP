@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
 import { checkPermission, getAllRolePermissions } from "@/lib/services/role-permissions";
+import { reportServerError } from "@/lib/clients/sentry";
 
 /**
  * GET /api/tribes/[tribe_id]/roles
@@ -37,6 +38,7 @@ export async function GET(
     return NextResponse.json(rolePermissions);
   } catch (error) {
     console.error("Error fetching role permissions:", error);
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/roles", method: "GET" });
     return NextResponse.json({ error: "Failed to fetch role permissions" }, { status: 500 });
   }
 }

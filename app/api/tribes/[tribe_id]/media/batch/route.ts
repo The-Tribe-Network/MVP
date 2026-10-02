@@ -5,6 +5,7 @@ import { validateImageFile } from '@/lib/utils/image';
 import { checkTribeMembership } from '@/lib/services/permissions';
 import { multipartFileLimit, rejectOversizedBody } from '@/lib/services/multipart-limits';
 import { AlbumForbiddenError, InvalidAlbumError } from '@/lib/services/album';
+import { reportServerError } from '@/lib/clients/sentry';
 
 /**
  * POST /api/tribes/[tribe_id]/media/batch
@@ -140,6 +141,7 @@ export async function POST(
       }
     }
 
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/media/batch", method: "POST" });
     return NextResponse.json(
       { error: 'Failed to upload media' },
       { status: 500 }

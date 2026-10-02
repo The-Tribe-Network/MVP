@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { guardEventRoute } from "@/lib/services/event-routes";
 import { deleteEventLink } from "@/lib/services/event-settings";
+import { reportServerError } from "@/lib/clients/sentry";
 
 type Params = { params: Promise<{ tribe_id: string; event_id: string; link_id: string }> };
 
@@ -17,6 +18,7 @@ export async function DELETE(_request: NextRequest, { params }: Params) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error deleting event link:", error);
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/events/[event_id]/links/[link_id]", method: "DELETE" });
     return NextResponse.json({ error: "Failed to delete link" }, { status: 500 });
   }
 }

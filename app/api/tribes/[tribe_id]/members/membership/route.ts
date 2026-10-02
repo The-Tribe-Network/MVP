@@ -2,6 +2,7 @@ import { getServerUser } from "@/lib/services/auth";
 import { checkTribeMembership } from "@/lib/services/permissions";
 import { tribeIdParamSchema, validateApiRequest } from "@/lib/validations/tribe";
 import { NextRequest, NextResponse } from "next/server"
+import { reportServerError } from "@/lib/clients/sentry";
 
 export async function GET(
   request: NextRequest,
@@ -27,6 +28,7 @@ export async function GET(
     return NextResponse.json({ isMember }, { status: 200 });
   } catch (error) {
     console.error("Error checking tribe membership:", error);
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/members/membership", method: "GET" });
     return NextResponse.json(
       { error: "Failed to check tribe membership" },
       { status: 500 }
