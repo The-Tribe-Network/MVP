@@ -5,7 +5,7 @@ import { post, postLike } from "@/lib/database/schemas/post";
 import { catchUpRead, tribe, tribeMember, tribeMemberPreference } from "@/lib/database/schemas/tribe";
 import { user } from "@/lib/database/schemas/auth";
 import { media } from "@/lib/database/schemas/media";
-import { and, asc, desc, eq, gt, gte, inArray, lte, ne, or, sql, type AnyColumn, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, gt, gte, inArray, isNull, lte, ne, or, sql, type AnyColumn, type SQL } from "drizzle-orm";
 import { userPreviewColumns } from "@/lib/database/user-columns";
 import { effectiveEventStatus, getAgendaItems, type AgendaItemPreview, type UserPreview } from "./event";
 import { getPostsByIds, type PostWithMetadata } from "./post";
@@ -22,16 +22,18 @@ export type TribeRef = { id: string; name: string; avatar: string | null; color:
 export type AgendaParams = { from: Date; to: Date; tribeId?: string; limit: number };
 
 /**
- * Events across the caller's tribes starting in [from, to], soonest first. Cancelled events are
- * left out (the calendar and "This week" show what is happening, and the tribe list's `nextEvent`
- * already skips them); `tribeId` narrows to one tribe and yields nothing for a tribe the caller is
- * not in.
+ * Events across the caller's tribes that overlap [from, to], soonest first: starting by `to` and not
+ * ended before `from` (an event without an end ends when it starts), so a multi-day event that began
+ * before `from` and is still on is returned too (TRI-411). Cancelled
+ * events are left out (the calendar and "This week" show what is happening, and the tribe list's
+ * `nextEvent` already skips them); `tribeId` narrows to one tribe and yields nothing for a tribe the
+ * caller is not in.
  */
 export async function getAgenda(userId: string, params: AgendaParams): Promise<AgendaItemPreview[]> {
   const conditions: SQL[] = [
     eq(tribeMember.userId, userId),
-    gte(event.startDate, params.from),
     lte(event.startDate, params.to),
+    or(gte(event.endDate, params.from), and(isNull(event.endDate), gte(event.startDate, params.from)))!,
     ne(event.status, "cancelled"),
   ];
   if (params.tribeId) conditions.push(eq(event.tribeId, params.tribeId));
