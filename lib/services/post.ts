@@ -1,7 +1,7 @@
 import { db, getDbTransaction } from "@/lib/database/client";
 import { post, postLike, postMedia, comment, commentLike } from "@/lib/database/schemas/post";
 import { event } from "@/lib/database/schemas/event";
-import { poll } from "@/lib/database/schemas/poll";
+import { poll, pollOption } from "@/lib/database/schemas/poll";
 import { postKind } from "@/lib/database/schemas/enums";
 import { tribeMember } from "@/lib/database/schemas/tribe";
 import { user } from "@/lib/database/schemas/auth";
@@ -18,7 +18,7 @@ import type {
   UserPreview,
 } from "@/lib/database/types";
 import type { CreatePostInput } from "@/lib/validations/post";
-import { checkPermission } from "./role-permissions";
+import { checkPermission, roleMeetsLevel } from "./role-permissions";
 import {
   assertAlbumInTribe,
   assertCanAddToAlbum,
@@ -79,17 +79,30 @@ type PostKind = (typeof postKind.enumValues)[number];
 function derivePostKind(input: {
   isPinned: boolean;
   eventId: string | null;
-  pollId: string | null;
+  hasPoll: boolean;
   mediaCount: number;
   linkedAlbumId: string | null;
 }): PostKind {
   if (input.isPinned) return "announcement";
   if (input.eventId) return "event";
-  if (input.pollId) return "poll";
+  if (input.hasPoll) return "poll";
   if (input.mediaCount > 1) return "photos";
   if (input.mediaCount === 1) return "photo";
   if (input.linkedAlbumId) return "album";
   return "text";
+}
+
+/**
+ * Whether `role` may put a new poll on a post (TRI-151). The tribe's polls switch must be on, and its
+ * poll creation level met; `event_creator` means whoever makes the content, here the post's author.
+ * The owner always may.
+ */
+async function canCreatePostPoll(tribeId: string, role: string): Promise<boolean> {
+  if (role === "owner") return true;
+  const settings = await getTribeSettings(tribeId);
+  if (!settings.pollsEnabled) return false;
+  const level = settings.pollCreationPermissionLevel;
+  return level === "event_creator" || roleMeetsLevel(role, level);
 }
 
 /**
@@ -183,6 +196,10 @@ export async function createPost(
     }
   }
 
+  if (input.poll && !(await canCreatePostPoll(tribeId, role))) {
+    throw new Error("You do not have permission to create polls in this tribe");
+  }
+
   // Both album references must be albums of this tribe (InvalidAlbumError → the route's 400 INVALID_ALBUM).
   // `albumId` null means the general album.
   await assertAlbumInTribe(linkedAlbumId, tribeId);
@@ -204,7 +221,14 @@ export async function createPost(
     await assertAlbumInTribe(albumId, tribeId);
   }
 
-  const kind = derivePostKind({ isPinned, eventId, pollId, mediaCount: mediaIds.length, linkedAlbumId });
+  const inlinePoll = input.poll ?? null;
+  const kind = derivePostKind({
+    isPinned,
+    eventId,
+    hasPoll: pollId !== null || inlinePoll !== null,
+    mediaCount: mediaIds.length,
+    linkedAlbumId,
+  });
 
   const createdPost = await getDbTransaction().transaction(async (tx) => {
     const [newPost] = await tx
@@ -223,6 +247,27 @@ export async function createPost(
         pinnedBy: isPinned ? userId : null,
       } as PostInsert)
       .returning();
+
+    // TRI-151: the post's own poll. poll_owner_check needs the post to exist first, so the poll is
+    // written after it and the post then points at it; a bad option list rolls the post back too.
+    if (inlinePoll) {
+      const [newPoll] = await tx
+        .insert(poll)
+        .values({
+          postId: newPost.id,
+          createdBy: userId,
+          question: inlinePoll.question,
+          allowMultiple: inlinePoll.allowMultiple ?? false,
+          isAnonymous: inlinePoll.isAnonymous ?? false,
+          endsAt: inlinePoll.endsAt ? new Date(inlinePoll.endsAt) : null,
+        })
+        .returning({ id: poll.id });
+      await tx
+        .insert(pollOption)
+        .values(inlinePoll.options.map((text, order) => ({ pollId: newPoll.id, text, order })));
+      await tx.update(post).set({ pollId: newPoll.id }).where(eq(post.id, newPost.id));
+      newPost.pollId = newPoll.id;
+    }
 
     if (mediaIds.length > 0) {
       await tx.insert(postMedia).values(

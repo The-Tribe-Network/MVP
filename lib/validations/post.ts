@@ -5,6 +5,28 @@ const uuidSchema = z.string().uuid("Invalid UUID format");
 
 export const POST_MAX_PHOTOS = 10;
 
+// A poll made in the composer (TRI-151). It belongs to the post, unlike `pollId`, which shares an
+// event's poll. Options are trimmed, 2–10 and unique; the end time, when given, is in the future.
+export const inlinePollSchema = z
+  .object({
+    question: z.string().trim().min(1, "Poll question is required").max(500),
+    options: z
+      .array(z.string().trim().min(1, "Poll options cannot be empty").max(200))
+      .min(2, "Poll must have at least 2 options")
+      .max(10, "Poll cannot have more than 10 options"),
+    allowMultiple: z.boolean().optional(),
+    isAnonymous: z.boolean().optional(),
+    endsAt: z.string().datetime().optional().nullable(),
+  })
+  .refine((data) => new Set(data.options).size === data.options.length, {
+    message: "Poll options must be unique",
+    path: ["options"],
+  })
+  .refine((data) => !data.endsAt || new Date(data.endsAt).getTime() > Date.now(), {
+    message: "Poll must end in the future",
+    path: ["endsAt"],
+  });
+
 // Create post schema
 // `mediaIds` is the canonical photo list; `mediaId` is the legacy single-image field and is read
 // only when `mediaIds` is absent. Content may be empty when the post carries an attachment.
@@ -29,19 +51,20 @@ export const createPostSchema = z
     linkedAlbumId: z.string().uuid("Invalid linked album ID format").optional().nullable(),
     eventId: z.string().uuid("Invalid event ID format").optional().nullable(),
     pollId: z.string().uuid("Invalid poll ID format").optional().nullable(),
+    poll: inlinePollSchema.optional().nullable(),
     isPinned: z.boolean().optional(),
     // The posts timeline to post in; Global when omitted (TRI-314)
     timelineId: z.string().uuid("Invalid timeline ID format").optional().nullable(),
   })
   .superRefine((data, ctx) => {
     const hasMedia = (data.mediaIds?.length ?? 0) > 0 || Boolean(data.mediaId);
-    const links = [data.eventId, data.pollId, data.linkedAlbumId].filter(Boolean).length;
+    const links = [data.eventId, data.pollId, data.poll, data.linkedAlbumId].filter(Boolean).length;
 
     if (links > 1) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["eventId"],
-        message: "A post can link only one of an event, a poll or an album",
+        message: "A post can carry only one of an event, a poll or an album",
       });
     }
 
