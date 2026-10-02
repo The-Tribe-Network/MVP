@@ -43,3 +43,25 @@ export const confirmMediaUploadSchema = z.object({
 export type SignMediaUploadInput = z.infer<typeof signMediaUploadSchema>;
 export type ConfirmAssetInput = z.infer<typeof confirmAssetSchema>;
 export type ConfirmMediaUploadInput = z.infer<typeof confirmMediaUploadSchema>;
+
+/**
+ * User-scoped signed upload (TRI-417): images that belong to the caller rather than a tribe, so no
+ * membership applies. `avatar` = the profile photo (`/upload/avatar`), `tribe-avatar` = a tribe avatar
+ * uploaded before the tribe exists (`/upload/tribe-avatar`, its media id goes to `POST /tribes` as `avatar`).
+ */
+export const USER_UPLOAD_PURPOSES = ["avatar", "tribe-avatar"] as const;
+
+export type UserUploadPurpose = (typeof USER_UPLOAD_PURPOSES)[number];
+
+export const signUserUploadSchema = z.object({
+  purpose: z.enum(USER_UPLOAD_PURPOSES),
+});
+
+export const confirmUserUploadSchema = z.object({
+  purpose: z.enum(USER_UPLOAD_PURPOSES),
+  asset: confirmAssetSchema.omit({ altText: true }),
+});
+
+export type SignUserUploadInput = z.infer<typeof signUserUploadSchema>;
+export type ConfirmUserUploadInput = z.infer<typeof confirmUserUploadSchema>;
+export type ConfirmUserAssetInput = ConfirmUserUploadInput["asset"];

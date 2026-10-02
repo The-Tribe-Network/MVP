@@ -242,3 +242,30 @@ In tribe-mobile:
   `canUploadMedia`, album add rule, format / size limits, blurhash, `album_media`). Everything
   deliberately ignored answers 200 `{ ok: true }` with no detail; unexpected failures answer 500 so
   Cloudinary retries. The app and the webhook can both confirm the same asset in either order.
+
+## TRI-417 · User-scoped signed upload (profile photo, tribe avatar before the tribe exists)
+
+The signed replacement for the multipart `POST /upload/avatar` and `POST /upload/tribe-avatar` (Vercel's 4.5 MB
+body cap). No tribe, so no membership, album or webhook; otherwise the same model. Service
+`lib/services/user-media-upload.ts`, routes `app/api/upload/{sign,confirm}/route.ts`, schemas in
+`lib/validations/media-upload.ts`. The multipart routes and the tribe-scoped pair are unchanged.
+
+- **sign** `POST /api/upload/sign` `{ purpose: "avatar" | "tribe-avatar" }` → 200 `SignedUploadBatch` with one slot.
+  Folder `users/<userId>/avatars` or `users/<userId>/tribe-avatars`. `params` = `folder`, `public_id`, `timestamp`,
+  `transformation`, `signature`; send verbatim with `file` + `api_key`. `transformation` is
+  `c_fill,h_512,w_512/q_auto:good/f_auto`, the incoming transformation the multipart routes apply, so the stored
+  asset is the same 512×512 image. No `notification_url`/`context`: the app confirms, and the webhook only acts on
+  `tribes/<id>/` uploads. 401 signed out, 400 bad body.
+- **confirm** `POST /api/upload/confirm` `{ purpose, asset: { publicId, url, width, height, bytes, format } }`.
+  Checks: 401 → body (400) → `publicId` under `users/<userId>/<folder for purpose>/`, no `..` (400
+  `INVALID_PUBLIC_ID`) → already confirmed by this user: 200 with the stored row, nothing re-applied; by
+  someone else: 400 `ALREADY_CONFIRMED` → Admin API asset exists (400 `ASSET_NOT_FOUND`) → format (400
+  `UNSUPPORTED_FORMAT`, asset destroyed) → reported bytes/format/dimensions match (400 `ASSET_MISMATCH`) →
+  `bytes ≤ 25 MB` hard cap (413 `FILE_TOO_LARGE`, asset destroyed). Errors are `{ error, code }`.
+- **writes** one `media` row like `uploadAvatar` / `uploadTribeAvatar` (`tribeId` and `postId` null, `publicId`
+  set, no blurhash), and for `avatar` sets `user.image` to its URL in the same transaction. Answers 201 the
+  multipart shape `{ id, url, width, height, fileSize, mimeType }`. For `tribe-avatar` that `id` goes to
+  `POST /tribes` as `avatar`. `mimeType` comes from Cloudinary's format (multipart stored the client's file type).
+- Verified 2026-10-01 against Development: 401s, 400 body / folder / `..` / wrong-purpose / foreign-folder,
+  `ASSET_NOT_FOUND`, `ASSET_MISMATCH`, a real signed upload of both purposes (512×512), 201 then 200 replay,
+  `user.image` updated, and Cloudinary refusing a form with a changed `folder`.
