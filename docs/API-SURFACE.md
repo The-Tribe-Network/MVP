@@ -51,6 +51,7 @@ for a write that rolled back (and vice versa).
 | `account.ts` (2) | `deleteAccount` (sessions, links, memberships, media → purge queue, scrub; TRI-16); `deactivateAccount` + revoke sessions |
 | `media.ts` (1) | `deleteMedia`: the photo's row + its file queued in `media_purge` (TRI-120) |
 | `media-upload.ts` (1) | `insertVerified` (confirm a signed upload): media row + album / post links |
+| `user-media-upload.ts` (1) | `confirmUserUpload` (TRI-417): the avatar / tribe-avatar media row + `user.image` for a profile photo |
 | `tribe.ts` (1) | `markCatchUpDone` (per-tribe `last_catch_up_at` for one or all tribes) |
 | `profile.ts` (1) | `updateProfileWithSocialLinks` (profile + the social link rows) |
 
@@ -88,7 +89,7 @@ These are the ones to watch, with the indexes added for them:
 | Service | Used for | Where |
 | --- | --- | --- |
 | Neon | Postgres (HTTP + WebSocket drivers) | everything |
-| Cloudinary | signed direct upload, confirm + blurhash, asset destroy (now via the 30-day purge), notification webhook URL | `media-upload.ts`, `media.ts` |
+| Cloudinary | signed direct upload (tribe-scoped + user-scoped, TRI-417), confirm + blurhash, asset destroy (now via the 30-day purge), notification webhook URL | `media-upload.ts`, `user-media-upload.ts`, `media.ts` |
 | Resend | every email (`lib/email/`: codes, invites, reports, account notices, event changes, reminders, digest) | `sendEmail()` |
 | Ably | live chat: REST publish + token requests scoped to the member's chat timelines | `realtime.ts`, `GET /realtime/token` |
 | Google, Discord | OAuth sign-in (Google paused for the alpha, TRI-236) | Better-Auth |
@@ -148,7 +149,7 @@ current plan through the API; PostHog has client-side events only (`app_env = pr
 
 <!-- GENERATED:START (node scripts/api-surface.mjs) -->
 
-### Routes (117 handler files)
+### Routes (122 handler files)
 
 Auth: `session` = `getServerUser()` (cookie or bearer), `Better-Auth` = its catch-all, `cron secret` = `Authorization: Bearer $CRON_SECRET`, `signed token` = HMAC in the URL, `Cloudinary signature` = the webhook's `X-Cld-Signature`, `public` = none. Session also covers routes whose handler lives in a service that signs the caller in (`guardEventRoute`, `timelineRoute`, `poll-votes`). `after()` is the route's own; External is the route plus the services it imports directly. What writes, opens transactions or calls `notify()` is per service, in the second table.
 
@@ -252,8 +253,10 @@ Auth: `session` = `getServerUser()` (cookie or bearer), `Better-Auth` = its catc
 | `/api/tribes/join/:code` | POST | session | — | `auth`, `invite-link` |  |  |
 | `/api/upload/album-cover` | POST | session | `canUserUploadMedia` | `auth`, `media`, `permissions` |  | Cloudinary |
 | `/api/upload/avatar` | POST | session | — | `auth`, `media` |  | Cloudinary |
+| `/api/upload/confirm` | POST | session | — | `auth`, `media-upload`, `user-media-upload` |  | Cloudinary |
 | `/api/upload/event-cover` | POST | session | `canUserUploadMedia` | `auth`, `media`, `permissions` |  | Cloudinary |
 | `/api/upload/post-image` | POST | session | `canUserUploadMedia` | `auth`, `media`, `permissions` |  | Cloudinary |
+| `/api/upload/sign` | POST | session | — | `auth`, `user-media-upload` |  | Cloudinary |
 | `/api/upload/tribe-avatar` | POST | session | — | `auth`, `media` |  | Cloudinary |
 | `/api/upload/tribe-banner` | POST | session | — | `auth`, `media` |  | Cloudinary |
 | `/api/user/profile` | GET PATCH | session | — | `auth`, `profile`, `user` |  |  |
@@ -268,11 +271,14 @@ Auth: `session` = `getServerUser()` (cookie or bearer), `Better-Auth` = its catc
 | `/api/users/:user_id/profile` | GET | session | — | `auth`, `profile` |  |  |
 | `/api/waitlist` | POST | public | — | `email` |  | Resend |
 | `/api/webhooks/cloudinary` | POST | Cloudinary signature | — | `media-upload` |  | Cloudinary |
+| `/guidelines` | GET | public | — | — |  |  |
 | `/i/:invitation_id` | GET | public | — | `notifications` |  |  |
 | `/join/:code` | GET | public | — | `invite-link` |  |  |
 | `/open/*path` | GET | public | — | — |  |  |
+| `/privacy` | GET | public | — | — |  |  |
+| `/terms` | GET | public | — | — |  |  |
 
-### Services (44)
+### Services (45)
 
 | Service | Writes | Transactions | `notify()` | `after()` | External | Uses |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -280,7 +286,7 @@ Auth: `session` = `getServerUser()` (cookie or bearer), `Better-Auth` = its catc
 | `lib/services/activity.ts` | yes |  |  |  |  | `blocks` |
 | `lib/services/agenda.ts` |  |  |  |  |  | `blocks`, `event`, `post`, `tribe` |
 | `lib/services/album.ts` | yes |  |  |  |  | `blocks`, `permissions`, `role-permissions` |
-| `lib/services/alpha-access.ts` | yes |  |  |  |  | — |
+| `lib/services/alpha-access.ts` | yes |  |  |  | Resend | — |
 | `lib/services/auth.ts` |  |  |  |  |  | `user` |
 | `lib/services/blocks.ts` | yes |  |  |  |  | — |
 | `lib/services/chat.ts` | yes | 2 | yes |  |  | `blocks`, `link-preview`, `member-permissions`, `notifications`, `permissions`, `timeline` |
@@ -319,6 +325,7 @@ Auth: `session` = `getServerUser()` (cookie or bearer), `Better-Auth` = its catc
 | `lib/services/timeline.ts` | yes | 2 |  |  |  | `blocks`, `member-permissions`, `permissions` |
 | `lib/services/tribe-settings.ts` | yes |  |  |  |  | — |
 | `lib/services/tribe.ts` | yes | 1 |  |  |  | `draft`, `event`, `notification-feed`, `permissions`, `post`, `role-permissions`, `timeline` |
+| `lib/services/user-media-upload.ts` | yes | 1 |  |  | Cloudinary | `media`, `media-upload` |
 | `lib/services/user.ts` | yes |  |  |  |  | — |
 
 <!-- GENERATED:END -->

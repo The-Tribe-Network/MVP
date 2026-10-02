@@ -34,7 +34,7 @@ import { MEDIA_UPLOAD_PURPOSES, type ConfirmAssetInput, type MediaUploadPurpose 
 export const SIGNATURE_TTL_SECONDS = 10 * 60;
 
 /** Image formats Cloudinary may report for an asset we will accept. Everything else is rejected. */
-const ACCEPTED_FORMATS: Record<string, string> = {
+export const ACCEPTED_FORMATS: Record<string, string> = {
   jpg: "image/jpeg",
   jpeg: "image/jpeg",
   png: "image/png",
@@ -218,7 +218,7 @@ export async function signMediaUploads(
   };
 }
 
-type CloudinaryResource = {
+export type CloudinaryResource = {
   public_id: string;
   format?: string;
   bytes?: number;
@@ -228,7 +228,7 @@ type CloudinaryResource = {
   resource_type?: string;
 };
 
-async function fetchResources(publicIds: string[]): Promise<Map<string, CloudinaryResource>> {
+export async function fetchResources(publicIds: string[]): Promise<Map<string, CloudinaryResource>> {
   const found = new Map<string, CloudinaryResource>();
   // resources_by_ids takes up to 100 ids in one Admin API call.
   const response = (await cloudinary.api.resources_by_ids(publicIds, { resource_type: "image" })) as {
@@ -271,7 +271,7 @@ export interface ConfirmResult {
 }
 
 /** Postgres unique violation on media.public_id: a concurrent confirm (app vs webhook) won the race. */
-function isPublicIdConflict(error: unknown): boolean {
+export function isPublicIdConflict(error: unknown): boolean {
   const e = error as { code?: string; constraint?: string; cause?: { code?: string; constraint?: string } };
   const code = e?.code ?? e?.cause?.code;
   const constraint = e?.constraint ?? e?.cause?.constraint ?? "";
@@ -565,7 +565,7 @@ export async function confirmFromUploadNotification(payload: Record<string, unkn
   }
 }
 
-async function destroyQuietly(publicId: string): Promise<void> {
+export async function destroyQuietly(publicId: string): Promise<void> {
   try {
     await cloudinary.uploader.destroy(publicId, { resource_type: "image" });
   } catch (error) {
