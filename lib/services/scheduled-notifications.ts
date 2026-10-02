@@ -3,6 +3,7 @@ import { and, eq, gt, isNotNull, lte, ne, sql } from "drizzle-orm";
 import { db } from "@/lib/database/client";
 import { event, eventSettings } from "@/lib/database/schemas/event";
 import { poll, pollOption, pollVote } from "@/lib/database/schemas/poll";
+import { post } from "@/lib/database/schemas/post";
 import { tribeSettings } from "@/lib/database/schemas/tribe";
 import { appLink, eventAttendeeIds, eventHostIds, notify } from "./notifications";
 import { DAY_BEFORE_MINUTES, sendDayBeforeReminderEmails } from "./event-reminder-emails";
@@ -117,13 +118,33 @@ export function pollResultMessage(
   return `Tied: ${winners.slice(0, -1).join(", ")} and ${winners[winners.length - 1]}`;
 }
 
+/** A closed poll's per-option vote counts, in option order, and everyone who voted. */
+async function pollTally(pollId: string) {
+  const options = await db
+    .select({ text: pollOption.text, votes: sql<number>`count(${pollVote.id})::int` })
+    .from(pollOption)
+    .leftJoin(pollVote, eq(pollVote.optionId, pollOption.id))
+    .where(eq(pollOption.pollId, pollId))
+    .groupBy(pollOption.id, pollOption.text, pollOption.order)
+    .orderBy(pollOption.order);
+  const voters = await db
+    .selectDistinct({ userId: pollVote.userId })
+    .from(pollVote)
+    .where(eq(pollVote.pollId, pollId));
+  return { options, voterIds: voters.map((voter) => voter.userId) };
+}
+
 /**
- * TRI-219: when an event poll's `endsAt` passes, tell its voters, its creator, the hosts and the going + maybe
- * attendees. Only while the event's "Poll results" setting is on; never for cancelled events. Anonymous polls name
- * nobody (the rows have no actor anyway). Post polls have no setting and are left out of v1.
+ * When a poll's `endsAt` passes, tell the people it concerns. Anonymous polls name nobody (the rows have no actor
+ * anyway). Polls are looked at for a week after closing, so a missed tick still catches them.
+ * - Event polls (TRI-219): its voters, its creator, the hosts and the going + maybe attendees, while the event's
+ *   "Poll results" setting is on; never for cancelled events.
+ * - Post polls (TRI-424): the post's author (the poll's creator) and its voters. They have no settings: like reads
+ *   (`lib/services/poll.ts`), their results show once the poll closes (`after_voting`), so the winner is named.
  */
 export async function runPollResults(now = new Date()) {
   const since = new Date(now.getTime() - UNIT_MINUTES.w * MINUTE);
+  const closedWindow = and(isNotNull(poll.endsAt), lte(poll.endsAt, now), gt(poll.endsAt, since));
   const closed = await db
     .select({
       id: poll.id,
@@ -139,24 +160,17 @@ export async function runPollResults(now = new Date()) {
     .innerJoin(event, eq(event.id, poll.eventId))
     .leftJoin(eventSettings, eq(eventSettings.eventId, event.id))
     .leftJoin(tribeSettings, eq(tribeSettings.tribeId, event.tribeId))
-    .where(
-      and(isNotNull(poll.endsAt), lte(poll.endsAt, now), gt(poll.endsAt, since), ne(event.status, "cancelled"))
-    );
+    .where(and(closedWindow, ne(event.status, "cancelled")));
+  const closedOnPosts = await db
+    .select({ id: poll.id, question: poll.question, createdBy: poll.createdBy, postId: post.id, tribeId: post.tribeId })
+    .from(poll)
+    .innerJoin(post, eq(post.id, poll.postId))
+    .where(closedWindow);
 
   let sent = 0;
   for (const row of closed) {
     if (row.notifyOn === false) continue;
-    const options = await db
-      .select({ text: pollOption.text, votes: sql<number>`count(${pollVote.id})::int` })
-      .from(pollOption)
-      .leftJoin(pollVote, eq(pollVote.optionId, pollOption.id))
-      .where(eq(pollOption.pollId, row.id))
-      .groupBy(pollOption.id, pollOption.text, pollOption.order)
-      .orderBy(pollOption.order);
-    const voters = await db
-      .selectDistinct({ userId: pollVote.userId })
-      .from(pollVote)
-      .where(eq(pollVote.pollId, row.id));
+    const { options, voterIds } = await pollTally(row.id);
     const result = pollResultMessage(options, row.eventVisibility ?? row.tribeVisibility);
     sent += await notify(db, {
       type: "poll_closed",
@@ -166,7 +180,7 @@ export async function runPollResults(now = new Date()) {
       entityId: row.id,
       recipients: [
         row.createdBy,
-        ...voters.map((voter) => voter.userId),
+        ...voterIds,
         ...(await eventHostIds(db, row.eventId)),
         ...(await eventAttendeeIds(db, row.eventId)),
       ],
@@ -177,5 +191,21 @@ export async function runPollResults(now = new Date()) {
       once: true,
     });
   }
-  return { closed: closed.length, sent };
+  for (const row of closedOnPosts) {
+    const { options, voterIds } = await pollTally(row.id);
+    sent += await notify(db, {
+      type: "poll_closed",
+      actorId: null,
+      tribeId: row.tribeId,
+      entityType: "poll",
+      entityId: row.id,
+      recipients: [row.createdBy, ...voterIds],
+      title: `Poll closed: ${row.question}`,
+      message: pollResultMessage(options, "after_voting") ?? "",
+      link: appLink.post(row.tribeId, row.postId),
+      collapse: true,
+      once: true,
+    });
+  }
+  return { closed: closed.length + closedOnPosts.length, sent };
 }
