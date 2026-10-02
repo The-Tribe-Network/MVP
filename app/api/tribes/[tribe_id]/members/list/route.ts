@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerUser } from '@/lib/services/auth';
 import { getAllTribeMembers } from '@/lib/services/members';
 import { memberListQuerySchema, validateApiRequest } from '@/lib/validations/members';
+import { reportServerError } from '@/lib/clients/sentry';
 
 /**
  * GET /api/tribes/[tribe_id]/members/list
@@ -54,6 +55,7 @@ export async function GET(
       }
     }
 
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/members/list", method: "GET" });
     return NextResponse.json(
       { error: 'Failed to fetch tribe members' },
       { status: 500 }

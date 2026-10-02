@@ -3,6 +3,7 @@ import { getServerUser } from "@/lib/services/auth";
 import { signUserUpload } from "@/lib/services/user-media-upload";
 import { signUserUploadSchema } from "@/lib/validations/media-upload";
 import { validateApiRequest } from "@/lib/validations/tribe";
+import { reportServerError } from "@/lib/clients/sentry";
 
 /**
  * POST /api/upload/sign
@@ -28,6 +29,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(signUserUpload(user.id, validation.data.purpose), { status: 200 });
   } catch (error) {
     console.error("Error signing user upload:", error);
+    reportServerError(error, { route: "/api/upload/sign", method: "POST" });
     return NextResponse.json({ error: "Failed to sign upload" }, { status: 500 });
   }
 }

@@ -17,6 +17,7 @@ async function visibleAlbum(albumId: string, userId: string) {
   return row;
 }
 import { checkTribeMembership } from '@/lib/services/permissions';
+import { reportServerError } from '@/lib/clients/sentry';
 
 /**
  * POST /api/tribes/[tribe_id]/albums/[album_id]/media
@@ -92,6 +93,7 @@ export async function POST(
       }
     }
 
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/albums/[album_id]/media", method: "POST" });
     return NextResponse.json(
       { error: 'Failed to add media to album' },
       { status: 500 }
@@ -168,6 +170,7 @@ export async function DELETE(
       }
     }
 
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/albums/[album_id]/media", method: "DELETE" });
     return NextResponse.json(
       { error: 'Failed to remove media from album' },
       { status: 500 }

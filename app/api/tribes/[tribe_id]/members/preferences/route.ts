@@ -3,6 +3,7 @@ import { getServerUser } from '@/lib/services/auth';
 import { db } from '@/lib/database/client';
 import { and, eq } from 'drizzle-orm';
 import { tribeMember, tribeMemberPreference } from '@/lib/database/schemas';
+import { reportServerError } from '@/lib/clients/sentry';
 
 /**
  * GET /api/tribes/[tribe_id]/members/preferences
@@ -61,6 +62,7 @@ export async function GET(
     );
   } catch (error) {
     console.error('Error fetching tribe member preferences:', error);
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/members/preferences", method: "GET" });
     return NextResponse.json(
       { error: 'Failed to fetch tribe member preferences' },
       { status: 500 }
@@ -127,6 +129,7 @@ export async function PATCH(
     return NextResponse.json({ preferences: updated }, { status: 200 });
   } catch (error) {
     console.error('Error updating tribe member preferences:', error);
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/members/preferences", method: "PATCH" });
     return NextResponse.json(
       { error: 'Failed to update tribe member preferences' },
       { status: 500 }

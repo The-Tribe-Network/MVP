@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
 import { togglePostPin, verifyPostAccessAndMembership } from "@/lib/services/post";
 import { tribePostIdParamSchema, validateApiRequest } from "@/lib/validations/post";
+import { reportServerError } from "@/lib/clients/sentry";
 
 export async function POST(
   request: NextRequest,
@@ -58,8 +59,10 @@ export async function POST(
     }
     console.error("Error toggling post pin:", error);
     if (error instanceof Error) {
+      reportServerError(error, { route: "/api/tribes/[tribe_id]/posts/[post_id]/pin", method: "POST" });
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/posts/[post_id]/pin", method: "POST" });
     return NextResponse.json(
       { error: "Failed to toggle post pin" },
       { status: 500 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
 import { createTribe, getMyTribeSummaries } from "@/lib/services/tribe";
 import { createTribeSchema, validateApiRequest } from "@/lib/validations/tribe";
+import { reportServerError } from "@/lib/clients/sentry";
 
 export async function GET() {
   try {
@@ -17,6 +18,7 @@ export async function GET() {
     return NextResponse.json(userTribes);
   } catch (error) {
     console.error("Error fetching user tribes:", error);
+    reportServerError(error, { route: "/api/tribes", method: "GET" });
     return NextResponse.json(
       { error: "Failed to fetch user tribes" },
       { status: 500 }
@@ -67,6 +69,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(newTribe, { status: 201 });
   } catch (error) {
     console.error("Error creating tribe:", error);
+    reportServerError(error, { route: "/api/tribes", method: "POST" });
     return NextResponse.json(
       { error: "Failed to create tribe" },
       { status: 500 }

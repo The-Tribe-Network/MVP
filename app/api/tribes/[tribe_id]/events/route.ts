@@ -4,6 +4,7 @@ import { createEvent, getTribeEvents } from "@/lib/services/event";
 import { getMemberWithPermissions } from "@/lib/services/permissions";
 import { checkPermission } from "@/lib/services/role-permissions";
 import { createEventWithPollSchema } from "@/lib/validations/event";
+import { reportServerError } from "@/lib/clients/sentry";
 
 // GET /api/tribes/[tribe_id]/events
 export async function GET(
@@ -41,6 +42,7 @@ export async function GET(
     return NextResponse.json(events);
   } catch (error) {
     console.error("Error fetching events:", error);
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/events", method: "GET" });
     return NextResponse.json(
       { error: "Failed to fetch events" },
       { status: 500 }
@@ -105,6 +107,7 @@ export async function POST(
     return NextResponse.json(newEvent, { status: 201 });
   } catch (error) {
     console.error("Error creating event:", error);
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/events", method: "POST" });
     return NextResponse.json(
       { error: "Failed to create event" },
       { status: 500 }

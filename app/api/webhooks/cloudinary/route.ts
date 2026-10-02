@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cloudinary } from "@/lib/clients/cloudinary";
 import { confirmFromUploadNotification } from "@/lib/services/media-upload";
+import { reportServerError } from "@/lib/clients/sentry";
 
 /** Notifications older than this are refused (Cloudinary's own default window is 2 hours). */
 const SIGNATURE_VALID_FOR_SECONDS = 2 * 60 * 60;
@@ -51,6 +52,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: true }, { status: 200 });
   } catch (error) {
     console.error("cloudinary webhook: confirm failed", error);
+    reportServerError(error, { route: "/api/webhooks/cloudinary", method: "POST" });
     return NextResponse.json({ error: "Failed" }, { status: 500 });
   }
 }

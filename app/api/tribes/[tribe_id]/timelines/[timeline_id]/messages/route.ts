@@ -9,7 +9,7 @@ type Ctx = RouteContext<"/api/tribes/[tribe_id]/timelines/[timeline_id]/messages
 
 // GET …/messages?before=&after=&limit=: history newest first; `after` = catch-up, oldest first (TRI-315/316)
 export async function GET(request: NextRequest, ctx: Ctx) {
-  return timelineRoute("fetching messages", async (userId) => {
+  return timelineRoute("fetching messages", { route: "/api/tribes/[tribe_id]/timelines/[timeline_id]/messages", method: "GET" }, async (userId) => {
     const params = parse(tribeTimelineParamsSchema, await ctx.params);
     if (!params.ok) return params.response;
     const search = request.nextUrl.searchParams;
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest, ctx: Ctx) {
 
 // POST …/messages: send (text, photos, reply, mentions); the link preview is unfurled after the response
 export async function POST(request: NextRequest, ctx: Ctx) {
-  return timelineRoute("sending a message", async (userId) => {
+  return timelineRoute("sending a message", { route: "/api/tribes/[tribe_id]/timelines/[timeline_id]/messages", method: "POST" }, async (userId) => {
     const params = parse(tribeTimelineParamsSchema, await ctx.params);
     if (!params.ok) return params.response;
     const body = parse(sendMessageSchema, await jsonBody(request));

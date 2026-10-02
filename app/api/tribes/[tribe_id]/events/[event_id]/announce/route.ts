@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { guardEventRoute, validationError } from "@/lib/services/event-routes";
 import { announceToAttendees } from "@/lib/services/event-settings";
 import { announceSchema } from "@/lib/validations/event-settings";
+import { reportServerError } from "@/lib/clients/sentry";
 
 type Params = { params: Promise<{ tribe_id: string; event_id: string }> };
 
@@ -21,6 +22,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     return NextResponse.json({ recipients });
   } catch (error) {
     console.error("Error announcing to attendees:", error);
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/events/[event_id]/announce", method: "POST" });
     return NextResponse.json({ error: "Failed to send the announcement" }, { status: 500 });
   }
 }

@@ -4,6 +4,7 @@ import { waitlist } from "@/lib/database/schemas/waitlist";
 import { waitlistSchema } from "@/lib/validations/waitlist";
 import { sendWaitlistEmail } from "@/lib/services/email";
 import { eq } from "drizzle-orm";
+import { reportServerError } from "@/lib/clients/sentry";
 
 export async function POST(request: NextRequest) {
   try {
@@ -53,6 +54,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Waitlist signup error:", error);
+    reportServerError(error, { route: "/api/waitlist", method: "POST" });
     return NextResponse.json(
       { error: "Something went wrong. Please try again." },
       { status: 500 }

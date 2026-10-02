@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerUser } from '@/lib/services/auth';
 import { deleteMedia, getMediaById } from '@/lib/services/media';
+import { reportServerError } from '@/lib/clients/sentry';
 
 export async function DELETE(
   request: NextRequest,
@@ -35,6 +36,7 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting media:', error);
+    reportServerError(error, { route: "/api/media/[media_id]", method: "DELETE" });
     return NextResponse.json(
       { error: 'Failed to delete media' },
       { status: 500 }

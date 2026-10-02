@@ -7,6 +7,7 @@ import { db } from "@/lib/database/client";
 import { tribeSettings } from "@/lib/database/schemas";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
+import { reportServerError } from "@/lib/clients/sentry";
 
 // A malformed id is a bad request, not a database error (TRI-247).
 const tribeIdSchema = z.string().uuid();
@@ -56,6 +57,7 @@ export async function GET(
     });
   } catch (error) {
     console.error("Error fetching tribe settings:", error);
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/settings", method: "GET" });
     return NextResponse.json(
       { error: "Failed to fetch tribe settings" },
       { status: 500 }
@@ -136,6 +138,7 @@ export async function PATCH(
     });
   } catch (error) {
     console.error("Error updating feature toggles:", error);
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/settings", method: "PATCH" });
     return NextResponse.json(
       { error: "Failed to update feature toggles" },
       { status: 500 }

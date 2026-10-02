@@ -5,6 +5,7 @@ import { getMemberWithPermissions } from '@/lib/services/permissions';
 import { checkPermission } from '@/lib/services/role-permissions';
 import { validateApiRequest } from '@/lib/validations/tribe-settings';
 import { updateTimelineSettingsSchema } from '@/lib/validations/tribe-settings';
+import { reportServerError } from '@/lib/clients/sentry';
 
 type RouteContext = { params: Promise<{ tribe_id: string }> };
 
@@ -31,6 +32,7 @@ export async function GET(request: NextRequest, ctx: RouteContext) {
     if (error instanceof Error && error.message.includes('permission')) {
       return NextResponse.json({ error: error.message }, { status: 403 });
     }
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/settings/timeline", method: "GET" });
     return NextResponse.json(
       { error: 'Failed to fetch timeline settings' },
       { status: 500 }
@@ -85,6 +87,7 @@ export async function PATCH(request: NextRequest, ctx: RouteContext) {
     if (error instanceof Error && error.message.includes('permission')) {
       return NextResponse.json({ error: error.message }, { status: 403 });
     }
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/settings/timeline", method: "PATCH" });
     return NextResponse.json(
       { error: 'Failed to update timeline settings' },
       { status: 500 }

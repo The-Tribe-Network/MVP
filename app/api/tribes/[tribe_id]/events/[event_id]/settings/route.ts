@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { guardEventRoute, validationError } from "@/lib/services/event-routes";
 import { getEventSettingsBundle, updateEventSettings } from "@/lib/services/event-settings";
 import { updateEventSettingsSchema } from "@/lib/validations/event-settings";
+import { reportServerError } from "@/lib/clients/sentry";
 
 type Params = { params: Promise<{ tribe_id: string; event_id: string }> };
 
@@ -17,6 +18,7 @@ export async function GET(_request: NextRequest, { params }: Params) {
     return NextResponse.json(await getEventSettingsBundle(event, member, user.id));
   } catch (error) {
     console.error("Error fetching event settings:", error);
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/events/[event_id]/settings", method: "GET" });
     return NextResponse.json({ error: "Failed to fetch event settings" }, { status: 500 });
   }
 }
@@ -36,6 +38,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     return NextResponse.json(await getEventSettingsBundle(event, member, user.id));
   } catch (error) {
     console.error("Error updating event settings:", error);
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/events/[event_id]/settings", method: "PATCH" });
     return NextResponse.json({ error: "Failed to update event settings" }, { status: 500 });
   }
 }

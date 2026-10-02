@@ -7,6 +7,7 @@ import { validateImageFile } from '@/lib/utils/image';
 import { checkTribeMembership } from '@/lib/services/permissions';
 import { multipartFileLimit, rejectOversizedBody } from '@/lib/services/multipart-limits';
 import { AlbumForbiddenError, InvalidAlbumError, getAlbumAccessContext } from '@/lib/services/album';
+import { reportServerError } from '@/lib/clients/sentry';
 
 /**
  * GET /api/tribes/[tribe_id]/media
@@ -65,6 +66,7 @@ export async function GET(
       return NextResponse.json({ error: error.message, code: 'INVALID_CURSOR' }, { status: 400 });
     }
     console.error('Error fetching media:', error);
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/media", method: "GET" });
     return NextResponse.json(
       { error: 'Failed to fetch media' },
       { status: 500 }
@@ -162,6 +164,7 @@ export async function POST(
       }
     }
 
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/media", method: "POST" });
     return NextResponse.json(
       { error: 'Failed to upload tribe media' },
       { status: 500 }

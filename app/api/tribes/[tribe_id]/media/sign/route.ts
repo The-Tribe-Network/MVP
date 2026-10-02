@@ -5,6 +5,7 @@ import { MediaUploadError, signMediaUploads } from "@/lib/services/media-upload"
 import { InvalidAlbumError } from "@/lib/services/album";
 import { signMediaUploadSchema } from "@/lib/validations/media-upload";
 import { validateApiRequest } from "@/lib/validations/tribe";
+import { reportServerError } from "@/lib/clients/sentry";
 
 /**
  * POST /api/tribes/[tribe_id]/media/sign
@@ -46,6 +47,7 @@ export async function POST(request: NextRequest, ctx: RouteContext<"/api/tribes/
       return NextResponse.json({ error: error.message, code: error.code }, { status: 400 });
     }
     console.error("Error signing media upload:", error);
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/media/sign", method: "POST" });
     return NextResponse.json({ error: "Failed to sign media upload" }, { status: 500 });
   }
 }

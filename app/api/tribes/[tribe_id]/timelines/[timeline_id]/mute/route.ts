@@ -8,7 +8,7 @@ const muteSchema = z.object({ muted: z.boolean() });
 
 // PUT /api/tribes/:tribe_id/timelines/:timeline_id/mute { muted }: no @mention / reply notifications from it (TRI-317)
 export async function PUT(request: NextRequest, ctx: RouteContext<"/api/tribes/[tribe_id]/timelines/[timeline_id]/mute">) {
-  return timelineRoute("muting a timeline", async (userId) => {
+  return timelineRoute("muting a timeline", { route: "/api/tribes/[tribe_id]/timelines/[timeline_id]/mute", method: "PUT" }, async (userId) => {
     const params = parse(tribeTimelineParamsSchema, await ctx.params);
     if (!params.ok) return params.response;
     const body = parse(muteSchema, await jsonBody(request));

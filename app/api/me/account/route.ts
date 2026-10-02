@@ -3,6 +3,7 @@ import { getServerUser } from "@/lib/services/auth";
 import { deleteAccount } from "@/lib/services/account";
 import { deleteAccountSchema } from "@/lib/validations/account";
 import { validateApiRequest } from "@/lib/validations/profile";
+import { reportServerError } from "@/lib/clients/sentry";
 
 /**
  * DELETE /api/me/account
@@ -45,6 +46,7 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error deleting account:", error);
+    reportServerError(error, { route: "/api/me/account", method: "DELETE" });
     return NextResponse.json({ error: "Failed to delete account" }, { status: 500 });
   }
 }

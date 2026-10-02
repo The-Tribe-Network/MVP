@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
 import { getMemberProfile } from "@/lib/services/profile";
 import { memberProfileQuerySchema, validateApiRequest } from "@/lib/validations/profile";
+import { reportServerError } from "@/lib/clients/sentry";
 
 /**
  * GET /api/users/[user_id]/profile?tribeId
@@ -31,6 +32,7 @@ export async function GET(request: NextRequest, ctx: RouteContext<"/api/users/[u
     return NextResponse.json(profile);
   } catch (error) {
     console.error("Error fetching member profile:", error);
+    reportServerError(error, { route: "/api/users/[user_id]/profile", method: "GET" });
     return NextResponse.json({ error: "Failed to fetch member profile" }, { status: 500 });
   }
 }

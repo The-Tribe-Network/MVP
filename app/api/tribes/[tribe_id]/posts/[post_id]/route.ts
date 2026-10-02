@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
 import { getPostByIdWithMetadata, updatePost, deletePost, verifyPostAccessAndMembership } from "@/lib/services/post";
 import { updatePostSchema, tribePostIdParamSchema, validateApiRequest } from "@/lib/validations/post";
+import { reportServerError } from "@/lib/clients/sentry";
 
 /**
  * OPTIMIZED: GET reduced from 2 sequential queries to 2 parallel queries
@@ -54,6 +55,7 @@ export async function GET(
     return NextResponse.json(postData);
   } catch (error) {
     console.error("Error fetching post:", error);
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/posts/[post_id]", method: "GET" });
     return NextResponse.json(
       { error: "Failed to fetch post" },
       { status: 500 }
@@ -111,8 +113,10 @@ export async function PATCH(
         const status = error.message.includes("not found") ? 404 : 403;
         return NextResponse.json({ error: error.message }, { status });
       }
+      reportServerError(error, { route: "/api/tribes/[tribe_id]/posts/[post_id]", method: "PATCH" });
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/posts/[post_id]", method: "PATCH" });
     return NextResponse.json(
       { error: "Failed to update post" },
       { status: 500 }
@@ -156,8 +160,10 @@ export async function DELETE(
         const status = error.message.includes("not found") ? 404 : 403;
         return NextResponse.json({ error: error.message }, { status });
       }
+      reportServerError(error, { route: "/api/tribes/[tribe_id]/posts/[post_id]", method: "DELETE" });
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/posts/[post_id]", method: "DELETE" });
     return NextResponse.json(
       { error: "Failed to delete post" },
       { status: 500 }

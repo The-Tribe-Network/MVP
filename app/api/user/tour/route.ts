@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
 import { isTourCompleted, markTourAsCompleted } from "@/lib/services/user";
+import { reportServerError } from "@/lib/clients/sentry";
 
 /**
  * GET /api/user/tour
@@ -18,6 +19,7 @@ export async function GET() {
     return NextResponse.json({ tourCompleted });
   } catch (error) {
     console.error("Error fetching tour status:", error);
+    reportServerError(error, { route: "/api/user/tour", method: "GET" });
     return NextResponse.json(
       { error: "Failed to fetch tour status" },
       { status: 500 }
@@ -41,6 +43,7 @@ export async function POST() {
     return NextResponse.json(updatedUser);
   } catch (error) {
     console.error("Error completing tour:", error);
+    reportServerError(error, { route: "/api/user/tour", method: "POST" });
     return NextResponse.json(
       { error: "Failed to complete tour" },
       { status: 500 }

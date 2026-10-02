@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
 import { changePassword } from "@/lib/services/security";
 import { changePasswordSchema, validateApiRequest } from "@/lib/validations/security";
+import { reportServerError } from "@/lib/clients/sentry";
 
 /**
  * POST /api/user/security/password
@@ -42,6 +43,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, message: "Password changed successfully" });
   } catch (error) {
     console.error("Error changing password:", error);
+    reportServerError(error, { route: "/api/user/security/password", method: "POST" });
     return NextResponse.json(
       { error: "Failed to change password" },
       { status: 500 }

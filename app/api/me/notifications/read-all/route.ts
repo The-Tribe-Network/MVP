@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
 import { markAllNotificationsRead } from "@/lib/services/notification-feed";
 import { markAllReadBodySchema } from "@/lib/validations/notifications";
+import { reportServerError } from "@/lib/clients/sentry";
 
 /**
  * POST /api/me/notifications/read-all { tribeId? }
@@ -30,6 +31,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error marking notifications read:", error);
+    reportServerError(error, { route: "/api/me/notifications/read-all", method: "POST" });
     return NextResponse.json({ error: "Failed to mark notifications read" }, { status: 500 });
   }
 }

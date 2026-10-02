@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
 import { markCatchUpItemRead } from "@/lib/services/tribe";
 import { catchUpReadSchema, validateApiRequest } from "@/lib/validations/agenda";
+import { reportServerError } from "@/lib/clients/sentry";
 
 /**
  * POST /api/me/catch-up/read  { itemId, tribeId }
@@ -31,6 +32,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error marking a catch-up item read:", error);
+    reportServerError(error, { route: "/api/me/catch-up/read", method: "POST" });
     return NextResponse.json({ error: "Failed to mark the item read" }, { status: 500 });
   }
 }

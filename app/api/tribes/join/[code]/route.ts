@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
 import { joinByInviteCode } from "@/lib/services/invite-link";
+import { reportServerError } from "@/lib/clients/sentry";
 
 /**
  * POST /api/tribes/join/[code]
@@ -43,6 +44,7 @@ export async function POST(
     }
   } catch (error) {
     console.error("Error joining by invite code:", error);
+    reportServerError(error, { route: "/api/tribes/join/[code]", method: "POST" });
     return NextResponse.json({ error: "Failed to join tribe" }, { status: 500 });
   }
 }

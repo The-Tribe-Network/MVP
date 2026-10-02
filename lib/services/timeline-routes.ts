@@ -4,13 +4,16 @@ import { getServerUser } from "@/lib/services/auth";
 import { TimelineError } from "@/lib/services/timeline";
 import { ChatError } from "@/lib/services/chat";
 import { validateApiRequest } from "@/lib/validations/post";
+import { reportServerError } from "@/lib/clients/sentry";
 
 /**
  * The shared shell of the timeline and chat routes: 401 without a session, 400 on bad params or body, and a
- * TimelineError or ChatError as `{ error, code }` with its status.
+ * TimelineError or ChatError as `{ error, code }` with its status. Anything else is a 500, reported to Sentry
+ * under `where` (the route pattern and method).
  */
 export async function timelineRoute(
   label: string,
+  where: { route: string; method: string },
   handler: (userId: string) => Promise<NextResponse>,
 ): Promise<NextResponse> {
   try {
@@ -24,6 +27,7 @@ export async function timelineRoute(
       return NextResponse.json({ error: error.message, code: error.code }, { status: error.status });
     }
     console.error(`Error ${label}:`, error);
+    reportServerError(error, where);
     return NextResponse.json({ error: `Failed ${label}` }, { status: 500 });
   }
 }

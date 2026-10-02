@@ -3,6 +3,7 @@ import { getServerUser } from '@/lib/services/auth';
 import { getMemberWithPermissions } from '@/lib/services/permissions';
 import { resolveEffectivePermissions } from '@/lib/services/member-permissions';
 import { tribeIdParamSchema, validateApiRequest } from '@/lib/validations/tribe';
+import { reportServerError } from '@/lib/clients/sentry';
 
 /**
  * GET /api/tribes/[tribe_id]/members/me
@@ -47,6 +48,7 @@ export async function GET(
     return NextResponse.json({ ...memberData, effectivePermissions });
   } catch (error) {
     console.error('Error fetching member data:', error);
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/members/me", method: "GET" });
     return NextResponse.json(
       { error: 'Failed to fetch member data' },
       { status: 500 }

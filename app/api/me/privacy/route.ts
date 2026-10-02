@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
 import { getPrivacyPreferences, updatePrivacyPreferences } from "@/lib/services/profile";
 import { updatePrivacySchema, validateApiRequest } from "@/lib/validations/profile";
+import { reportServerError } from "@/lib/clients/sentry";
 
 /**
  * GET /api/me/privacy
@@ -16,6 +17,7 @@ export async function GET() {
     return NextResponse.json(await getPrivacyPreferences(user.id));
   } catch (error) {
     console.error("Error fetching privacy preferences:", error);
+    reportServerError(error, { route: "/api/me/privacy", method: "GET" });
     return NextResponse.json({ error: "Failed to fetch privacy preferences" }, { status: 500 });
   }
 }
@@ -40,6 +42,7 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json(await updatePrivacyPreferences(user.id, validation.data));
   } catch (error) {
     console.error("Error updating privacy preferences:", error);
+    reportServerError(error, { route: "/api/me/privacy", method: "PATCH" });
     return NextResponse.json({ error: "Failed to update privacy preferences" }, { status: 500 });
   }
 }

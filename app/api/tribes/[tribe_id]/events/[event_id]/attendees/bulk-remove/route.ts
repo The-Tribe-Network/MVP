@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
 import { removeMultipleEventAttendees, getEventById } from "@/lib/services/event";
 import { getMemberWithPermissions } from "@/lib/services/permissions";
+import { reportServerError } from "@/lib/clients/sentry";
 
 // POST /api/tribes/[tribe_id]/events/[event_id]/attendees/bulk-remove
 export async function POST(
@@ -64,6 +65,7 @@ export async function POST(
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error removing attendees:", error);
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/events/[event_id]/attendees/bulk-remove", method: "POST" });
     return NextResponse.json(
       { error: "Failed to remove attendees" },
       { status: 500 }

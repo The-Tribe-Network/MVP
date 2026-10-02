@@ -3,6 +3,7 @@ import { getServerUser } from '@/lib/services/auth';
 import { getMediaByTribe } from '@/lib/services/media';
 import { checkTribeMembership } from '@/lib/services/permissions';
 import { getAlbumAccessContext } from '@/lib/services/album';
+import { reportServerError } from '@/lib/clients/sentry';
 
 /**
  * GET /api/tribes/[tribe_id]/media/public
@@ -42,6 +43,7 @@ export async function GET(
     return NextResponse.json({ media }, { status: 200 });
   } catch (error) {
     console.error('Error fetching public media:', error);
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/media/public", method: "GET" });
     return NextResponse.json(
       { error: 'Failed to fetch media' },
       { status: 500 }

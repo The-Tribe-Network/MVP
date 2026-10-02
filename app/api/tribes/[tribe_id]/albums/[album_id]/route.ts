@@ -3,6 +3,7 @@ import { getServerUser } from '@/lib/services/auth';
 import { getAlbumById, updateAlbum, deleteAlbum } from '@/lib/services/album';
 import { checkTribeMembership } from '@/lib/services/permissions';
 import { updateAlbumSchema, validateApiRequest } from '@/lib/validations/album';
+import { reportServerError } from '@/lib/clients/sentry';
 
 /**
  * GET /api/tribes/[tribe_id]/albums/[album_id]
@@ -49,6 +50,7 @@ export async function GET(
     return NextResponse.json({ album }, { status: 200 });
   } catch (error) {
     console.error('Error fetching album:', error);
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/albums/[album_id]", method: "GET" });
     return NextResponse.json(
       { error: 'Failed to fetch album' },
       { status: 500 }
@@ -110,6 +112,7 @@ export async function PUT(
       }
     }
 
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/albums/[album_id]", method: "PUT" });
     return NextResponse.json(
       { error: 'Failed to update album' },
       { status: 500 }
@@ -161,6 +164,7 @@ export async function DELETE(
       }
     }
 
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/albums/[album_id]", method: "DELETE" });
     return NextResponse.json(
       { error: 'Failed to delete album' },
       { status: 500 }

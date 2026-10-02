@@ -5,6 +5,7 @@ import { validateImageFile } from '@/lib/utils/image';
 import { db } from '@/lib/database/client';
 import { user as userSchema } from '@/lib/database/schemas/auth';
 import { eq } from 'drizzle-orm';
+import { reportServerError } from '@/lib/clients/sentry';
 
 export async function POST(request: NextRequest) {
   try {
@@ -57,6 +58,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error uploading avatar:', error);
+    reportServerError(error, { route: "/api/upload/avatar", method: "POST" });
     return NextResponse.json(
       { error: 'Failed to upload avatar' },
       { status: 500 }

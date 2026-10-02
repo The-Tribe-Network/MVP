@@ -3,6 +3,7 @@ import { getServerUser } from '@/lib/services/auth';
 import { createAlbumWithMedia, getAlbumsByTribe } from '@/lib/services/album';
 import { checkTribeMembership } from '@/lib/services/permissions';
 import { createAlbumSchema, validateApiRequest } from "@/lib/validations/album";
+import { reportServerError } from "@/lib/clients/sentry";
 
 /**
  * GET /api/tribes/[tribe_id]/albums
@@ -40,6 +41,7 @@ export async function GET(
     return NextResponse.json({ albums }, { status: 200 });
   } catch (error) {
     console.error('Error fetching albums:', error);
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/albums", method: "GET" });
     return NextResponse.json(
       { error: 'Failed to fetch albums' },
       { status: 500 }
@@ -101,6 +103,7 @@ export async function POST(
       }
     }
 
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/albums", method: "POST" });
     return NextResponse.json(
       { error: 'Failed to create album' },
       { status: 500 }

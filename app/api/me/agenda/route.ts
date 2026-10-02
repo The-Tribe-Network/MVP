@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
 import { getAgenda } from "@/lib/services/agenda";
 import { agendaQuerySchema, validateApiRequest } from "@/lib/validations/agenda";
+import { reportServerError } from "@/lib/clients/sentry";
 
 /**
  * GET /api/me/agenda?from&to&tribeId&limit
@@ -32,6 +33,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ items });
   } catch (error) {
     console.error("Error fetching agenda:", error);
+    reportServerError(error, { route: "/api/me/agenda", method: "GET" });
     return NextResponse.json({ error: "Failed to fetch agenda" }, { status: 500 });
   }
 }

@@ -7,6 +7,7 @@ import {
   validateApiRequest,
 } from "@/lib/validations/comment";
 import { tribePostIdParamSchema as postTribePostIdParamSchema } from "@/lib/validations/post";
+import { reportServerError } from "@/lib/clients/sentry";
 
 /**
  * OPTIMIZED: GET reduced from 2 DB calls to 1 DB call
@@ -57,6 +58,7 @@ export async function GET(
     return NextResponse.json(comments);
   } catch (error) {
     console.error("Error fetching comments:", error);
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/posts/[post_id]/comments", method: "GET" });
     return NextResponse.json(
       { error: "Failed to fetch comments" },
       { status: 500 }
@@ -128,8 +130,10 @@ export async function POST(
       if (error.message.includes("permission")) {
         return NextResponse.json({ error: error.message }, { status: 403 });
       }
+      reportServerError(error, { route: "/api/tribes/[tribe_id]/posts/[post_id]/comments", method: "POST" });
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/posts/[post_id]/comments", method: "POST" });
     return NextResponse.json(
       { error: "Failed to create comment" },
       { status: 500 }

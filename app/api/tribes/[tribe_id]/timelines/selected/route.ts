@@ -6,7 +6,7 @@ import { tribeIdParamSchema } from "@/lib/validations/post";
 
 // PUT /api/tribes/:tribe_id/timelines/selected: remember the member's timeline; null = Global (TRI-314)
 export async function PUT(request: NextRequest, ctx: RouteContext<"/api/tribes/[tribe_id]/timelines/selected">) {
-  return timelineRoute("selecting a timeline", async (userId) => {
+  return timelineRoute("selecting a timeline", { route: "/api/tribes/[tribe_id]/timelines/selected", method: "PUT" }, async (userId) => {
     const params = parse(tribeIdParamSchema, await ctx.params);
     if (!params.ok) return params.response;
     const body = parse(selectTimelineSchema, await jsonBody(request));

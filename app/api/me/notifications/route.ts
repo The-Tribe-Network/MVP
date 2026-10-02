@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
 import { InvalidCursorError, listNotifications } from "@/lib/services/notification-feed";
 import { listNotificationsQuerySchema } from "@/lib/validations/notifications";
+import { reportServerError } from "@/lib/clients/sentry";
 
 /**
  * GET /api/me/notifications?filter&tribeId&cursor&limit
@@ -27,6 +28,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     if (error instanceof InvalidCursorError) return NextResponse.json({ error: error.message }, { status: 400 });
     console.error("Error listing notifications:", error);
+    reportServerError(error, { route: "/api/me/notifications", method: "GET" });
     return NextResponse.json({ error: "Failed to list notifications" }, { status: 500 });
   }
 }

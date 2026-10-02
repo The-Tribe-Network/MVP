@@ -4,6 +4,7 @@ import { guardEventRoute, validationError } from "@/lib/services/event-routes";
 import { addCoHost, CoHostError, getEventCoHosts } from "@/lib/services/event-settings";
 import { getMemberWithPermissions } from "@/lib/services/permissions";
 import { addCoHostSchema } from "@/lib/validations/event-settings";
+import { reportServerError } from "@/lib/clients/sentry";
 
 type Params = { params: Promise<{ tribe_id: string; event_id: string }> };
 
@@ -16,6 +17,7 @@ export async function GET(_request: NextRequest, { params }: Params) {
     return NextResponse.json(await getEventCoHosts(event_id));
   } catch (error) {
     console.error("Error fetching co-hosts:", error);
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/events/[event_id]/co-hosts", method: "GET" });
     return NextResponse.json({ error: "Failed to fetch co-hosts" }, { status: 500 });
   }
 }
@@ -45,6 +47,7 @@ export async function POST(request: NextRequest, { params }: Params) {
       return NextResponse.json({ error: message, code: error.code }, { status: 409 });
     }
     console.error("Error adding co-host:", error);
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/events/[event_id]/co-hosts", method: "POST" });
     return NextResponse.json({ error: "Failed to add co-host" }, { status: 500 });
   }
 }

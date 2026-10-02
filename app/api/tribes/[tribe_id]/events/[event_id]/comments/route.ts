@@ -8,6 +8,7 @@ import {
   validateApiRequest,
 } from "@/lib/validations/comment";
 import { z } from "zod";
+import { reportServerError } from "@/lib/clients/sentry";
 
 // Validation schema for event comment route params
 const tribeEventIdParamSchema = z.object({
@@ -75,6 +76,7 @@ export async function GET(
     return NextResponse.json(comments);
   } catch (error) {
     console.error("Error fetching event comments:", error);
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/events/[event_id]/comments", method: "GET" });
     return NextResponse.json(
       { error: "Failed to fetch comments" },
       { status: 500 }
@@ -161,8 +163,10 @@ export async function POST(
       if (error.message.includes("permission")) {
         return NextResponse.json({ error: error.message }, { status: 403 });
       }
+      reportServerError(error, { route: "/api/tribes/[tribe_id]/events/[event_id]/comments", method: "POST" });
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/events/[event_id]/comments", method: "POST" });
     return NextResponse.json(
       { error: "Failed to create comment" },
       { status: 500 }

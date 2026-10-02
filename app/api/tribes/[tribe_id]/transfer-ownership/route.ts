@@ -6,6 +6,7 @@ import {
   transferOwnershipSchema,
   validateApiRequest,
 } from "@/lib/validations/tribe";
+import { reportServerError } from "@/lib/clients/sentry";
 
 /**
  * POST /api/tribes/[tribe_id]/transfer-ownership
@@ -65,6 +66,7 @@ export async function POST(
       }
     }
 
+    reportServerError(error, { route: "/api/tribes/[tribe_id]/transfer-ownership", method: "POST" });
     return NextResponse.json(
       { error: "Failed to transfer ownership" },
       { status: 500 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
 import { listBlocks } from "@/lib/services/blocks";
 import { listBlocksQuerySchema } from "@/lib/validations/reports";
+import { reportServerError } from "@/lib/clients/sentry";
 
 /**
  * GET /api/me/blocks?limit=&offset= (TRI-238, USET-06 blocked list)
@@ -29,6 +30,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(await listBlocks(user.id, parsed.data));
   } catch (error) {
     console.error("Error listing blocks:", error);
+    reportServerError(error, { route: "/api/me/blocks", method: "GET" });
     return NextResponse.json({ error: "Failed to list blocked users" }, { status: 500 });
   }
 }

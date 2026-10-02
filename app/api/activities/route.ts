@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
 import { getUserTribesActivities } from "@/lib/services/activity";
 import { getUserTribes } from "@/lib/services/tribe";
+import { reportServerError } from "@/lib/clients/sentry";
 
 export async function GET(request: NextRequest) {
   try {
@@ -30,6 +31,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(activities);
   } catch (error) {
     console.error("Error fetching user activities:", error);
+    reportServerError(error, { route: "/api/activities", method: "GET" });
     return NextResponse.json(
       { error: "Failed to fetch activities" },
       { status: 500 }

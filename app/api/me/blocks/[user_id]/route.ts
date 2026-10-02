@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
 import { blockUser, unblockUser } from "@/lib/services/blocks";
+import { reportServerError } from "@/lib/clients/sentry";
 
 const ERRORS = {
   INVALID_USER_ID: { status: 400, error: "Invalid user id" },
@@ -31,6 +32,7 @@ export async function POST(_request: NextRequest, ctx: RouteContext<"/api/me/blo
     return NextResponse.json({ block: result.block, created: result.created }, { status: result.created ? 201 : 200 });
   } catch (error) {
     console.error("Error blocking user:", error);
+    reportServerError(error, { route: "/api/me/blocks/[user_id]", method: "POST" });
     return NextResponse.json({ error: "Failed to block user" }, { status: 500 });
   }
 }
@@ -56,6 +58,7 @@ export async function DELETE(_request: NextRequest, ctx: RouteContext<"/api/me/b
     return NextResponse.json({ success: true, removed: result.removed });
   } catch (error) {
     console.error("Error unblocking user:", error);
+    reportServerError(error, { route: "/api/me/blocks/[user_id]", method: "DELETE" });
     return NextResponse.json({ error: "Failed to unblock user" }, { status: 500 });
   }
 }

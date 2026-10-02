@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
 import { listNotificationGroups } from "@/lib/services/notification-feed";
 import { listNotificationGroupsQuerySchema } from "@/lib/validations/notifications";
+import { reportServerError } from "@/lib/clients/sentry";
 
 /**
  * GET /api/me/notifications/groups?filter&perGroup
@@ -26,6 +27,7 @@ export async function GET(request: NextRequest) {
     );
   } catch (error) {
     console.error("Error listing notification groups:", error);
+    reportServerError(error, { route: "/api/me/notifications/groups", method: "GET" });
     return NextResponse.json({ error: "Failed to list notifications" }, { status: 500 });
   }
 }
