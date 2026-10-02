@@ -27,6 +27,7 @@ import {
   insertAlbumMediaRows,
   InvalidAlbumError,
   isAlbumVisibleTo,
+  visibleMediaCondition,
   type AlbumAccessContext,
 } from "./album";
 import { getTribeSettings } from "./tribe-settings";
@@ -153,21 +154,44 @@ export async function createPost(
     }
   }
 
-  // Attached media must be the caller's own upload to this tribe and not already on a post
-  if (mediaIds.length > 0) {
+  // Fresh photos must be the caller's own upload to this tribe and not already on a post; they move onto
+  // the new post (media.post_id, so deleting the post deletes them). Library photos (TRI-419) may be any
+  // image of the tribe the caller can see (TRI-273) and only gain a post_media row, so they stay where
+  // they are and survive the new post's deletion.
+  const library = new Set(input.libraryMediaIds ?? []);
+  const freshIds = mediaIds.filter((id) => !library.has(id));
+  const libraryIds = mediaIds.filter((id) => library.has(id));
+  if (freshIds.length > 0) {
     const rows = await db
       .select({ id: media.id })
       .from(media)
       .where(
         and(
-          inArray(media.id, mediaIds),
+          inArray(media.id, freshIds),
           eq(media.tribeId, tribeId),
           eq(media.uploadedBy, userId),
           eq(media.fileType, "image"),
           isNull(media.postId),
         ),
       );
-    if (rows.length !== mediaIds.length) {
+    if (rows.length !== freshIds.length) {
+      throw new PostInputError("INVALID_MEDIA", "One or more photos cannot be attached to this post");
+    }
+  }
+  if (libraryIds.length > 0) {
+    const access = await getAlbumAccessContext(tribeId, userId);
+    const rows = await db
+      .select({ id: media.id })
+      .from(media)
+      .where(
+        and(
+          inArray(media.id, libraryIds),
+          eq(media.tribeId, tribeId),
+          eq(media.fileType, "image"),
+          visibleMediaCondition(access),
+        ),
+      );
+    if (access.role === null || rows.length !== libraryIds.length) {
       throw new PostInputError("INVALID_MEDIA", "One or more photos cannot be attached to this post");
     }
   }
@@ -214,8 +238,8 @@ export async function createPost(
       throw new InvalidAlbumError();
     }
   }
-  if (input.addToAlbum === true && mediaIds.length > 0) {
-    // The photos are filed into `albumId`: the one add rule (TRI-274, AlbumForbiddenError → 403 ALBUM_FORBIDDEN).
+  if (input.addToAlbum === true && freshIds.length > 0) {
+    // The fresh photos are filed into `albumId`: the one add rule (TRI-274, AlbumForbiddenError → 403 ALBUM_FORBIDDEN).
     await assertCanAddToAlbum(albumId, tribeId, userId);
   } else {
     await assertAlbumInTribe(albumId, tribeId);
@@ -274,22 +298,25 @@ export async function createPost(
         mediaIds.map((mediaId, index) => ({ postId: newPost.id, mediaId, displayOrder: index })),
       );
 
-      // media.postId stays in sync for the web app. The isNull guard makes a concurrent attach of
-      // the same photo fail here instead of moving it between posts.
-      const attached = await tx
-        .update(media)
-        .set({ postId: newPost.id })
-        .where(and(inArray(media.id, mediaIds), isNull(media.postId)))
-        .returning({ id: media.id });
-      if (attached.length !== mediaIds.length) {
+      // media.postId stays in sync for the web app, for fresh photos only. The isNull guard makes a
+      // concurrent attach of the same photo fail here instead of moving it between posts.
+      const attached =
+        freshIds.length > 0
+          ? await tx
+              .update(media)
+              .set({ postId: newPost.id })
+              .where(and(inArray(media.id, freshIds), isNull(media.postId)))
+              .returning({ id: media.id })
+          : [];
+      if (attached.length !== freshIds.length) {
         throw new PostInputError("INVALID_MEDIA", "One or more photos cannot be attached to this post");
       }
 
-      if (input.addToAlbum === true) {
+      if (input.addToAlbum === true && freshIds.length > 0) {
         const addedAt = new Date();
         // Skips general-library rows the photos already got at confirm (no duplicate null-album rows, TRI-274).
         await insertAlbumMediaRows(
-          mediaIds.map((mediaId) => ({
+          freshIds.map((mediaId) => ({
             addedAt,
             albumId, // null means the general album
             mediaId,

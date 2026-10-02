@@ -35,6 +35,10 @@ export const inlinePollSchema = z
 // which is what `GET /tribes/{tribeId}/media` lists. With `albumId` they are filed in that album;
 // without one they land in the general library (`album_id` null, `GET /media?albumId=null`).
 // `false` leaves them on the post only. No album picker is needed for the default case.
+//
+// `libraryMediaIds` (TRI-419) marks which of `mediaIds` are photos already in the tribe, picked from its
+// library: any image of the tribe the author can see. They stay where they are (their albums, their
+// original post) and are only shown on the new post; `addToAlbum` does not apply to them.
 export const createPostSchema = z
   .object({
     content: z
@@ -44,6 +48,10 @@ export const createPostSchema = z
     addToAlbum: z.boolean(),
     mediaId: z.string().uuid("Invalid media ID format").optional().nullable(),
     mediaIds: z
+      .array(z.string().uuid("Invalid media ID format"))
+      .max(POST_MAX_PHOTOS, `A post can have at most ${POST_MAX_PHOTOS} photos`)
+      .optional(),
+    libraryMediaIds: z
       .array(z.string().uuid("Invalid media ID format"))
       .max(POST_MAX_PHOTOS, `A post can have at most ${POST_MAX_PHOTOS} photos`)
       .optional(),
@@ -65,6 +73,15 @@ export const createPostSchema = z
         code: z.ZodIssueCode.custom,
         path: ["eventId"],
         message: "A post can carry only one of an event, a poll or an album",
+      });
+    }
+
+    const listed = new Set(data.mediaIds ?? []);
+    if ((data.libraryMediaIds ?? []).some((id) => !listed.has(id))) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["libraryMediaIds"],
+        message: "Library photos must also be listed in mediaIds",
       });
     }
 
