@@ -122,6 +122,7 @@ export { alphaAccess } from "@/lib/database/schemas/alpha-access";
 export {
   waitlist,
   waitlistSurvey,
+  productUpdates,
   surveyRoleEnum,
   surveyPricingEnum,
 } from "@/lib/database/schemas/waitlist";
