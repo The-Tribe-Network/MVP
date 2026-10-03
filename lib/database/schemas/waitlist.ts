@@ -8,6 +8,20 @@ export const waitlist = pgTable("waitlist", {
   userAgent: text("user_agent"), // Browser/device info
   metadata: text("metadata"), // JSON string for future flexibility
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  // Set when someone leaves the waitlist. Added by the landing site (tribe-landing db/migrations/0001, TRI-465).
+  unsubscribedAt: timestamp("unsubscribed_at"),
+});
+
+// Product-updates (newsletter) consent, separate from the waitlist. Written only by the landing site
+// (The-Tribe-Network/tribe-landing, role `landing_writer`); mirrored here so `drizzle-kit push` keeps it (TRI-465).
+export const productUpdates = pgTable("product_updates", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  email: text("email").notNull().unique(),
+  source: text("source").notNull(), // "hero", "cta", "about" or "footer"
+  referrer: text("referrer"),
+  userAgent: text("user_agent"),
+  consentedAt: timestamp("consented_at").defaultNow().notNull(),
+  unsubscribedAt: timestamp("unsubscribed_at"),
 });
 
 // Survey enums - aligned with use cases page categories
