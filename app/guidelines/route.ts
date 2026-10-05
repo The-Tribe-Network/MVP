@@ -1,7 +1,9 @@
-import { documentPage } from "@/lib/landing/document";
-import { GUIDELINES } from "@/lib/legal/guidelines";
+import { NextResponse } from "next/server";
 
-/** GET /guidelines — linked from the app's Help & about (USET-07) and the App Store listing. Public, no sign-in. */
+/**
+ * GET /guidelines: the Community Guidelines now lives on the landing site (TRI-468). Older app builds, the App Store
+ * listing and old emails still link here, so this stays as a permanent redirect.
+ */
 export function GET() {
-  return documentPage(GUIDELINES);
+  return NextResponse.redirect("https://tribehq.io/guidelines", 308);
 }
