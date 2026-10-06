@@ -11,6 +11,14 @@ included**: D3 (2026-09-21) is a full cutover, so tribe-v2 ends up UI-only and e
 
 Last full pass: 2026-09-28 (117 route files, 42 services).
 
+> **Frozen (2026-10-06).** This API is being replaced by **tribe-api** (`The-Tribe-Network/tribe-api`, Linear
+> P-TRI-14), which takes `api.tribehq.io` and then serves one module at a time. Until a module moves, tribe-v2 still
+> serves it, but **only bug fixes go in here, and each one is ported to tribe-api** in the same change or right after.
+> New API features are built in tribe-api (P-TRI-14 milestone "P4 · After cutover"). **The database schema belongs to
+> tribe-api**: its `drizzle/` migrations are the only way the schema changes; never `push-db` or hand-run SQL from
+> here. tribe-api's parity suite compares its responses with this API's, so this file stays the reference until each
+> module is switched.
+
 ## How requests are served
 
 - **Next.js route handlers** on Vercel (Node runtime, region `iad1`), `app/apiroute.ts`, plus three public HTML
