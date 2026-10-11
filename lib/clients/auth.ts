@@ -185,6 +185,12 @@ export const auth = betterAuth({
     database: {
       generateId: false, // Let database generate UUIDs automatically
     },
+    // Behind tribe-api's front door, x-forwarded-for names the proxy, not the client. proxy.ts keeps
+    // x-tribe-client-ip on auth routes only when tribe-api's shared secret vouches for it (TRI-480), so
+    // rate limits and session records use the client's address; without it this falls back as before.
+    ipAddress: {
+      ipAddressHeaders: ["x-tribe-client-ip", "x-forwarded-for"],
+    },
   },
   socialProviders: {
     google: {

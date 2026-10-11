@@ -543,6 +543,12 @@ Uncaught route errors reach Sentry through `onRequestError` (`instrumentation.ts
 and answers 5xx itself must call `reportServerError(error, { route, method })` (`lib/clients/sentry.ts`) next to its
 `console.error`, on the 5xx path only (never for an expected 4xx). `timelineRoute()` does this for its routes.
 
+### Front door (tribe-api)
+- `PROXY_SHARED_SECRET` - Optional, at least 32 characters, the same value as tribe-api's. Behind tribe-api's
+  front door, `x-forwarded-for` names the proxy, so Better-Auth would rate-limit every sign-in as one client.
+  With this set, `proxy.ts` trusts `x-tribe-client-ip` on `/api/auth/*` only when `x-tribe-proxy-secret`
+  matches. Unset: the header is always dropped and `x-forwarded-for` applies (TRI-480).
+
 ### Other
 - `NODE_ENV` - Environment (development/production)
 
