@@ -27,7 +27,7 @@ pnpm run generate-auth    # Generate Better-Auth migrations
 pnpm run migrate-auth     # Run Better-Auth migrations
 
 # Drizzle ORM operations
-pnpm run push-db          # Push schema changes to database
+pnpm run push-db          # DON'T: the schema is owned by tribe-api now (see below)
 pnpm run migrate-avatar   # Run custom avatar migration
 ```
 
@@ -35,7 +35,12 @@ pnpm run migrate-avatar   # Run custom avatar migration
 - The project uses **pnpm** as the package manager
 - Database migrations are handled separately for Better-Auth tables and application tables
 - Always run `generate-auth` and `migrate-auth` after modifying auth configuration
-- Use `push-db` for quick schema updates during development (use with caution in production)
+- **Don't use `push-db` or hand-run SQL migrations.** Since 2026-10-06 the database schema is owned by tribe-api
+  (`The-Tribe-Network/tribe-api`, `drizzle/` + `pnpm db:migrate` there). `lib/database/schemas/*` here is a read-only
+  copy that must match it; a schema change starts in tribe-api and is copied here afterwards. A `push-db` from this
+  repo would undo constraint renames tribe-api made and drift the database.
+- **The API is frozen**: bug fixes only, each ported to tribe-api; new API features go to tribe-api. See
+  `docs/API-SURFACE.md`.
 
 ## Architecture & Code Organization
 
