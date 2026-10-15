@@ -86,9 +86,10 @@ These are the ones to watch, with the indexes added for them:
 - **`after()`** (runs after the response on Vercel; failures are only logged): Ably publishes for chat send / edit /
   delete / reactions (TRI-316), report emails (TRI-237), the event-cancellation email (TRI-349).
 - **Cron** `GET /api/cron/notifications`, every 15 min (`vercel.json`; needs Vercel Pro), one route, sequential:
-  event reminders (TRI-190) + the day-before reminder email (TRI-350), poll results (TRI-219), due event-change emails
-  (TRI-349), daily digests (TRI-347), purge of deleted photos older than 30 days (TRI-120). Each step is idempotent
-  (`once` rows, `email_log`, claimed outbox rows), so a repeated tick sends nothing twice.
+  due event-change emails (TRI-349) and the purge of deleted photos older than 30 days (TRI-120). Each step is
+  idempotent (claimed outbox rows), so a repeated tick sends nothing twice. Event reminders (TRI-190) + the day-before
+  email (TRI-350), poll results (TRI-219) and the daily digests (TRI-347) run on tribe-api's worker since 2026-10-15
+  (`LOCAL_SCHEDULES`); the services stay here, unused, until tribe-v2 is retired.
 - **Inline but would be better queued**: invite / accepted / declined emails (awaited in the request), code emails
   (awaited on purpose: a failure must reach the user), Cloudinary blurhash on confirm.
 
@@ -166,7 +167,7 @@ Auth: `session` = `getServerUser()` (cookie or bearer), `Better-Auth` = its catc
 | --- | --- | --- | --- | --- | --- | --- |
 | `/api/activities` | GET | session | — | `activity`, `auth`, `tribe` |  |  |
 | `/api/auth/*all` | GET POST | Better-Auth | — | — |  |  |
-| `/api/cron/notifications` | GET | cron secret | — | `digest-emails`, `event-change-emails`, `media`, `scheduled-notifications` |  | Cloudinary, Resend |
+| `/api/cron/notifications` | GET | cron secret | — | `event-change-emails`, `media` |  | Cloudinary, Resend |
 | `/api/email/unsubscribe` | GET POST | signed token | — | `email-preferences` |  | Resend |
 | `/api/invitations` | GET | session | — | `auth`, `invitation` |  | Resend |
 | `/api/invitations/:invitation_id/accept` | POST | session | — | `auth`, `invitation` |  | Resend |
