@@ -352,6 +352,8 @@ export type EventWithDetails = EventWithAttendees & {
   capacityLimit?: number | null;
   rsvpDeadline?: Date | null;
   attendeeVisibility?: "all_members" | "count_only" | "hidden";
+  // Detail only: the first going attendees for the avatar stack (TRI-259, TRI-553)
+  attendeePreview?: UserPreview[];
 };
 
 // Event settings extended types

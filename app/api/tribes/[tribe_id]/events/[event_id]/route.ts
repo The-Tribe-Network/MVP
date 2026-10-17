@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
 import { getEventById, updateEvent, deleteEvent } from "@/lib/services/event";
-import { eventEditability } from "@/lib/services/event-settings";
+import { canSeeAttendeeList, eventEditability } from "@/lib/services/event-settings";
 import { getMemberWithPermissions } from "@/lib/services/permissions";
 import { checkPermission } from "@/lib/services/role-permissions";
 import { updateEventDetailsSchema } from "@/lib/validations/event";
@@ -28,14 +28,27 @@ export async function GET(
     }
 
     // Scoped to the tribe in the URL: membership above is checked against that tribe (TRI-552)
-    const event = await getEventById(event_id, user.id);
+    const event = await getEventById(event_id, user.id, { unfilteredAttendeePreview: true });
     if (!event || event.tribeId !== tribe_id) {
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
 
     // EVT-02 ⋯ Manage / EVT-04 gate: who may edit, from one place (TRI-13, DATA-MODEL-DELTA §6)
     const { isUserCoHost, canUserEdit } = await eventEditability(event, memberData, user.id);
-    return NextResponse.json({ ...event, isUserCoHost, canUserEdit });
+    // The going avatars follow the attendee list's visibility (TRI-553)
+    const seesList = canSeeAttendeeList({
+      visibility: event.attendeeVisibility ?? "all_members",
+      createdBy: event.createdBy,
+      isCoHost: isUserCoHost,
+      member: memberData,
+      userId: user.id,
+    });
+    return NextResponse.json({
+      ...event,
+      attendeePreview: seesList ? event.attendeePreview : [],
+      isUserCoHost,
+      canUserEdit,
+    });
   } catch (error) {
     console.error("Error fetching event:", error);
     reportServerError(error, { route: "/api/tribes/[tribe_id]/events/[event_id]", method: "GET" });

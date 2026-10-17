@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
 import {
   addEventAttendee,
+  attendeeVisibilityOf,
   EventFullError,
   getEventAttendees,
   removeEventAttendee,
 } from "@/lib/services/event";
 import { rsvpSchema } from "@/lib/validations/event";
-import { findTribeEvent } from "@/lib/services/event-settings";
+import { canSeeAttendeeList, findTribeEvent, getEventCoHosts } from "@/lib/services/event-settings";
 import { getMemberWithPermissions } from "@/lib/services/permissions";
 import { reportServerError } from "@/lib/clients/sentry";
 
@@ -30,9 +31,21 @@ export async function GET(
     }
 
     // The event must be in the tribe the caller is a member of (TRI-552)
-    if (!(await findTribeEvent(tribe_id, event_id))) {
+    const event = await findTribeEvent(tribe_id, event_id);
+    if (!event) {
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
+
+    // A count_only or hidden list is the hosts', owners' and admins'; everyone else gets an empty one (TRI-553)
+    const [visibility, coHosts] = await Promise.all([attendeeVisibilityOf(event_id), getEventCoHosts(event_id)]);
+    const seesList = canSeeAttendeeList({
+      visibility,
+      createdBy: event.createdBy,
+      isCoHost: coHosts.some((row) => row.userId === user.id),
+      member: memberData,
+      userId: user.id,
+    });
+    if (!seesList) return NextResponse.json([]);
 
     const attendees = await getEventAttendees(event_id, user.id);
     return NextResponse.json(attendees);

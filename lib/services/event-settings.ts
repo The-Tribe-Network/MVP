@@ -234,6 +234,23 @@ export async function eventEditability(
 }
 
 /**
+ * Who sees an event's attendee list and its going avatars (EVT-17, TRI-553): every member when it is `all_members`;
+ * otherwise (`count_only`, `hidden`) only the creator, co-hosts, and the tribe's owners and admins. The rest get an
+ * empty list.
+ */
+export function canSeeAttendeeList(input: {
+  visibility: "all_members" | "count_only" | "hidden";
+  createdBy: string;
+  isCoHost: boolean;
+  member: MemberWithPermissions;
+  userId: string;
+}): boolean {
+  if (input.visibility === "all_members") return true;
+  if (input.createdBy === input.userId || input.isCoHost) return true;
+  return input.member.member.role === "owner" || input.member.member.role === "admin";
+}
+
+/**
  * Who may add a poll to an event: effective `canCreateEvents` (with the tribe's `eventCreationPermissionLevel`)
  * AND the event's `pollCreationLevel` (seeded from the tribe's `pollCreationPermissionLevel`):
  * - event_creator: the event's creator or a co-host (the tribe owner still may);
