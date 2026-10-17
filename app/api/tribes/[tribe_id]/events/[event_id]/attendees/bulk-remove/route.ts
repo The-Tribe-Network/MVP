@@ -24,8 +24,9 @@ export async function POST(
     }
 
     // Get the event to check ownership
+    // Scoped to the tribe in the URL: membership and role above are that tribe's (TRI-552)
     const event = await getEventById(event_id, user.id);
-    if (!event) {
+    if (!event || event.tribeId !== tribe_id) {
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
 

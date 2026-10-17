@@ -3,7 +3,7 @@ import { getServerUser } from "@/lib/services/auth";
 import { getEventPolls, createPoll } from "@/lib/services/poll";
 import { getMemberWithPermissions } from "@/lib/services/permissions";
 import { getEventById } from "@/lib/services/event";
-import { canCreateEventPoll } from "@/lib/services/event-settings";
+import { canCreateEventPoll, findTribeEvent } from "@/lib/services/event-settings";
 import { createPollSchema } from "@/lib/validations/poll";
 import { reportServerError } from "@/lib/clients/sentry";
 
@@ -23,6 +23,11 @@ export async function GET(
     const memberData = await getMemberWithPermissions(tribe_id, user.id);
     if (!memberData) {
       return NextResponse.json({ error: "Not a member" }, { status: 403 });
+    }
+
+    // The event must be in the tribe the caller is a member of (TRI-552)
+    if (!(await findTribeEvent(tribe_id, event_id))) {
+      return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
 
     const polls = await getEventPolls(event_id, user.id);
