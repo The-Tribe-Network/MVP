@@ -7,6 +7,7 @@ import {
   removeEventAttendee,
 } from "@/lib/services/event";
 import { rsvpSchema } from "@/lib/validations/event";
+import { findTribeEvent } from "@/lib/services/event-settings";
 import { getMemberWithPermissions } from "@/lib/services/permissions";
 import { reportServerError } from "@/lib/clients/sentry";
 
@@ -26,6 +27,11 @@ export async function GET(
     const memberData = await getMemberWithPermissions(tribe_id, user.id);
     if (!memberData) {
       return NextResponse.json({ error: "Not a member" }, { status: 403 });
+    }
+
+    // The event must be in the tribe the caller is a member of (TRI-552)
+    if (!(await findTribeEvent(tribe_id, event_id))) {
+      return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
 
     const attendees = await getEventAttendees(event_id, user.id);
@@ -56,6 +62,11 @@ export async function POST(
     const memberData = await getMemberWithPermissions(tribe_id, user.id);
     if (!memberData) {
       return NextResponse.json({ error: "Not a member" }, { status: 403 });
+    }
+
+    // The event must be in the tribe the caller is a member of (TRI-552)
+    if (!(await findTribeEvent(tribe_id, event_id))) {
+      return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
 
     // Web sends `{ status }` only; mobile adds guestCount and note (EVT-18, TRI-10).

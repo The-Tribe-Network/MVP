@@ -27,8 +27,9 @@ export async function GET(
       return NextResponse.json({ error: "Not a member" }, { status: 403 });
     }
 
+    // Scoped to the tribe in the URL: membership above is checked against that tribe (TRI-552)
     const event = await getEventById(event_id, user.id);
-    if (!event) {
+    if (!event || event.tribeId !== tribe_id) {
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
 
@@ -58,9 +59,10 @@ export async function PUT(
 
     const { tribe_id, event_id } = await ctx.params;
 
-    // Get event first to check ownership
+    // Get event first to check ownership, scoped to the tribe in the URL: membership and permissions below are
+    // checked against that tribe (TRI-552)
     const existingEvent = await getEventById(event_id);
-    if (!existingEvent) {
+    if (!existingEvent || existingEvent.tribeId !== tribe_id) {
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
 
@@ -113,8 +115,9 @@ export async function DELETE(
 
     const { tribe_id, event_id } = await ctx.params;
 
+    // Scoped to the tribe in the URL: membership and permissions below are checked against that tribe (TRI-552)
     const existingEvent = await getEventById(event_id);
-    if (!existingEvent) {
+    if (!existingEvent || existingEvent.tribeId !== tribe_id) {
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
 

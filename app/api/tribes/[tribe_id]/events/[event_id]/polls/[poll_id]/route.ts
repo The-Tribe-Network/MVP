@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
 import { deletePoll } from "@/lib/services/poll";
+import { resolvePollOwner } from "@/lib/services/poll-votes";
 import { getMemberWithPermissions } from "@/lib/services/permissions";
 import { db } from "@/lib/database/client";
 import { poll } from "@/lib/database/schemas/poll";
@@ -22,7 +23,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { tribe_id, poll_id } = await params;
+    const { tribe_id, event_id, poll_id } = await params;
 
     // Get poll to check ownership
     const [existingPoll] = await db
@@ -31,7 +32,9 @@ export async function DELETE(
       .where(eq(poll.id, poll_id))
       .limit(1);
 
-    if (!existingPoll) {
+    // Scoped to the event and tribe in the URL: membership and role below are that tribe's (TRI-552)
+    const owner = existingPoll ? await resolvePollOwner(poll_id) : null;
+    if (!existingPoll || !owner || owner.tribeId !== tribe_id || owner.eventId !== event_id) {
       return NextResponse.json({ error: "Poll not found" }, { status: 404 });
     }
 
