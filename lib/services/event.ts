@@ -101,6 +101,11 @@ async function rsvpRulesFor(eventId: string): Promise<RsvpRules> {
   return (await rsvpRulesForMany([eventId])).get(eventId) ?? DEFAULT_RSVP_RULES;
 }
 
+/** Who may see the event's attendee list (EVT-17), `all_members` when it has no settings row. Never writes. */
+export async function attendeeVisibilityOf(eventId: string): Promise<RsvpRules["attendeeVisibility"]> {
+  return (await rsvpRulesFor(eventId)).attendeeVisibility;
+}
+
 type EventCounts = { pollCount: number; commentCount: number };
 
 /**
@@ -612,7 +617,9 @@ async function listEvents(scope: SQL, options?: EventListOptions): Promise<Event
  */
 export async function getEventById(
   eventId: string,
-  userId?: string
+  userId?: string,
+  // The detail route decides who sees the going avatars itself (TRI-553), so it asks for them unfiltered
+  options: { unfilteredAttendeePreview?: boolean } = {}
 ): Promise<EventWithDetails | null> {
   const [eventData, counts, userAttendance, rules, eventCounts, agenda] = await Promise.all([
     // Event with creator
@@ -700,7 +707,9 @@ export async function getEventById(
     attendees: [], // Fetch separately if needed
     // Hidden unless the list itself is visible to members; the creator always sees it (TRI-259)
     attendeePreview:
-      rules.attendeeVisibility === "all_members" || eventData[0].createdBy === userId
+      options.unfilteredAttendeePreview ||
+      rules.attendeeVisibility === "all_members" ||
+      eventData[0].createdBy === userId
         ? (agenda.get(eventId)?.attendeePreview ?? [])
         : [],
   } as unknown as EventWithDetails;
