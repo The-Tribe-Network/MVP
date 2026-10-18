@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { reportServerError } from "@/lib/clients/sentry";
+import { getServerUser } from "@/lib/services/auth";
 
 interface NominatimResult {
   place_id: number;
@@ -27,8 +28,15 @@ interface LocationSuggestion {
   type: string;
 }
 
+// Signed-in callers only, with a User-Agent that names us, per Nominatim's usage policy: an open relay risked a ban on
+// the server's IP (TRI-554). tribe-api's copy also caches and spaces its calls.
 export async function GET(request: NextRequest) {
   try {
+    const user = await getServerUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const searchParams = request.nextUrl.searchParams;
     const query = searchParams.get("q");
     const lat = searchParams.get("lat");
@@ -55,7 +63,7 @@ export async function GET(request: NextRequest) {
 
     const response = await fetch(`${baseUrl}?${params.toString()}`, {
       headers: {
-        "User-Agent": "Tribe App Location Search", // Required by Nominatim
+        "User-Agent": "TribeHQ/1.0 (+https://tribehq.io)", // Required by Nominatim: identifies the app
         Accept: "application/json",
       },
     });
