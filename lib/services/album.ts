@@ -1,4 +1,4 @@
-import { db } from "@/lib/database/client";
+import { db, getDbTransaction } from "@/lib/database/client";
 import { album, albumMedia, media, mediaLike } from "@/lib/database/schemas/media";
 import { user } from "@/lib/database/schemas/auth";
 import { tribe, tribeMember, tribeMemberPreference, tribeSettings } from "@/lib/database/schemas/tribe";
@@ -348,12 +348,16 @@ export async function assertAlbumInTribe(albumId: unknown, tribeId: string): Pro
   }
 }
 
-/** Throws unless `coverId` is a media row in the tribe (the same rule `createAlbumWithMedia` applies). */
-async function assertCoverInTribe(coverId: string, tribeId: string): Promise<void> {
+/**
+ * Throws unless `coverId` is a media row in the tribe that `userId` may see (the same rule `createAlbumWithMedia`
+ * applies; a photo filed only in an album they can't see counts as missing, TRI-568).
+ */
+async function assertCoverInTribe(coverId: string, tribeId: string, userId: string): Promise<void> {
+  const access = await getAlbumAccessContext(tribeId, userId);
   const [coverMediaRecord] = await db
     .select({ id: media.id })
     .from(media)
-    .where(and(eq(media.id, coverId), eq(media.tribeId, tribeId)))
+    .where(and(eq(media.id, coverId), eq(media.tribeId, tribeId), visibleMediaCondition(access)))
     .limit(1);
   if (!coverMediaRecord) {
     throw new Error("Cover image not found or not accessible");
@@ -764,7 +768,7 @@ export async function updateAlbum(
   }
 
   if (updateData.coverId !== undefined) {
-    await assertCoverInTribe(updateData.coverId, albumRecord.tribeId);
+    await assertCoverInTribe(updateData.coverId, albumRecord.tribeId, userId);
   }
 
   // Update the album
@@ -778,7 +782,9 @@ export async function updateAlbum(
 }
 
 /**
- * Delete an album (its album_media rows cascade; the media rows stay)
+ * Delete an album; its photos stay, in the general library (album_media's FK sets album_id null). Its rows whose photo
+ * is already there go first: a second general-library row would break uq_album_media_general_media_id and fail the
+ * whole delete (TRI-570).
  * @param albumId - The album ID
  * @param userId - The user ID (creator, or a member with `ALBUM_MANAGE_PERMISSION`)
  * @param options.tribeId - The tribe id from the route; a mismatch throws before any permission check
@@ -794,7 +800,13 @@ export async function deleteAlbum(
     throw new Error("User does not have permission to delete this album");
   }
 
-  await db.delete(album).where(eq(album.id, albumId));
+  await getDbTransaction().transaction(async (tx) => {
+    await tx.execute(sql`
+      DELETE FROM album_media am
+      WHERE am.album_id = ${albumId}
+        AND EXISTS (SELECT 1 FROM album_media g WHERE g.media_id = am.media_id AND g.album_id IS NULL)`);
+    await tx.delete(album).where(eq(album.id, albumId));
+  });
 }
 
 /**
@@ -890,13 +902,15 @@ export async function addMultipleMediaToAlbum(
     throw new AlbumForbiddenError();
   }
 
-  // Validate all media exist and belong to tribe
+  // Validate all media exist, belong to the tribe and are visible to the caller (TRI-568)
+  const access = await getAlbumAccessContext(albumRecord.tribeId, userId);
   const mediaRecords = await db
     .select()
     .from(media)
     .where(and(
       inArray(media.id, mediaIds),
       eq(media.tribeId, albumRecord.tribeId),
+      visibleMediaCondition(access),
     ));
 
   if (mediaRecords.length !== mediaIds.length) {
@@ -938,20 +952,9 @@ export async function createAlbumWithMedia(
     throw new Error("User does not have permission to create albums");
   }
 
-  // Validate cover media if provided
+  // Validate cover media if provided: the tribe's, and visible to the caller (TRI-568)
   if (albumData.coverId) {
-    const coverMediaRecord = await db
-      .select()
-      .from(media)
-      .where(and(
-        eq(media.id, albumData.coverId),
-        eq(media.tribeId, albumData.tribeId)
-      ))
-      .limit(1);
-
-    if (!coverMediaRecord[0]) {
-      throw new Error("Cover image not found or not accessible");
-    }
+    await assertCoverInTribe(albumData.coverId, albumData.tribeId, userId);
   }
 
   // Create the album

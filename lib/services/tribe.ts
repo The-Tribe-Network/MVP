@@ -2,7 +2,7 @@ import { db, getDbTransaction } from "@/lib/database/client";
 import { deleteDraftsForMember } from "@/lib/services/draft";
 import { catchUpRead, tribe, tribeMember, tribeMemberPermission, tribeMemberPreference, tribeSettings } from "@/lib/database/schemas/tribe";
 import { user } from "@/lib/database/schemas/auth";
-import { media } from "@/lib/database/schemas/media";
+import { album, albumMedia, media } from "@/lib/database/schemas/media";
 import { event } from "@/lib/database/schemas/event";
 import { post } from "@/lib/database/schemas/post";
 import { eq, ne, asc, count, and, inArray, aliasedTable, lte, sql } from "drizzle-orm";
@@ -539,8 +539,14 @@ export async function deleteTribe(tribeId: string, userId: string): Promise<void
     throw new Error("No permission to delete tribe");
   }
 
-  // Delete tribe (cascade will handle related records)
-  await db.delete(tribe).where(eq(tribe.id, tribeId));
+  // Delete tribe (cascade will handle related records). Its albums' album_media rows go first: the cascade would set
+  // them to the general library, and a photo already there (or in two albums) fails the delete (TRI-570)
+  await getDbTransaction().transaction(async (tx) => {
+    await tx
+      .delete(albumMedia)
+      .where(inArray(albumMedia.albumId, tx.select({ id: album.id }).from(album).where(eq(album.tribeId, tribeId))));
+    await tx.delete(tribe).where(eq(tribe.id, tribeId));
+  });
 }
 
 /**
