@@ -3,8 +3,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { purgeRetiredMedia } from "@/lib/services/media";
 import { reportServerError } from "@/lib/clients/sentry";
 
-// GET /api/cron/notifications — Vercel Cron, daily at 04:00 UTC (vercel.json; TRI-184). Destroys deleted photos
-// whose 30 days are up (TRI-120); safe to run twice.
+// GET /api/cron/notifications — no longer scheduled: the photo purge (TRI-120) moved to tribe-api's worker
+// (media.purge, LOCAL_SCHEDULES) with the media module on 2026-10-18. If media goes back to tribe-v2, add
+// `"crons": [{ "path": "/api/cron/notifications", "schedule": "0 4 * * *" }]` to vercel.json again.
+// Destroys deleted photos whose 30 days are up; safe to run twice.
 // Event reminders (TRI-190), poll results (TRI-219) and the daily digests (TRI-347) moved to tribe-api's worker
 // (notifications.eventReminders / pollResults / digest, LOCAL_SCHEDULES); its jobs share `email_log` and notify()'s
 // once-keys with these, so they never double up. To move them back, restore them here (TRI-485).
