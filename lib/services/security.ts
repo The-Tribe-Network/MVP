@@ -73,10 +73,11 @@ export async function getUserSessions(): Promise<SessionWithDevice[]> {
       .orderBy(desc(session.updatedAt));
 
     // Enrich sessions with device information
-    const enrichedSessions: SessionWithDevice[] = sessions.map((sess) => {
+    // Without `token`: one leaked response would hand over every device (TRI-575)
+    const enrichedSessions: SessionWithDevice[] = sessions.map(({ token, ...sess }) => {
       const parsed = parseUserAgent(sess.userAgent || null);
       const location = getLocationFromIP(sess.ipAddress || null);
-      const isCurrentSession = sess.token === currentSessionToken;
+      const isCurrentSession = token === currentSessionToken;
 
       return {
         ...sess,
@@ -130,6 +131,35 @@ export async function revokeUserSession(sessionToken: string): Promise<{ success
     // Delete the session
     await db.delete(session).where(eq(session.token, sessionToken));
 
+    return { success: true };
+  } catch (error) {
+    console.error("Error revoking session:", error);
+    return {
+      success: false,
+      error: thrownMessage(error) || "Failed to revoke session",
+    };
+  }
+}
+
+/**
+ * Revoke a specific session by id (TRI-575: the sessions list no longer sends tokens)
+ */
+export async function revokeUserSessionById(sessionId: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const currentSession = await getServerSession();
+    if (!currentSession?.session?.token) {
+      return { success: false, error: "Unauthorized" };
+    }
+    if (sessionId === currentSession.session.id) {
+      return { success: false, error: "Cannot revoke current session" };
+    }
+    const deleted = await db
+      .delete(session)
+      .where(and(eq(session.id, sessionId), eq(session.userId, currentSession.user.id)))
+      .returning({ id: session.id });
+    if (deleted.length === 0) {
+      return { success: false, error: "Session not found or already revoked" };
+    }
     return { success: true };
   } catch (error) {
     console.error("Error revoking session:", error);

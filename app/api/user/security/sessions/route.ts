@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
-import { getUserSessions, revokeUserSession, revokeOtherSessions } from "@/lib/services/security";
-import { revokeSessionSchema, validateApiRequest } from "@/lib/validations/security";
+import { getUserSessions, revokeUserSession, revokeUserSessionById, revokeOtherSessions } from "@/lib/services/security";
+import { revokeSessionByIdSchema, revokeSessionSchema, validateApiRequest } from "@/lib/validations/security";
 import { reportServerError } from "@/lib/clients/sentry";
 
 /**
@@ -33,7 +33,7 @@ export async function GET() {
 /**
  * DELETE /api/user/security/sessions
  * Revoke session(s)
- * - If sessionToken in body: revoke specific session
+ * - If sessionId in body: revoke that session (TRI-575); sessionToken still works for older clients
  * - If no sessionToken: revoke all other sessions (current session preserved)
  */
 export async function DELETE(request: NextRequest) {
@@ -47,7 +47,27 @@ export async function DELETE(request: NextRequest) {
     // 2. Parse request body
     const body = await request.json().catch(() => ({}));
 
-    // 3. If sessionToken provided, revoke specific session
+    // 3. If sessionId (or, from older clients, sessionToken) provided, revoke that session
+    if (body.sessionId) {
+      const validation = validateApiRequest(revokeSessionByIdSchema, body);
+      if (!validation.success) {
+        return NextResponse.json(
+          { error: "Validation failed", details: validation.error },
+          { status: 400 }
+        );
+      }
+
+      const result = await revokeUserSessionById(validation.data.sessionId);
+      if (!result.success) {
+        return NextResponse.json(
+          { error: result.error || "Failed to revoke session" },
+          { status: 400 }
+        );
+      }
+
+      return NextResponse.json({ success: true, message: "Session revoked successfully" });
+    }
+
     if (body.sessionToken) {
       const validation = validateApiRequest(revokeSessionSchema, body);
       if (!validation.success) {

@@ -130,8 +130,8 @@ export function SecurityTab() {
     fetchConnectedAccounts()
   }, [])
 
-  const handleRevokeSession = (sessionToken: string) => {
-    revokeSessionMutation.mutate(sessionToken)
+  const handleRevokeSession = (sessionId: string) => {
+    revokeSessionMutation.mutate(sessionId)
   }
 
   const handleRevokeAllOtherSessions = () => {
@@ -377,7 +377,7 @@ export function SecurityTab() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleRevokeSession(session.token)}
+                          onClick={() => handleRevokeSession(session.id)}
                           disabled={revokeSessionMutation.isPending}
                         >
                           {revokeSessionMutation.isPending ? (

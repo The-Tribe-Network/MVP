@@ -50,7 +50,7 @@ export function useRevokeSession() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (sessionToken: string) => revokeSession(sessionToken),
+    mutationFn: (sessionId: string) => revokeSession(sessionId),
     onSuccess: () => {
       toast.success("Session revoked successfully");
       queryClient.invalidateQueries({ queryKey: queryKeys.security.sessions() });

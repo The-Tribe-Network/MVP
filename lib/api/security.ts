@@ -13,7 +13,7 @@ export interface ChangePasswordParams {
 }
 
 export interface RevokeSessionParams {
-  sessionToken: string;
+  sessionId: string;
 }
 
 // ============================================================================
@@ -51,14 +51,14 @@ export async function changePassword(
  * Revoke a specific session
  */
 export async function revokeSession(
-  sessionToken: string
+  sessionId: string
 ): Promise<{ success: boolean; message: string }> {
   return apiFetch<{ success: boolean; message: string }>(
     `${API_BASE}/sessions`,
     {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sessionToken }),
+      body: JSON.stringify({ sessionId }),
     }
   );
 }
