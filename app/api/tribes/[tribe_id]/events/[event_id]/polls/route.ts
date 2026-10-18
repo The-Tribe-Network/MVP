@@ -3,7 +3,7 @@ import { getServerUser } from "@/lib/services/auth";
 import { getEventPolls, createPoll } from "@/lib/services/poll";
 import { getMemberWithPermissions } from "@/lib/services/permissions";
 import { getEventById } from "@/lib/services/event";
-import { canCreateEventPoll, findTribeEvent } from "@/lib/services/event-settings";
+import { canCreateEventPoll, findTribeEvent, getOrCreateEventSettings } from "@/lib/services/event-settings";
 import { createPollSchema } from "@/lib/validations/poll";
 import { reportServerError } from "@/lib/clients/sentry";
 
@@ -73,6 +73,10 @@ export async function POST(
         { error: "No permission to create polls" },
         { status: 403 }
       );
+    }
+    // The host's switch in the event settings (TRI-560)
+    if ((await getOrCreateEventSettings(eventRow.id, eventRow.tribeId)).enablePolls === false) {
+      return NextResponse.json({ error: "Polls are turned off for this event" }, { status: 403 });
     }
 
     const body = await request.json();
