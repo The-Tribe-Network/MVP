@@ -248,6 +248,14 @@ export async function createPoll(
  * Vote on a poll
  * Handles both single and multiple choice polls
  */
+/** A vote the poll can't take (TRI-560): the vote routes answer it as 400 with this message */
+export class PollVoteError extends Error {}
+
+async function assertPollOpen(pollId: string) {
+  const [row] = await db.select({ endsAt: poll.endsAt }).from(poll).where(eq(poll.id, pollId)).limit(1);
+  if (row?.endsAt && row.endsAt <= new Date()) throw new PollVoteError("Poll is closed");
+}
+
 export async function votePoll(
   pollId: string,
   userId: string,
@@ -263,6 +271,22 @@ export async function votePoll(
 
     if (!pollData) {
       throw new Error("Poll not found");
+    }
+
+    // Only this poll's options, one on a single-choice poll, before it closes (TRI-560)
+    if (pollData.endsAt && pollData.endsAt <= new Date()) {
+      throw new PollVoteError("Poll is closed");
+    }
+    const chosen = [...new Set(optionIds)];
+    if (!pollData.allowMultiple && chosen.length > 1) {
+      throw new PollVoteError("This poll allows only one choice");
+    }
+    const known = await tx
+      .select({ id: pollOption.id })
+      .from(pollOption)
+      .where(and(eq(pollOption.pollId, pollId), inArray(pollOption.id, chosen)));
+    if (known.length !== chosen.length) {
+      throw new PollVoteError("Invalid poll option");
     }
 
     // 2. For single-choice polls, remove existing votes first
@@ -293,6 +317,8 @@ export async function removeVote(
   userId: string,
   optionId?: string
 ): Promise<void> {
+  // Results stay as they were once the poll closes (TRI-560)
+  await assertPollOpen(pollId);
   if (optionId) {
     // Remove specific option vote
     await db

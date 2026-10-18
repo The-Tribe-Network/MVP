@@ -9,7 +9,7 @@ import { pollVoteSchema } from "@/lib/validations/poll";
 
 import { getServerUser } from "./auth";
 import { getMemberWithPermissions } from "./permissions";
-import { removeVote, votePoll } from "./poll";
+import { PollVoteError, removeVote, votePoll } from "./poll";
 
 // TRI-150: one vote code path for event polls and post polls. The poll's owner (its event's tribe or
 // its post's tribe) decides who may vote; the tribe in the URL must be that tribe, and the event
@@ -72,6 +72,7 @@ export async function handleVote(request: NextRequest, scope: Scope) {
     await votePoll(scope.pollId, guarded.user.id, validation.data.optionIds);
     return NextResponse.json({ success: true });
   } catch (error) {
+    if (error instanceof PollVoteError) return NextResponse.json({ error: error.message }, { status: 400 });
     console.error("Error voting on poll:", error);
     return NextResponse.json({ error: "Failed to vote on poll" }, { status: 500 });
   }
@@ -87,6 +88,7 @@ export async function handleRemoveVote(request: NextRequest, scope: Scope) {
     await removeVote(scope.pollId, guarded.user.id, optionId || undefined);
     return NextResponse.json({ success: true });
   } catch (error) {
+    if (error instanceof PollVoteError) return NextResponse.json({ error: error.message }, { status: 400 });
     console.error("Error removing vote:", error);
     return NextResponse.json({ error: "Failed to remove vote" }, { status: 500 });
   }
