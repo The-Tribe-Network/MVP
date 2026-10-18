@@ -538,7 +538,8 @@ export type MediaItemProps = MediaWithStats;
 // ============================================
 // Security types
 // ============================================
-export type SessionWithDevice = SelectSession & {
+// Never the session's `token`: it's the bearer credential (TRI-575)
+export type SessionWithDevice = Omit<SelectSession, "token"> & {
   deviceName: string;
   browser: string;
   os: string;

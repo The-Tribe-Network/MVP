@@ -25,6 +25,11 @@ export const revokeSessionSchema = z.object({
   sessionToken: z.string().min(1, "Session token is required"),
 });
 
+// By id, now that the sessions list no longer sends tokens (TRI-575)
+export const revokeSessionByIdSchema = z.object({
+  sessionId: z.string().uuid({ message: "Invalid session id" }),
+});
+
 // Export types
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
 export type RevokeSessionInput = z.infer<typeof revokeSessionSchema>;
