@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
-import { createComment, getPostComments } from "@/lib/services/comment";
+import { createComment, getPostComments, ParentCommentError } from "@/lib/services/comment";
 import { verifyPostAccessAndMembership } from "@/lib/services/post";
 import {
   createCommentSchema,
@@ -126,6 +126,9 @@ export async function POST(
     return NextResponse.json(newComment, { status: 201 });
   } catch (error) {
     console.error("Error creating comment:", error);
+    if (error instanceof ParentCommentError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
     if (error instanceof Error) {
       if (error.message.includes("permission")) {
         return NextResponse.json({ error: error.message }, { status: 403 });

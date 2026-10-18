@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerUser } from "@/lib/services/auth";
-import { createEventComment, getEventComments } from "@/lib/services/comment";
+import { createEventComment, getEventComments, ParentCommentError } from "@/lib/services/comment";
 import { getEventById } from "@/lib/services/event";
 import { getMemberWithPermissions } from "@/lib/services/permissions";
 import {
@@ -159,6 +159,9 @@ export async function POST(
     return NextResponse.json(newComment, { status: 201 });
   } catch (error) {
     console.error("Error creating event comment:", error);
+    if (error instanceof ParentCommentError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
     if (error instanceof Error) {
       if (error.message.includes("permission")) {
         return NextResponse.json({ error: error.message }, { status: 403 });

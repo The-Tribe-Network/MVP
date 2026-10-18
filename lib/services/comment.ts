@@ -88,6 +88,28 @@ async function hostsWantCommentNotices(tx: NotifyExecutor, eventId: string) {
   return settings?.on ?? true;
 }
 
+/** A reply whose parent isn't a comment on the same post or event (TRI-559): the routes answer 400 */
+export class ParentCommentError extends Error {
+  constructor() {
+    super("Parent comment not found");
+  }
+}
+
+async function assertParentOn(parentCommentId: string | undefined, on: { postId: string } | { eventId: string }) {
+  if (!parentCommentId) return;
+  const [row] = await db
+    .select({ id: comment.id })
+    .from(comment)
+    .where(
+      and(
+        eq(comment.id, parentCommentId),
+        "postId" in on ? eq(comment.postId, on.postId) : eq(comment.eventId, on.eventId)
+      )
+    )
+    .limit(1);
+  if (!row) throw new ParentCommentError();
+}
+
 export async function createComment(
   postId: string,
   userId: string,
@@ -100,6 +122,7 @@ export async function createComment(
     throw new Error("Post not found");
   }
   await assertCanComment(postData.tribeId, userId);
+  await assertParentOn(parentCommentId, { postId });
 
   // The comment and its notifications commit together (TRI-186)
   const createdComment = await getDbTransaction().transaction(async (tx) => {
@@ -456,6 +479,7 @@ export async function createEventComment(
     throw new Error("Event not found");
   }
   await assertCanComment(eventData.tribeId, userId);
+  await assertParentOn(parentCommentId, { eventId });
 
   // The comment and its notifications commit together (TRI-186)
   const createdComment = await getDbTransaction().transaction(async (tx) => {
