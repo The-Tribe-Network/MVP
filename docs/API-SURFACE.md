@@ -85,8 +85,8 @@ These are the ones to watch, with the indexes added for them:
 
 - **`after()`** (runs after the response on Vercel; failures are only logged): Ably publishes for chat send / edit /
   delete / reactions (TRI-316), report emails (TRI-237), the event-cancellation email (TRI-349).
-- **Cron** `GET /api/cron/notifications`, daily at 04:00 UTC (`vercel.json`): the purge of deleted photos older than
-  30 days (TRI-120), idempotent (claimed rows). Due event-change emails (TRI-349) went with events to tribe-api on
+- **Cron** `GET /api/cron/notifications`: not scheduled since 2026-10-18; the purge of deleted photos older than
+  30 days (TRI-120) runs on tribe-api's worker (`media.purge`). The route stays for a rollback. Due event-change emails (TRI-349) went with events to tribe-api on
   2026-10-17 (a job queued with each row). Event reminders (TRI-190) + the day-before
   email (TRI-350), poll results (TRI-219) and the daily digests (TRI-347) run on tribe-api's worker since 2026-10-15
   (`LOCAL_SCHEDULES`); the services stay here, unused, until tribe-v2 is retired.
